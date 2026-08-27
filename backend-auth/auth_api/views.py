@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.http import JsonResponse
 
 from rest_framework import status
@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import LoginSerializer
-from utils.token import generar_tokens
+from utils.token import generar_tokens, verificar_token
 
 
 def health(request):
@@ -39,11 +39,9 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        access_token, refresh_token, access_max_age, refresh_max_age = (
-            generar_tokens(
-                usuario,
-                recordar=recordar,
-            )
+        access_token, refresh_token, access_max_age, refresh_max_age = generar_tokens(
+            usuario,
+            recordar=recordar,
         )
 
         response = Response(
@@ -78,3 +76,46 @@ class LoginView(APIView):
         )
 
         return response
+
+
+class SesionUsuarioView(APIView):
+    def get(self, request):
+        access_token = request.COOKIES.get("access_token")
+
+        if not access_token:
+            return Response(
+                {"detail": "No existe una sesión activa"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        payload = verificar_token(
+            access_token,
+            tipo_esperado="access",
+        )
+
+        if payload is None:
+            return Response(
+                {"detail": "Token inválido o expirado"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        user_id = payload.get("user_id")
+
+        Usuario = get_user_model()
+
+        try:
+            usuario = Usuario.objects.get(id=user_id)
+        except Usuario.DoesNotExist:
+            return Response(
+                {"detail": "Usuario no encontrado"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return Response(
+            {
+                "id": usuario.id,
+                "username": usuario.username,
+                "email": usuario.email,
+            }
+        )
+    
