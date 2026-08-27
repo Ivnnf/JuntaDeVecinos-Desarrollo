@@ -6,14 +6,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import LoginSerializer
-
 from utils.token import generar_tokens
 
+
 def health(request):
-    return JsonResponse({
-        "status": "ok",
-        "service": "auth_api"
-    })
+    return JsonResponse(
+        {
+            "status": "ok",
+            "service": "auth_api",
+        }
+    )
 
 
 class LoginView(APIView):
@@ -28,26 +30,51 @@ class LoginView(APIView):
         usuario = authenticate(
             request=request,
             username=username,
-            password=password
+            password=password,
         )
-        access_token, refresh_token, _, _ = generar_tokens(
-        usuario,
-        recordar=recordar
-)
 
         if usuario is None:
             return Response(
                 {"detail": "Credenciales inválidas"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        return Response({
-    "message": "Autenticación correcta",
-    "usuario": {
-        "id": usuario.id,
-        "username": usuario.username,
-        "email": usuario.email,
-    },
-    "access": access_token,
-    "refresh": refresh_token,
-})
+        access_token, refresh_token, access_max_age, refresh_max_age = (
+            generar_tokens(
+                usuario,
+                recordar=recordar,
+            )
+        )
+
+        response = Response(
+            {
+                "message": "Autenticación correcta",
+                "usuario": {
+                    "id": usuario.id,
+                    "username": usuario.username,
+                    "email": usuario.email,
+                },
+            }
+        )
+
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            max_age=int(access_max_age),
+            path="/",
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            max_age=int(refresh_max_age),
+            path="/",
+        )
+
+        return response
