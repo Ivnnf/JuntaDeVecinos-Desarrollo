@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -133,3 +134,20 @@ MAILERS = {
 
 
 AUTH_USER_MODEL = "profiles.Usuario"
+
+# Tokens JWT
+ACCESS_TOKEN_EXP_SECONDS = int(
+    os.getenv("ACCESS_TOKEN_EXP_SECONDS", 900)
+)
+
+ACCESS_TOKEN_EXP_REMEMBER_SECONDS = int(
+    os.getenv("ACCESS_TOKEN_EXP_REMEMBER_SECONDS", 7200)
+)
+
+REFRESH_TOKEN_EXP_SECONDS = int(
+    os.getenv("REFRESH_TOKEN_EXP_SECONDS", 3600)
+)
+
+REFRESH_TOKEN_EXP_REMEMBER_SECONDS = int(
+    os.getenv("REFRESH_TOKEN_EXP_REMEMBER_SECONDS", 604800)
+)

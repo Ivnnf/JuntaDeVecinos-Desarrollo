@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from .serializers import LoginSerializer
 
+from utils.token import generar_tokens
 
 def health(request):
     return JsonResponse({
@@ -22,12 +23,17 @@ class LoginView(APIView):
 
         username = serializer.validated_data["username"]
         password = serializer.validated_data["password"]
+        recordar = serializer.validated_data["recordar"]
 
         usuario = authenticate(
             request=request,
             username=username,
             password=password
         )
+        access_token, refresh_token, _, _ = generar_tokens(
+        usuario,
+        recordar=recordar
+)
 
         if usuario is None:
             return Response(
@@ -36,10 +42,12 @@ class LoginView(APIView):
             )
 
         return Response({
-            "message": "Autenticación correcta",
-            "usuario": {
-                "id": usuario.id,
-                "username": usuario.username,
-                "email": usuario.email,
-            }
-        })
+    "message": "Autenticación correcta",
+    "usuario": {
+        "id": usuario.id,
+        "username": usuario.username,
+        "email": usuario.email,
+    },
+    "access": access_token,
+    "refresh": refresh_token,
+})
