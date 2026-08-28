@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from .serializers import LoginSerializer
 from utils.token import generar_tokens, refresh_access_token, verificar_token
-
+from rest_framework.permissions import IsAuthenticated
 
 def health(request):
     return JsonResponse(
@@ -79,36 +79,10 @@ class LoginView(APIView):
 
 
 class SesionUsuarioView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        access_token = request.COOKIES.get("access_token")
-
-        if not access_token:
-            return Response(
-                {"detail": "No existe una sesión activa"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        payload = verificar_token(
-            access_token,
-            tipo_esperado="access",
-        )
-
-        if payload is None:
-            return Response(
-                {"detail": "Token inválido o expirado"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        user_id = payload.get("user_id")
-        Usuario = get_user_model()
-
-        try:
-            usuario = Usuario.objects.get(id=user_id)
-        except Usuario.DoesNotExist:
-            return Response(
-                {"detail": "Usuario no encontrado"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+        usuario = request.user
 
         return Response(
             {
@@ -138,6 +112,7 @@ class LogoutView(APIView):
 
         return response
 
+
 class RefreshTokenView(APIView):
     def post(self, request):
         refresh_token = request.COOKIES.get("refresh_token")
@@ -148,9 +123,7 @@ class RefreshTokenView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        nuevo_access_token, access_max_age, error = refresh_access_token(
-            refresh_token
-        )
+        nuevo_access_token, access_max_age, error = refresh_access_token(refresh_token)
 
         if error:
             return Response(

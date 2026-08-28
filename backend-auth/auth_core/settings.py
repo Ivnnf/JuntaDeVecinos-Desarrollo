@@ -151,3 +151,9 @@ REFRESH_TOKEN_EXP_SECONDS = int(
 REFRESH_TOKEN_EXP_REMEMBER_SECONDS = int(
     os.getenv("REFRESH_TOKEN_EXP_REMEMBER_SECONDS", 604800)
 )
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "auth_api.authentication.CookieJWTAuthentication",
+    ],
+}
