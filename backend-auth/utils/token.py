@@ -11,7 +11,6 @@ Actualmente maneja dos tipos de token:
 """
 
 from datetime import datetime, timedelta, timezone
-
 import jwt
 from django.conf import settings
 
@@ -40,6 +39,7 @@ def generar_tokens(user, recordar=False):
     refresh_payload = {
         "user_id": user.id,
         "type": "refresh",
+        "recordar": recordar,
         "iat": ahora,
         "exp": ahora + timedelta(seconds=refresh_exp_seconds),
     }
@@ -86,3 +86,59 @@ def verificar_token(token, tipo_esperado="access"):
 
     except jwt.InvalidTokenError:
         return None
+
+
+def refresh_access_token(refresh_token):
+    """
+    Genera un nuevo access token a partir de un refresh token válido.
+    """
+
+    payload = verificar_token(
+        refresh_token,
+        tipo_esperado="refresh",
+    )
+
+    if payload is None:
+        return None, None, "Token inválido o expirado"
+
+    recordar = payload.get("recordar", False)
+
+    user_id = payload.get("user_id")
+
+    if not user_id:
+        return None, None, "Token inválido o expirado"
+
+    from django.contrib.auth import get_user_model
+
+    Usuario = get_user_model()
+
+    try:
+        usuario = Usuario.objects.get(id=user_id)
+    except Usuario.DoesNotExist:
+        return None, None, "Token inválido o expirado"
+
+    if recordar:
+        access_exp_seconds = settings.ACCESS_TOKEN_EXP_REMEMBER_SECONDS
+    else:
+        access_exp_seconds = settings.ACCESS_TOKEN_EXP_SECONDS
+
+    ahora = datetime.now(timezone.utc)
+
+    access_payload = {
+        "user_id": usuario.id,
+        "type": "access",
+        "iat": ahora,
+        "exp": ahora + timedelta(seconds=access_exp_seconds),
+    }
+
+    nuevo_access_token = jwt.encode(
+        access_payload,
+        settings.SECRET_KEY,
+        algorithm="HS256",
+    )
+
+    return nuevo_access_token, access_exp_seconds, None
+
+
+
+    

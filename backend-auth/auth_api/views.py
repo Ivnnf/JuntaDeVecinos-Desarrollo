@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import LoginSerializer
-from utils.token import generar_tokens, verificar_token
+from utils.token import generar_tokens, refresh_access_token, verificar_token
 
 
 def health(request):
@@ -133,6 +133,43 @@ class LogoutView(APIView):
 
         response.delete_cookie(
             "refresh_token",
+            path="/",
+        )
+
+        return response
+
+class RefreshTokenView(APIView):
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if not refresh_token:
+            return Response(
+                {"detail": "No existe refresh token"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        nuevo_access_token, access_max_age, error = refresh_access_token(
+            refresh_token
+        )
+
+        if error:
+            return Response(
+                {"detail": error},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        response = Response(
+            {"message": "Access token renovado"},
+            status=status.HTTP_200_OK,
+        )
+
+        response.set_cookie(
+            key="access_token",
+            value=nuevo_access_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            max_age=int(access_max_age),
             path="/",
         )
 
