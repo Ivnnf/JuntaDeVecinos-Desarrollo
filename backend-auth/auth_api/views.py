@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from .serializers import LoginSerializer
 from utils.token import generar_tokens, refresh_access_token, verificar_token
+from utils.AutorizacionUsuario import AutorizacionUsuario
 from rest_framework.permissions import IsAuthenticated
 
 def health(request):
@@ -38,6 +39,17 @@ class LoginView(APIView):
                 {"detail": "Credenciales inválidas"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+        auth_usuario = AutorizacionUsuario(usuario)
+        puede_acceder, motivo = auth_usuario.puede_acceder()
+
+        if not puede_acceder:
+           return Response(
+        {
+            "detail": "Acceso denegado",
+            "motivo": motivo,
+        },
+        status=status.HTTP_403_FORBIDDEN,
+    )
 
         access_token, refresh_token, access_max_age, refresh_max_age = generar_tokens(
             usuario,
@@ -84,11 +96,26 @@ class SesionUsuarioView(APIView):
     def get(self, request):
         usuario = request.user
 
+        auth_usuario = AutorizacionUsuario(usuario)
+        puede_acceder, motivo = auth_usuario.puede_acceder()
+
+        if not puede_acceder:
+            return Response(
+                {
+                    "detail": "Acceso denegado",
+                    "motivo": motivo,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         return Response(
             {
                 "id": usuario.id,
                 "username": usuario.username,
                 "email": usuario.email,
+                "rol_id": auth_usuario.getRol(),
+                "estado": auth_usuario.getEstado(),
+                "cargo_id": auth_usuario.getCargo(),
             }
         )
 
