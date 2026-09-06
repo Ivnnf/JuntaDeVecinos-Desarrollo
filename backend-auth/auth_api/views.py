@@ -1,11 +1,24 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.http import JsonResponse
 
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import (
+    urlsafe_base64_decode,
+    urlsafe_base64_encode,
+)
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import LoginSerializer
+from .serializers import (
+    LoginSerializer,
+    SolicitudRecuperacionSerializer,
+    RestablecerPasswordSerializer,
+)
 from utils.token import generar_tokens, refresh_access_token, verificar_token
 from utils.AutorizacionUsuario import AutorizacionUsuario
 from rest_framework.permissions import IsAuthenticated
@@ -89,6 +102,131 @@ class LoginView(APIView):
 
         return response
 
+class SolicitudRecuperacionView(APIView):
+    def post(self, request):
+        serializer = SolicitudRecuperacionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+
+        Usuario = get_user_model()
+
+        usuario = Usuario.objects.filter(
+            email__iexact=email,
+            is_active=True,
+        ).first()
+
+        if usuario and usuario.has_usable_password():
+            uid = urlsafe_base64_encode(
+                force_bytes(usuario.pk)
+            )
+
+            token = default_token_generator.make_token(
+                usuario
+            )
+
+            frontend_url = getattr(
+                settings,
+                "FRONTEND_URL",
+                "http://localhost:5173",
+            )
+
+            enlace = (
+                f"{frontend_url}/restablecer-password/"
+                f"{uid}/{token}"
+            )
+
+            send_mail(
+                subject="Recuperación de contraseña",
+                message=(
+                    "Se solicitó recuperar el acceso a tu cuenta.\n\n"
+                    "Utiliza el siguiente enlace para establecer "
+                    "una nueva contraseña:\n\n"
+                    f"{enlace}\n\n"
+                    "Si no realizaste esta solicitud, puedes "
+                    "ignorar este mensaje."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[usuario.email],
+                fail_silently=False,
+            )
+
+        return Response(
+            {
+                "message": (
+                    "Si el correo se encuentra registrado, "
+                    "recibirás instrucciones para recuperar "
+                    "tu contraseña."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class RestablecerPasswordView(APIView):
+    def post(self, request, uidb64, token):
+        serializer = RestablecerPasswordSerializer(
+            data=request.data
+        )
+        serializer.is_valid(raise_exception=True)
+
+        Usuario = get_user_model()
+
+        try:
+            usuario_id = force_str(
+                urlsafe_base64_decode(uidb64)
+            )
+
+            usuario = Usuario.objects.get(
+                pk=usuario_id
+            )
+
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            UnicodeDecodeError,
+            Usuario.DoesNotExist,
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "El enlace de recuperación "
+                        "no es válido."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not default_token_generator.check_token(
+            usuario,
+            token,
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "El enlace de recuperación "
+                        "es inválido o ha expirado."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        usuario.set_password(
+            serializer.validated_data["password"]
+        )
+
+        usuario.save(
+            update_fields=["password"]
+        )
+
+        return Response(
+            {
+                "message": (
+                    "Contraseña actualizada correctamente."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
 
 class SesionUsuarioView(APIView):
     permission_classes = [IsAuthenticated]

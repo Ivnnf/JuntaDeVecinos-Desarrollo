@@ -12,3 +12,30 @@ class LoginSerializer(serializers.Serializer):
         required=False,
         default=False
     )
+
+
+class SolicitudRecuperacionSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class RestablecerPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+    )
+
+    confirmar_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+    )
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["confirmar_password"]:
+            raise serializers.ValidationError(
+                {
+                    "confirmar_password": (
+                        "Las contraseñas no coinciden."
+                    )
+                }
+            )
+
+        return attrs
