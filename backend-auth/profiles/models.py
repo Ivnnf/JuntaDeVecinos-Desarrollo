@@ -83,6 +83,38 @@ class Rol(models.Model):
     def __str__(self):
         return self.nombre
 
+class UsuarioRol(models.Model):
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name="roles_asignados",
+    )
+
+    rol = models.ForeignKey(
+        Rol,
+        on_delete=models.PROTECT,
+        related_name="usuarios_asignados",
+    )
+
+    fecha_asignacion = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    activo = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["usuario", "rol"],
+                name="uq_usuario_rol",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.rol.nombre}"
+
 class Perfil(models.Model):
     SEXO_MASCULINO = "M"
     SEXO_FEMENINO = "F"

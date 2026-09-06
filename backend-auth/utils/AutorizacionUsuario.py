@@ -1,11 +1,12 @@
 """
 Lógica de autorización para usuarios autenticados.
 
-Permite obtener información del perfil asociado al usuario
-y determinar si su estado permite acceder al sistema.
+Permite obtener los roles activos asociados a un usuario,
+consultar información de su perfil y determinar si su estado
+permite acceder al sistema.
 """
 
-from profiles.models import EstadoUsuario
+from profiles.models import EstadoUsuario, UsuarioRol
 
 
 class AutorizacionUsuario:
@@ -13,11 +14,37 @@ class AutorizacionUsuario:
         self.usuario = usuario
         self.perfil = getattr(usuario, "perfil", None)
 
+    def getRoles(self):
+        return list(
+            UsuarioRol.objects.filter(
+                usuario=self.usuario,
+                activo=True,
+            )
+            .order_by("rol_id")
+            .values_list("rol_id", flat=True)
+        )
+
     def getRol(self):
-        if self.perfil and self.perfil.rol:
-            return self.perfil.rol.id
+        """
+        Compatibilidad temporal con el código existente.
+
+        Retorna el primer rol activo del usuario.
+        Más adelante las vistas trabajarán directamente
+        con getRoles().
+        """
+        roles = self.getRoles()
+
+        if roles:
+            return roles[0]
 
         return None
+
+    def tieneRol(self, rol_id):
+        return UsuarioRol.objects.filter(
+            usuario=self.usuario,
+            rol_id=rol_id,
+            activo=True,
+        ).exists()
 
     def getEstado(self):
         if self.perfil:

@@ -109,15 +109,16 @@ class SesionUsuarioView(APIView):
             )
 
         return Response(
-            {
-                "id": usuario.id,
-                "username": usuario.username,
-                "email": usuario.email,
-                "rol_id": auth_usuario.getRol(),
-                "estado": auth_usuario.getEstado(),
-                "cargo_id": auth_usuario.getCargo(),
-            }
-        )
+    {
+        "id": usuario.id,
+        "username": usuario.username,
+        "email": usuario.email,
+        "roles": auth_usuario.getRoles(),
+        "rol_id": auth_usuario.getRol(),
+        "estado": auth_usuario.getEstado(),
+        "cargo_id": auth_usuario.getCargo(),
+    }
+)
 
 
 class LogoutView(APIView):
