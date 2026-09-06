@@ -50,6 +50,36 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         unique=True
     )
 
+    rut = models.CharField(
+        max_length=12,
+        unique=True,
+        null=True,
+        blank=True,
+    )
+
+    nombres = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+    )
+
+    apellido_paterno = models.CharField(
+        max_length=80,
+        null=True,
+        blank=True,
+    )  
+
+    apellido_materno = models.CharField(
+        max_length=80,
+        null=True,
+        blank=True,
+    )
+
+    fecha_nacimiento = models.DateField(
+        null=True,
+        blank=True,
+    )
+
     email = models.EmailField(
         unique=True
     )
