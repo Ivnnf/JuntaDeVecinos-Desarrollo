@@ -236,6 +236,10 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    rut = serializers.CharField(
+        read_only=True,
+    )
+
     class Meta:
         model = get_user_model()
         fields = [
@@ -247,3 +251,22 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
             "email",
             "fecha_nacimiento",
         ]
+
+    def validate_email(self, value):
+        Usuario = get_user_model()
+
+        consulta = Usuario.objects.filter(
+            email__iexact=value
+        )
+
+        if self.instance:
+            consulta = consulta.exclude(
+                pk=self.instance.pk
+            )
+
+        if consulta.exists():
+            raise serializers.ValidationError(
+                "El correo electrónico ya se encuentra registrado."
+            )
+
+        return value.lower()

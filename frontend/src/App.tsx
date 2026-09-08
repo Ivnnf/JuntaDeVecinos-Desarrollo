@@ -13,11 +13,20 @@ import RecuperarPasswordPage from './pages/auth/RecuperarPasswordPage'
 import RestablecerPasswordPage from './pages/auth/RestablecerPasswordPage'
 import RutaProtegida from './components/routing/RutaProtegida'
 import RegistroVecinoPage from './pages/auth/RegistroVecinoPage'
-
+import MiPerfilPage from './pages/vecino/MiPerfilPage'
 
 function App() {
   return (
     <Routes>
+
+      <Route
+      path="/vecino/perfil"
+      element={
+      <RutaProtegida rolPermitido={3}>
+      <MiPerfilPage />
+      </RutaProtegida>
+  }
+      />
       <Route
        path="/registro"
        element={<RegistroVecinoPage />}

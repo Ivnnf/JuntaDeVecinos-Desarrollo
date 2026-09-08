@@ -517,3 +517,36 @@ class AutenticacionTests(APITestCase):
             str(self.usuario.fecha_nacimiento),
             "1995-06-15",
         )
+
+    def test_perfil_no_permite_modificar_rut(self):
+        self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        rut_original = self.usuario.rut
+
+        response = self.client.patch(
+            "/api/auth/perfil/",
+            {
+                "rut": "12345678-5",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.usuario.refresh_from_db()
+
+        self.assertEqual(
+            self.usuario.rut,
+            rut_original,
+        )
