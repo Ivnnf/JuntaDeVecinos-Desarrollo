@@ -59,22 +59,18 @@ class AutorizacionUsuario:
         return None
 
     def puede_acceder(self):
-        if not self.perfil:
-            return False, "Perfil no encontrado"
+        if not self.usuario.is_active:
+            return False, "Usuario inactivo"
 
-        if self.perfil.estado == EstadoUsuario.BANEADO:
-            return False, "Usuario baneado"
+        if not self.getRoles():
+            return False, "Usuario sin roles activos"
 
-        if self.perfil.estado == EstadoUsuario.SUSPENDIDO:
-            return False, "Usuario suspendido"
+        # Compatibilidad temporal con perfiles heredados.
+        if self.perfil:
+            if self.perfil.estado == EstadoUsuario.BANEADO:
+                return False, "Usuario baneado"
 
-        if self.perfil.estado in [
-            EstadoUsuario.VERIFICACION,
-            EstadoUsuario.ACTIVO,
-        ]:
-            return True, "Acceso permitido"
+            if self.perfil.estado == EstadoUsuario.SUSPENDIDO:
+                return False, "Usuario suspendido"
 
-        return (
-            False,
-            f"Estado {self.perfil.estado} no permite acceso",
-        )
+        return True, "Acceso permitido"

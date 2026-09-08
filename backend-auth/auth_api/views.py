@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.http import JsonResponse
-
+from utils.AutorizacionUsuario import AutorizacionUsuario
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -18,9 +18,9 @@ from .serializers import (
     LoginSerializer,
     SolicitudRecuperacionSerializer,
     RestablecerPasswordSerializer,
+    RegistroVecinoSerializer,
 )
 from utils.token import generar_tokens, refresh_access_token, verificar_token
-from utils.AutorizacionUsuario import AutorizacionUsuario
 from rest_framework.permissions import IsAuthenticated
 
 def health(request):
@@ -31,6 +31,32 @@ def health(request):
         }
     )
 
+
+class RegistroVecinoView(APIView):
+    def post(self, request):
+        serializer = RegistroVecinoSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        usuario = serializer.save()
+
+        return Response(
+            {
+                "message": (
+                    "Registro realizado correctamente."
+                ),
+                "usuario": {
+                    "id": usuario.id,
+                    "username": usuario.username,
+                    "email": usuario.email,
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class LoginView(APIView):
     def post(self, request):

@@ -4,6 +4,7 @@ from .views import (
     LoginView,
     LogoutView,
     RefreshTokenView,
+    RegistroVecinoView,
     RestablecerPasswordView,
     SesionUsuarioView,
     SolicitudRecuperacionView,
@@ -13,6 +14,7 @@ from .views import (
 urlpatterns = [
     path("health/", health, name="health"),
     path("login/", LoginView.as_view(), name="login"),
+    path("registro/", RegistroVecinoView.as_view(), name="registro-vecino"),
     path(
     "recuperar-password/",
     SolicitudRecuperacionView.as_view(),

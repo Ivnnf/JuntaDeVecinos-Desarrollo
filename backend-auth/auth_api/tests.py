@@ -308,3 +308,141 @@ class AutenticacionTests(APITestCase):
             segunda_respuesta.status_code,
             400,
         )
+
+    def test_registro_vecino_correcto_crea_usuario_y_rol(self):
+        response = self.client.post(
+            "/api/auth/registro/",
+            {
+                "username": "nuevo_vecino",
+                "rut": "12.345.678-5",
+                "nombres": "Nuevo",
+                "apellido_paterno": "Vecino",
+                "apellido_materno": "Prueba",
+                "email": "nuevo@vecino.cl",
+                "password": "PasswordNuevo123!",
+                "confirmar_password": "PasswordNuevo123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201,
+        )
+
+        Usuario = get_user_model()
+
+        usuario = Usuario.objects.get(
+            username="nuevo_vecino"
+        )
+
+        self.assertTrue(usuario.is_active)
+
+        self.assertEqual(
+            usuario.rut,
+            "12345678-5",
+        )
+
+        self.assertTrue(
+            UsuarioRol.objects.filter(
+                usuario=usuario,
+                rol=self.rol_vecino,
+                activo=True,
+            ).exists()
+        )
+
+        self.assertFalse(
+            Perfil.objects.filter(
+                usuario=usuario
+            ).exists()
+        )
+
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "nuevo_vecino",
+                "password": "PasswordNuevo123!",
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            login_response.status_code,
+            200,
+        )
+
+    def test_registro_vecino_rechaza_rut_invalido(self):
+        response = self.client.post(
+            "/api/auth/registro/",
+            {
+                "username": "vecino_rut_invalido",
+                "rut": "12.345.678-9",
+                "nombres": "Vecino",
+                "apellido_paterno": "Prueba",
+                "email": "rut@invalido.cl",
+                "password": "PasswordNuevo123!",
+                "confirmar_password": "PasswordNuevo123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "rut",
+            response.data,
+        )
+
+    def test_registro_vecino_rechaza_email_duplicado(self):
+        response = self.client.post(
+            "/api/auth/registro/",
+            {
+                "username": "otro_vecino",
+                "rut": "11.111.111-1",
+                "nombres": "Otro",
+                "apellido_paterno": "Vecino",
+                "email": "vecino@test.cl",
+                "password": "PasswordNuevo123!",
+                "confirmar_password": "PasswordNuevo123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "email",
+            response.data,
+        )
+
+    def test_registro_vecino_rechaza_passwords_distintos(self):
+        response = self.client.post(
+            "/api/auth/registro/",
+            {
+                "username": "vecino_password",
+                "rut": "12.345.678-5",
+                "nombres": "Vecino",
+                "apellido_paterno": "Password",
+                "email": "password@vecino.cl",
+                "password": "PasswordNuevo123!",
+                "confirmar_password": "OtraPassword123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.assertIn(
+            "confirmar_password",
+            response.data,
+        )
