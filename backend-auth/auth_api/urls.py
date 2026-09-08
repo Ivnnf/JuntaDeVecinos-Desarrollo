@@ -9,6 +9,7 @@ from .views import (
     SesionUsuarioView,
     SolicitudRecuperacionView,
     health,
+    PerfilVecinoView,
 )
 
 urlpatterns = [
@@ -16,9 +17,15 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("registro/", RegistroVecinoView.as_view(), name="registro-vecino"),
     path(
+    "perfil/",
+    PerfilVecinoView.as_view(),
+    name="perfil-vecino",
+),
+    path(
     "recuperar-password/",
     SolicitudRecuperacionView.as_view(),
     name="recuperar-password",
+    
 ),
 path(
     "restablecer-password/<uidb64>/<token>/",

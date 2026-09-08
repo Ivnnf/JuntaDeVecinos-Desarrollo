@@ -446,3 +446,74 @@ class AutenticacionTests(APITestCase):
             "confirmar_password",
             response.data,
         )
+
+    def test_perfil_requiere_autenticacion(self):
+        response = self.client.get(
+            "/api/auth/perfil/"
+        )
+
+        self.assertIn(
+            response.status_code,
+            [401, 403],
+        )
+
+    def test_perfil_autenticado_entrega_datos_usuario(self):
+        self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        response = self.client.get(
+            "/api/auth/perfil/"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            response.data["username"],
+            "vecino_test",
+        )
+
+        self.assertEqual(
+            response.data["email"],
+            "vecino@test.cl",
+        )
+
+    def test_perfil_permite_actualizar_fecha_nacimiento(self):
+        self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        response = self.client.patch(
+            "/api/auth/perfil/",
+            {
+                "fecha_nacimiento": "1995-06-15",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.usuario.refresh_from_db()
+
+        self.assertEqual(
+            str(self.usuario.fecha_nacimiento),
+            "1995-06-15",
+        )

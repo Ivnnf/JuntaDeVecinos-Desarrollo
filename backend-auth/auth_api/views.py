@@ -19,6 +19,8 @@ from .serializers import (
     SolicitudRecuperacionSerializer,
     RestablecerPasswordSerializer,
     RegistroVecinoSerializer,
+    PerfilVecinoSerializer,
+    
 )
 from utils.token import generar_tokens, refresh_access_token, verificar_token
 from rest_framework.permissions import IsAuthenticated
@@ -56,6 +58,40 @@ class RegistroVecinoView(APIView):
                 },
             },
             status=status.HTTP_201_CREATED,
+        )
+
+class PerfilVecinoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = PerfilVecinoSerializer(
+            request.user
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request):
+        serializer = PerfilVecinoSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        return Response(
+            {
+                "message": "Perfil actualizado correctamente.",
+                "perfil": serializer.data,
+            },
+            status=status.HTTP_200_OK,
         )
 
 class LoginView(APIView):

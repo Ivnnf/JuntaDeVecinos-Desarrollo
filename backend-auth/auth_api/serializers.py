@@ -230,3 +230,20 @@ class RegistroVecinoSerializer(serializers.Serializer):
         )
 
         return usuario
+
+class PerfilVecinoSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        read_only=True,
+    )
+
+    class Meta:
+        model = get_user_model()
+        fields = [
+            "username",
+            "rut",
+            "nombres",
+            "apellido_paterno",
+            "apellido_materno",
+            "email",
+            "fecha_nacimiento",
+        ]
