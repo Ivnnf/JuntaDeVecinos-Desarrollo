@@ -12,12 +12,17 @@ import MunicipalInicioPage from './pages/municipal/MunicipalInicioPage'
 import RecuperarPasswordPage from './pages/auth/RecuperarPasswordPage'
 import RestablecerPasswordPage from './pages/auth/RestablecerPasswordPage'
 import RutaProtegida from './components/routing/RutaProtegida'
-
+import RegistroVecinoPage from './pages/auth/RegistroVecinoPage'
 
 
 function App() {
   return (
     <Routes>
+      <Route
+       path="/registro"
+       element={<RegistroVecinoPage />}
+      />
+
       <Route
         path="/"
         element={<Navigate to="/login" replace />}
