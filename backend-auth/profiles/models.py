@@ -80,6 +80,37 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         blank=True,
     )
 
+    sector = models.ForeignKey(
+    "organizacion.Sector",
+    on_delete=models.PROTECT,
+    related_name="usuarios",
+    null=True,
+    blank=True,
+    )
+
+    estado_asociacion_sector = models.CharField(
+    max_length=20,
+    choices=[
+        ("PENDIENTE", "Pendiente"),
+        ("CONFIRMADA", "Confirmada"),
+        ("RECHAZADA", "Rechazada"),
+    ],
+    default="PENDIENTE",
+    )
+
+    confirmado_por_usuario = models.ForeignKey(
+    "self",
+    on_delete=models.SET_NULL,
+    related_name="asociaciones_sector_confirmadas",
+    null=True,
+    blank=True,
+    )
+
+    fecha_confirmacion_sector = models.DateTimeField(
+    null=True,
+    blank=True,
+    )
+
     email = models.EmailField(
         unique=True
     )

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
     'profiles.apps.ProfilesConfig',
     'auth_api.apps.AuthApiConfig',
+    "organizacion",
 ]
 
 MIDDLEWARE = [
