@@ -14,22 +14,30 @@ import RestablecerPasswordPage from './pages/auth/RestablecerPasswordPage'
 import RutaProtegida from './components/routing/RutaProtegida'
 import RegistroVecinoPage from './pages/auth/RegistroVecinoPage'
 import MiPerfilPage from './pages/vecino/MiPerfilPage'
+import JuntasVecinosPage from './pages/admin/JuntasVecinosPage'
 
 function App() {
   return (
     <Routes>
-
       <Route
-      path="/vecino/perfil"
-      element={
-      <RutaProtegida rolPermitido={3}>
-      <MiPerfilPage />
-      </RutaProtegida>
-  }
+        path="/admin/juntas"
+        element={
+          <RutaProtegida rolPermitido={1}>
+            <JuntasVecinosPage />
+          </RutaProtegida>
+        }
       />
       <Route
-       path="/registro"
-       element={<RegistroVecinoPage />}
+        path="/vecino/perfil"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <MiPerfilPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/registro"
+        element={<RegistroVecinoPage />}
       />
 
       <Route
@@ -45,36 +53,36 @@ function App() {
       <Route
         path="/admin"
         element={
-      <RutaProtegida rolPermitido={1}>
-        <AdminInicioPage />
-      </RutaProtegida>
-  }
-/>
+          <RutaProtegida rolPermitido={1}>
+            <AdminInicioPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/directiva"
         element={
-      <RutaProtegida rolPermitido={2}>
-        <DirectivaInicioPage />
-      </RutaProtegida>
-  }
-/>
+          <RutaProtegida rolPermitido={2}>
+            <DirectivaInicioPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/vecino"
         element={
-      <RutaProtegida rolPermitido={3}>
-        <VecinoInicioPage />
-      </RutaProtegida>
-  }
-/>
+          <RutaProtegida rolPermitido={3}>
+            <VecinoInicioPage />
+          </RutaProtegida>
+        }
+      />
 
       <Route
         path="/municipal"
         element={
-      <RutaProtegida rolPermitido={4}>
-        <MunicipalInicioPage />
-      </RutaProtegida>
-  }
-/>
+          <RutaProtegida rolPermitido={4}>
+            <MunicipalInicioPage />
+          </RutaProtegida>
+        }
+      />
 
       <Route
         path="/recuperar-password"
