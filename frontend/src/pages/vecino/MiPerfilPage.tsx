@@ -8,6 +8,26 @@ type PerfilVecino = {
     apellido_materno: string | null
     email: string
     fecha_nacimiento: string | null
+
+    sector_id: number | null
+    sector_nombre: string | null
+    junta_id: number | null
+    junta_nombre: string | null
+    estado_asociacion_sector:
+    | 'PENDIENTE'
+    | 'CONFIRMADA'
+    | 'RECHAZADA'
+    | null
+    fecha_confirmacion_sector: string | null
+}
+
+type SectorDisponible = {
+    id: number
+    junta_vecinos: number
+    junta_nombre: string
+    nombre: string
+    descripcion: string | null
+    activo: boolean
 }
 
 function MiPerfilPage() {
@@ -17,7 +37,10 @@ function MiPerfilPage() {
     const [editando, setEditando] = useState(false)
     const [guardando, setGuardando] = useState(false)
     const [mensaje, setMensaje] = useState('')
-
+    const [sectores, setSectores] = useState<SectorDisponible[]>([])
+    const [sectorSeleccionado, setSectorSeleccionado] = useState('')
+    const [cargandoSectores, setCargandoSectores] = useState(true)
+    const [solicitandoSector, setSolicitandoSector] = useState(false)
     const [nombres, setNombres] = useState('')
     const [apellidoPaterno, setApellidoPaterno] = useState('')
     const [apellidoMaterno, setApellidoMaterno] = useState('')
@@ -61,7 +84,102 @@ function MiPerfilPage() {
 
         void cargarPerfil()
     }, [])
+    useEffect(() => {
+        const cargarSectores = async () => {
+            try {
+                const response = await fetch(
+                    'http://localhost:8000/api/organizacion/sectores-disponibles/',
+                    {
+                        credentials: 'include',
+                    },
+                )
 
+                if (!response.ok) {
+                    setError(
+                        'No fue posible obtener los sectores disponibles.',
+                    )
+                    return
+                }
+
+                const data =
+                    (await response.json()) as SectorDisponible[]
+
+                setSectores(data)
+            } catch {
+                setError(
+                    'No fue posible comunicarse con el servidor.',
+                )
+            } finally {
+                setCargandoSectores(false)
+            }
+        }
+
+        void cargarSectores()
+    }, [])
+    const solicitarAsociacionSector = async () => {
+        if (!sectorSeleccionado) {
+            setError(
+                'Debe seleccionar un sector.',
+            )
+            return
+        }
+
+        setError('')
+        setMensaje('')
+        setSolicitandoSector(true)
+
+        try {
+            const response = await fetch(
+                'http://localhost:8000/api/organizacion/solicitar-asociacion-sector/',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        sector_id: Number(sectorSeleccionado),
+                    }),
+                },
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                setError(
+                    data.detail ??
+                    'No fue posible solicitar la asociación territorial.',
+                )
+                return
+            }
+
+            const perfilResponse = await fetch(
+                'http://localhost:8000/api/auth/perfil/',
+                {
+                    credentials: 'include',
+                },
+            )
+
+            if (perfilResponse.ok) {
+                const perfilActualizado =
+                    (await perfilResponse.json()) as PerfilVecino
+
+                setPerfil(perfilActualizado)
+            }
+
+            setSectorSeleccionado('')
+
+            setMensaje(
+                'Solicitud de asociación territorial enviada correctamente.',
+            )
+        } catch {
+            setError(
+                'No fue posible comunicarse con el servidor.',
+            )
+        } finally {
+            setSolicitandoSector(false)
+        }
+    }
     const guardarPerfil = async () => {
         setError('')
         setMensaje('')
@@ -151,8 +269,101 @@ function MiPerfilPage() {
                                     <div className="alert alert-success">
                                         <span>{mensaje}</span>
                                     </div>
-                                )}
 
+                                )}
+                                <div className="divider" />
+
+                                <div>
+                                    <h2 className="text-xl font-semibold">
+                                        Asociación territorial
+                                    </h2>
+
+                                    <p className="text-base-content/70 mt-2">
+                                        Selecciona el sector al que perteneces para solicitar
+                                        la asociación con tu junta de vecinos.
+                                    </p>
+                                </div>
+
+                                <div className="card bg-base-200">
+                                    <div className="card-body">
+                                        {perfil.sector_id ? (
+                                            <div className="space-y-2">
+                                                <p>
+                                                    <span className="font-semibold">
+                                                        Junta de Vecinos:
+                                                    </span>{' '}
+                                                    {perfil.junta_nombre ?? '-'}
+                                                </p>
+
+                                                <p>
+                                                    <span className="font-semibold">
+                                                        Sector:
+                                                    </span>{' '}
+                                                    {perfil.sector_nombre ?? '-'}
+                                                </p>
+
+                                                <p>
+                                                    <span className="font-semibold">
+                                                        Estado:
+                                                    </span>{' '}
+                                                    {perfil.estado_asociacion_sector ?? '-'}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-base-content/70">
+                                                Aún no tienes un sector asociado.
+                                            </p>
+                                        )}
+
+                                        {perfil.estado_asociacion_sector !== 'CONFIRMADA' && (
+                                            <div className="mt-4 space-y-3">
+                                                <select
+                                                    className="select select-bordered w-full"
+                                                    value={sectorSeleccionado}
+                                                    onChange={(event) =>
+                                                        setSectorSeleccionado(event.target.value)
+                                                    }
+                                                    disabled={
+                                                        cargandoSectores ||
+                                                        solicitandoSector
+                                                    }
+                                                >
+                                                    <option value="">
+                                                        Seleccione un sector
+                                                    </option>
+
+                                                    {sectores.map((sector) => (
+                                                        <option
+                                                            key={sector.id}
+                                                            value={sector.id}
+                                                        >
+                                                            {sector.junta_nombre}
+                                                            {' - '}
+                                                            {sector.nombre}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary"
+                                                    disabled={
+                                                        cargandoSectores ||
+                                                        solicitandoSector ||
+                                                        !sectorSeleccionado
+                                                    }
+                                                    onClick={() =>
+                                                        void solicitarAsociacionSector()
+                                                    }
+                                                >
+                                                    {solicitandoSector
+                                                        ? 'Enviando solicitud...'
+                                                        : 'Solicitar asociación'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                                 <div className="flex items-center justify-between gap-4">
                                     <h2 className="text-xl font-semibold">
                                         Información personal

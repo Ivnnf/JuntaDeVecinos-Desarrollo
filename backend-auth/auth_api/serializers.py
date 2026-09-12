@@ -10,18 +10,14 @@ from rest_framework import serializers
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
 
-    password = serializers.CharField(
-        write_only=True
-    )
+    password = serializers.CharField(write_only=True)
 
-    recordar = serializers.BooleanField(
-        required=False,
-        default=False
-    )
+    recordar = serializers.BooleanField(required=False, default=False)
 
 
 class SolicitudRecuperacionSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
 
 class RestablecerPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(
@@ -37,14 +33,11 @@ class RestablecerPasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["password"] != attrs["confirmar_password"]:
             raise serializers.ValidationError(
-                {
-                    "confirmar_password": (
-                        "Las contraseñas no coinciden."
-                    )
-                }
+                {"confirmar_password": ("Las contraseñas no coinciden.")}
             )
 
         return attrs
+
 
 class RegistroVecinoSerializer(serializers.Serializer):
     username = serializers.CharField(
@@ -84,9 +77,7 @@ class RegistroVecinoSerializer(serializers.Serializer):
     def validate_username(self, value):
         Usuario = get_user_model()
 
-        if Usuario.objects.filter(
-            username__iexact=value
-        ).exists():
+        if Usuario.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError(
                 "El nombre de usuario ya se encuentra registrado."
             )
@@ -96,9 +87,7 @@ class RegistroVecinoSerializer(serializers.Serializer):
     def validate_email(self, value):
         Usuario = get_user_model()
 
-        if Usuario.objects.filter(
-            email__iexact=value
-        ).exists():
+        if Usuario.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError(
                 "El correo electrónico ya se encuentra registrado."
             )
@@ -108,21 +97,14 @@ class RegistroVecinoSerializer(serializers.Serializer):
     def validate_rut(self, value):
         Usuario = get_user_model()
 
-        rut_limpio = (
-            value.replace(".", "")
-            .replace("-", "")
-            .strip()
-            .upper()
-        )
+        rut_limpio = value.replace(".", "").replace("-", "").strip().upper()
 
         if (
             len(rut_limpio) < 2
             or not rut_limpio[:-1].isdigit()
             or rut_limpio[-1] not in "0123456789K"
         ):
-            raise serializers.ValidationError(
-                "El RUT ingresado no es válido."
-            )
+            raise serializers.ValidationError("El RUT ingresado no es válido.")
 
         cuerpo = rut_limpio[:-1]
         dv_ingresado = rut_limpio[-1]
@@ -148,29 +130,19 @@ class RegistroVecinoSerializer(serializers.Serializer):
             dv_esperado = str(resultado)
 
         if dv_ingresado != dv_esperado:
-            raise serializers.ValidationError(
-                "El RUT ingresado no es válido."
-            )
+            raise serializers.ValidationError("El RUT ingresado no es válido.")
 
         rut_normalizado = f"{cuerpo}-{dv_ingresado}"
 
-        if Usuario.objects.filter(
-            rut__iexact=rut_normalizado
-        ).exists():
-            raise serializers.ValidationError(
-                "El RUT ya se encuentra registrado."
-            )
+        if Usuario.objects.filter(rut__iexact=rut_normalizado).exists():
+            raise serializers.ValidationError("El RUT ya se encuentra registrado.")
 
         return rut_normalizado
 
     def validate(self, attrs):
         if attrs["password"] != attrs["confirmar_password"]:
             raise serializers.ValidationError(
-                {
-                    "confirmar_password": (
-                        "Las contraseñas no coinciden."
-                    )
-                }
+                {"confirmar_password": ("Las contraseñas no coinciden.")}
             )
 
         Usuario = get_user_model()
@@ -193,23 +165,15 @@ class RegistroVecinoSerializer(serializers.Serializer):
                 user=usuario_temporal,
             )
         except DjangoValidationError as error:
-            raise serializers.ValidationError(
-                {
-                    "password": list(error.messages)
-                }
-            )
+            raise serializers.ValidationError({"password": list(error.messages)})
 
         return attrs
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data.pop(
-            "confirmar_password"
-        )
+        validated_data.pop("confirmar_password")
 
-        password = validated_data.pop(
-            "password"
-        )
+        password = validated_data.pop("password")
 
         Usuario = get_user_model()
 
@@ -219,9 +183,7 @@ class RegistroVecinoSerializer(serializers.Serializer):
             **validated_data,
         )
 
-        rol_vecino = Rol.objects.get(
-            nombre__iexact="Vecino"
-        )
+        rol_vecino = Rol.objects.get(nombre__iexact="Vecino")
 
         UsuarioRol.objects.create(
             usuario=usuario,
@@ -231,6 +193,7 @@ class RegistroVecinoSerializer(serializers.Serializer):
 
         return usuario
 
+
 class PerfilVecinoSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
         read_only=True,
@@ -239,6 +202,13 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
     rut = serializers.CharField(
         read_only=True,
     )
+    sector_id = serializers.IntegerField(
+        read_only=True,
+    )
+
+    sector_nombre = serializers.SerializerMethodField()
+    junta_id = serializers.SerializerMethodField()
+    junta_nombre = serializers.SerializerMethodField()
 
     class Meta:
         model = get_user_model()
@@ -250,19 +220,39 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
             "apellido_materno",
             "email",
             "fecha_nacimiento",
+            "sector_id",
+            "sector_nombre",
+            "junta_id",
+            "junta_nombre",
+            "estado_asociacion_sector",
+            "fecha_confirmacion_sector",
         ]
+
+    def get_sector_nombre(self, obj):
+        if obj.sector:
+            return obj.sector.nombre
+
+        return None
+
+    def get_junta_id(self, obj):
+        if obj.sector:
+            return obj.sector.junta_vecinos_id
+
+        return None
+
+    def get_junta_nombre(self, obj):
+        if obj.sector:
+            return obj.sector.junta_vecinos.nombre
+
+        return None
 
     def validate_email(self, value):
         Usuario = get_user_model()
 
-        consulta = Usuario.objects.filter(
-            email__iexact=value
-        )
+        consulta = Usuario.objects.filter(email__iexact=value)
 
         if self.instance:
-            consulta = consulta.exclude(
-                pk=self.instance.pk
-            )
+            consulta = consulta.exclude(pk=self.instance.pk)
 
         if consulta.exists():
             raise serializers.ValidationError(

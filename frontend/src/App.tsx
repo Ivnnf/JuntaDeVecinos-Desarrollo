@@ -15,10 +15,28 @@ import RutaProtegida from './components/routing/RutaProtegida'
 import RegistroVecinoPage from './pages/auth/RegistroVecinoPage'
 import MiPerfilPage from './pages/vecino/MiPerfilPage'
 import JuntasVecinosPage from './pages/admin/JuntasVecinosPage'
+import SectoresPage from './pages/admin/SectoresPage'
+import AsociacionesSectorPage from './pages/admin/AsociacionesSectorPage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/admin/asociaciones"
+        element={
+          <RutaProtegida rolPermitido={1}>
+            <AsociacionesSectorPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/admin/sectores"
+        element={
+          <RutaProtegida rolPermitido={1}>
+            <SectoresPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/admin/juntas"
         element={
