@@ -1,14 +1,21 @@
 from django.urls import path
 
 from .views import (
+    AsociacionesSectorPendientesView,
+    CargoDetailView,
+    CargoListCreateView,
     JuntaVecinosDetailView,
     JuntaVecinosListCreateView,
+    ResolverAsociacionSectorView,
     SectorDetailView,
     SectorListCreateView,
     SectoresDisponiblesView,
     SolicitarAsociacionSectorView,
-    AsociacionesSectorPendientesView,
-    ResolverAsociacionSectorView,
+    DirectivaDetailView,
+    DirectivaListCreateView,
+    IntegranteDirectivaListCreateView,
+    IntegranteDirectivaDetailView,
+    UsuariosElegiblesDirectivaView,
 )
 
 urlpatterns = [
@@ -51,5 +58,40 @@ urlpatterns = [
         "sectores/<int:pk>/",
         SectorDetailView.as_view(),
         name="sectores-detail",
+    ),
+    path(
+        "cargos/",
+        CargoListCreateView.as_view(),
+        name="cargos-list-create",
+    ),
+    path(
+        "cargos/<int:pk>/",
+        CargoDetailView.as_view(),
+        name="cargos-detail",
+    ),
+    path(
+        "directivas/",
+        DirectivaListCreateView.as_view(),
+        name="directivas-list-create",
+    ),
+    path(
+        "directivas/<int:pk>/",
+        DirectivaDetailView.as_view(),
+        name="directivas-detail",
+    ),
+    path(
+        "integrantes-directiva/",
+        IntegranteDirectivaListCreateView.as_view(),
+        name="integrantes-directiva-list-create",
+    ),
+    path(
+        "integrantes-directiva/<int:pk>/",
+        IntegranteDirectivaDetailView.as_view(),
+        name="integrantes-directiva-detail",
+    ),
+    path(
+        "directivas/<int:directiva_id>/usuarios-elegibles/",
+        UsuariosElegiblesDirectivaView.as_view(),
+        name="usuarios-elegibles-directiva",
     ),
 ]

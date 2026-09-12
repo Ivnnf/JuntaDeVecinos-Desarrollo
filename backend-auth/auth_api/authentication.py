@@ -38,5 +38,8 @@ class CookieJWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed(
                 "Usuario no encontrado"
             )
-
+        if not usuario.is_active:
+            raise AuthenticationFailed(
+                "La cuenta de usuario está deshabilitada"
+            )
         return usuario, None

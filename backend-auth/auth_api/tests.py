@@ -69,13 +69,9 @@ class AutenticacionTests(APITestCase):
         self.assertIn("access_token", response.cookies)
         self.assertIn("refresh_token", response.cookies)
 
-        self.assertTrue(
-            response.cookies["access_token"]["httponly"]
-        )
+        self.assertTrue(response.cookies["access_token"]["httponly"])
 
-        self.assertTrue(
-            response.cookies["refresh_token"]["httponly"]
-        )
+        self.assertTrue(response.cookies["refresh_token"]["httponly"])
 
     def test_login_con_password_incorrecta_rechazado(self):
         response = self.client.post(
@@ -128,6 +124,38 @@ class AutenticacionTests(APITestCase):
         self.assertIn(
             self.rol_vecino.id,
             response.data["roles"],
+        )
+
+    def test_sesion_activa_es_rechazada_si_usuario_es_deshabilitado(self):
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            login_response.status_code,
+            200,
+        )
+
+        self.usuario.is_active = False
+        self.usuario.save(
+            update_fields=[
+                "is_active",
+            ]
+        )
+
+        response = self.client.get(
+            "/api/auth/sesion/",
+        )
+
+        self.assertIn(
+            response.status_code,
+            [401, 403],
         )
 
     def test_refresh_token_renueva_access_token(self):
@@ -232,21 +260,14 @@ class AutenticacionTests(APITestCase):
         self.assertEqual(len(mail.outbox), 1)
 
     def test_restablecimiento_password_valido(self):
-        uid = urlsafe_base64_encode(
-            force_bytes(self.usuario.pk)
-        )
+        uid = urlsafe_base64_encode(force_bytes(self.usuario.pk))
 
-        token = default_token_generator.make_token(
-            self.usuario
-        )
+        token = default_token_generator.make_token(self.usuario)
 
         nueva_password = "NuevaPassword456!"
 
         response = self.client.post(
-            (
-                "/api/auth/restablecer-password/"
-                f"{uid}/{token}/"
-            ),
+            ("/api/auth/restablecer-password/" f"{uid}/{token}/"),
             {
                 "password": nueva_password,
                 "confirmar_password": nueva_password,
@@ -258,28 +279,17 @@ class AutenticacionTests(APITestCase):
 
         self.usuario.refresh_from_db()
 
-        self.assertTrue(
-            self.usuario.check_password(
-                nueva_password
-            )
-        )
+        self.assertTrue(self.usuario.check_password(nueva_password))
 
     def test_token_de_recuperacion_no_puede_reutilizarse(self):
-        uid = urlsafe_base64_encode(
-            force_bytes(self.usuario.pk)
-        )
+        uid = urlsafe_base64_encode(force_bytes(self.usuario.pk))
 
-        token = default_token_generator.make_token(
-            self.usuario
-        )
+        token = default_token_generator.make_token(self.usuario)
 
         nueva_password = "NuevaPassword789!"
 
         primera_respuesta = self.client.post(
-            (
-                "/api/auth/restablecer-password/"
-                f"{uid}/{token}/"
-            ),
+            ("/api/auth/restablecer-password/" f"{uid}/{token}/"),
             {
                 "password": nueva_password,
                 "confirmar_password": nueva_password,
@@ -288,10 +298,7 @@ class AutenticacionTests(APITestCase):
         )
 
         segunda_respuesta = self.client.post(
-            (
-                "/api/auth/restablecer-password/"
-                f"{uid}/{token}/"
-            ),
+            ("/api/auth/restablecer-password/" f"{uid}/{token}/"),
             {
                 "password": "OtraPassword789!",
                 "confirmar_password": "OtraPassword789!",
@@ -332,9 +339,7 @@ class AutenticacionTests(APITestCase):
 
         Usuario = get_user_model()
 
-        usuario = Usuario.objects.get(
-            username="nuevo_vecino"
-        )
+        usuario = Usuario.objects.get(username="nuevo_vecino")
 
         self.assertTrue(usuario.is_active)
 
@@ -351,11 +356,7 @@ class AutenticacionTests(APITestCase):
             ).exists()
         )
 
-        self.assertFalse(
-            Perfil.objects.filter(
-                usuario=usuario
-            ).exists()
-        )
+        self.assertFalse(Perfil.objects.filter(usuario=usuario).exists())
 
         login_response = self.client.post(
             "/api/auth/login/",
@@ -448,9 +449,7 @@ class AutenticacionTests(APITestCase):
         )
 
     def test_perfil_requiere_autenticacion(self):
-        response = self.client.get(
-            "/api/auth/perfil/"
-        )
+        response = self.client.get("/api/auth/perfil/")
 
         self.assertIn(
             response.status_code,
@@ -468,9 +467,7 @@ class AutenticacionTests(APITestCase):
             format="json",
         )
 
-        response = self.client.get(
-            "/api/auth/perfil/"
-        )
+        response = self.client.get("/api/auth/perfil/")
 
         self.assertEqual(
             response.status_code,
