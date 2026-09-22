@@ -282,3 +282,61 @@ class Perfil(models.Model):
             f"{self.nombre_completo or 'Sin nombre'} "
             f"({self.rut or 'Sin RUT'})"
         )
+
+class HistorialGestionUsuario(models.Model):
+    class TipoCambio(models.TextChoices):
+        CARGO = "CARGO", "Cargo"
+        ROL = "ROL", "Rol"
+        ESTADO_CUENTA = "ESTADO_CUENTA", "Estado de cuenta"
+
+    usuario_objetivo = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        related_name="historial_gestion_recibido",
+    )
+
+    realizado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        related_name="historial_gestion_realizado",
+    )
+
+    tipo_cambio = models.CharField(
+        max_length=30,
+        choices=TipoCambio.choices,
+    )
+
+    valor_anterior = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    valor_nuevo = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    detalle = models.CharField(
+        max_length=500,
+        null=True,
+        blank=True,
+    )
+
+    fecha_cambio = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-fecha_cambio",
+            "-id",
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.tipo_cambio} - "
+            f"{self.usuario_objetivo.username} - "
+            f"{self.realizado_por.username}"
+        )

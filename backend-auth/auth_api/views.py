@@ -13,17 +13,26 @@ from django.utils.http import (
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from .permissions import EsAdministrador
+from profiles.models import (
+    HistorialGestionUsuario,
+    Rol,
+    UsuarioRol,
+)
+from organizacion.models import IntegranteDirectiva
 from .serializers import (
     LoginSerializer,
     SolicitudRecuperacionSerializer,
     RestablecerPasswordSerializer,
     RegistroVecinoSerializer,
     PerfilVecinoSerializer,
-    
+    UsuarioAdministracionSerializer,
+    EstadoCuentaUsuarioSerializer,
+    RolUsuarioAdministracionSerializer,
 )
 from utils.token import generar_tokens, refresh_access_token, verificar_token
 from rest_framework.permissions import IsAuthenticated
+
 
 def health(request):
     return JsonResponse(
@@ -36,21 +45,15 @@ def health(request):
 
 class RegistroVecinoView(APIView):
     def post(self, request):
-        serializer = RegistroVecinoSerializer(
-            data=request.data
-        )
+        serializer = RegistroVecinoSerializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
         usuario = serializer.save()
 
         return Response(
             {
-                "message": (
-                    "Registro realizado correctamente."
-                ),
+                "message": ("Registro realizado correctamente."),
                 "usuario": {
                     "id": usuario.id,
                     "username": usuario.username,
@@ -60,13 +63,12 @@ class RegistroVecinoView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
 class PerfilVecinoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        serializer = PerfilVecinoSerializer(
-            request.user
-        )
+        serializer = PerfilVecinoSerializer(request.user)
 
         return Response(
             serializer.data,
@@ -80,9 +82,7 @@ class PerfilVecinoView(APIView):
             partial=True,
         )
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
         serializer.save()
 
@@ -93,6 +93,7 @@ class PerfilVecinoView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
 
 class LoginView(APIView):
     def post(self, request):
@@ -118,13 +119,13 @@ class LoginView(APIView):
         puede_acceder, motivo = auth_usuario.puede_acceder()
 
         if not puede_acceder:
-           return Response(
-        {
-            "detail": "Acceso denegado",
-            "motivo": motivo,
-        },
-        status=status.HTTP_403_FORBIDDEN,
-    )
+            return Response(
+                {
+                    "detail": "Acceso denegado",
+                    "motivo": motivo,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         access_token, refresh_token, access_max_age, refresh_max_age = generar_tokens(
             usuario,
@@ -164,6 +165,7 @@ class LoginView(APIView):
 
         return response
 
+
 class SolicitudRecuperacionView(APIView):
     def post(self, request):
         serializer = SolicitudRecuperacionSerializer(data=request.data)
@@ -179,13 +181,9 @@ class SolicitudRecuperacionView(APIView):
         ).first()
 
         if usuario and usuario.has_usable_password():
-            uid = urlsafe_base64_encode(
-                force_bytes(usuario.pk)
-            )
+            uid = urlsafe_base64_encode(force_bytes(usuario.pk))
 
-            token = default_token_generator.make_token(
-                usuario
-            )
+            token = default_token_generator.make_token(usuario)
 
             frontend_url = getattr(
                 settings,
@@ -193,10 +191,7 @@ class SolicitudRecuperacionView(APIView):
                 "http://localhost:5173",
             )
 
-            enlace = (
-                f"{frontend_url}/restablecer-password/"
-                f"{uid}/{token}"
-            )
+            enlace = f"{frontend_url}/restablecer-password/" f"{uid}/{token}"
 
             send_mail(
                 subject="Recuperación de contraseña",
@@ -224,23 +219,18 @@ class SolicitudRecuperacionView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
 class RestablecerPasswordView(APIView):
     def post(self, request, uidb64, token):
-        serializer = RestablecerPasswordSerializer(
-            data=request.data
-        )
+        serializer = RestablecerPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         Usuario = get_user_model()
 
         try:
-            usuario_id = force_str(
-                urlsafe_base64_decode(uidb64)
-            )
+            usuario_id = force_str(urlsafe_base64_decode(uidb64))
 
-            usuario = Usuario.objects.get(
-                pk=usuario_id
-            )
+            usuario = Usuario.objects.get(pk=usuario_id)
 
         except (
             TypeError,
@@ -250,12 +240,7 @@ class RestablecerPasswordView(APIView):
             Usuario.DoesNotExist,
         ):
             return Response(
-                {
-                    "detail": (
-                        "El enlace de recuperación "
-                        "no es válido."
-                    )
-                },
+                {"detail": ("El enlace de recuperación " "no es válido.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -264,31 +249,19 @@ class RestablecerPasswordView(APIView):
             token,
         ):
             return Response(
-                {
-                    "detail": (
-                        "El enlace de recuperación "
-                        "es inválido o ha expirado."
-                    )
-                },
+                {"detail": ("El enlace de recuperación " "es inválido o ha expirado.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        usuario.set_password(
-            serializer.validated_data["password"]
-        )
+        usuario.set_password(serializer.validated_data["password"])
 
-        usuario.save(
-            update_fields=["password"]
-        )
+        usuario.save(update_fields=["password"])
 
         return Response(
-            {
-                "message": (
-                    "Contraseña actualizada correctamente."
-                )
-            },
+            {"message": ("Contraseña actualizada correctamente.")},
             status=status.HTTP_200_OK,
         )
+
 
 class SesionUsuarioView(APIView):
     permission_classes = [IsAuthenticated]
@@ -309,16 +282,16 @@ class SesionUsuarioView(APIView):
             )
 
         return Response(
-    {
-        "id": usuario.id,
-        "username": usuario.username,
-        "email": usuario.email,
-        "roles": auth_usuario.getRoles(),
-        "rol_id": auth_usuario.getRol(),
-        "estado": auth_usuario.getEstado(),
-        "cargo_id": auth_usuario.getCargo(),
-    }
-)
+            {
+                "id": usuario.id,
+                "username": usuario.username,
+                "email": usuario.email,
+                "roles": auth_usuario.getRoles(),
+                "rol_id": auth_usuario.getRol(),
+                "estado": auth_usuario.getEstado(),
+                "cargo_id": auth_usuario.getCargo(),
+            }
+        )
 
 
 class LogoutView(APIView):
@@ -375,3 +348,152 @@ class RefreshTokenView(APIView):
         )
 
         return response
+
+
+class UsuarioAdministracionListView(APIView):
+    permission_classes = [EsAdministrador]
+
+    def get(self, request):
+        Usuario = get_user_model()
+
+        usuarios = Usuario.objects.all().order_by(
+            "nombres",
+            "apellido_paterno",
+            "username",
+        )
+
+        serializer = UsuarioAdministracionSerializer(
+            usuarios,
+            many=True,
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class EstadoCuentaUsuarioView(APIView):
+    permission_classes = [EsAdministrador]
+
+    def patch(self, request, usuario_id):
+        Usuario = get_user_model()
+
+        try:
+            usuario = Usuario.objects.get(id=usuario_id)
+        except Usuario.DoesNotExist:
+            return Response(
+                {"detail": ("Usuario no encontrado.")},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        estado_anterior = usuario.is_active
+
+        serializer = EstadoCuentaUsuarioSerializer(
+            usuario,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        usuario_actualizado = serializer.save()
+
+        if estado_anterior != usuario_actualizado.is_active:
+            HistorialGestionUsuario.objects.create(
+                usuario_objetivo=usuario_actualizado,
+                realizado_por=request.user,
+                tipo_cambio=(HistorialGestionUsuario.TipoCambio.ESTADO_CUENTA),
+                valor_anterior=("HABILITADA" if estado_anterior else "DESHABILITADA"),
+                valor_nuevo=(
+                    "HABILITADA" if usuario_actualizado.is_active else "DESHABILITADA"
+                ),
+                detalle="Cambio de estado de cuenta.",
+            )
+
+        return Response(
+            {
+                "message": ("Estado de cuenta actualizado correctamente."),
+                "usuario": UsuarioAdministracionSerializer(usuario_actualizado).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class RolUsuarioAdministracionView(APIView):
+    permission_classes = [EsAdministrador]
+
+    def patch(self, request, usuario_id):
+        Usuario = get_user_model()
+
+        try:
+            usuario = Usuario.objects.get(id=usuario_id)
+        except Usuario.DoesNotExist:
+            return Response(
+                {"detail": ("Usuario no encontrado.")},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = RolUsuarioAdministracionSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        rol = Rol.objects.get(id=serializer.validated_data["rol_id"])
+
+        activo = serializer.validated_data["activo"]
+
+        if (
+            not activo
+            and rol.nombre.lower() == "directiva"
+            and IntegranteDirectiva.objects.filter(
+                usuario=usuario,
+                activo=True,
+                directiva__estado="VIGENTE",
+            ).exists()
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "No se puede desactivar el rol Directiva "
+                        "mientras el usuario tenga un cargo activo."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        asignacion_previa = UsuarioRol.objects.filter(
+            usuario=usuario,
+            rol=rol,
+        ).first()
+
+        estado_anterior = asignacion_previa.activo if asignacion_previa else None
+
+        asignacion, _ = UsuarioRol.objects.update_or_create(
+            usuario=usuario,
+            rol=rol,
+            defaults={
+                "activo": activo,
+            },
+        )
+
+        if estado_anterior is None or estado_anterior != asignacion.activo:
+            HistorialGestionUsuario.objects.create(
+                usuario_objetivo=usuario,
+                realizado_por=request.user,
+                tipo_cambio=(HistorialGestionUsuario.TipoCambio.ROL),
+                valor_anterior=(
+                    "NO_ASIGNADO"
+                    if estado_anterior is None
+                    else ("ACTIVO" if estado_anterior else "INACTIVO")
+                ),
+                valor_nuevo=("ACTIVO" if asignacion.activo else "INACTIVO"),
+                detalle=(f"Rol: {rol.nombre}"),
+            )
+
+        return Response(
+            {
+                "message": ("Rol de usuario actualizado correctamente."),
+                "usuario": UsuarioAdministracionSerializer(usuario).data,
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from .models import (
     Cargo,
@@ -29,12 +30,17 @@ from .serializers import (
     JuntaVecinosSerializer,
     SectorSerializer,
     UsuarioElegibleDirectivaSerializer,
+    ReasignarCargoDirectivaSerializer,
 )
 
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
-from profiles.models import Rol, UsuarioRol
+from profiles.models import (
+    HistorialGestionUsuario,
+    Rol,
+    UsuarioRol,
+)
 
 
 def es_administrador(usuario):
@@ -245,7 +251,7 @@ class CargoListCreateView(generics.ListCreateAPIView):
     permission_classes = [EsAdministrador]
 
 
-class CargoDetailView(generics.RetrieveUpdateDestroyAPIView):
+class CargoDetailView(generics.RetrieveUpdateAPIView):
     queryset = Cargo.objects.all()
     serializer_class = CargoSerializer
     permission_classes = [EsAdministrador]
@@ -262,11 +268,71 @@ class DirectivaListCreateView(generics.ListCreateAPIView):
     permission_classes = [EsAdministrador]
 
 
-class DirectivaDetailView(generics.RetrieveUpdateDestroyAPIView):
+class DirectivaDetailView(generics.RetrieveUpdateAPIView):
     queryset = Directiva.objects.select_related("junta_vecinos").all()
 
     serializer_class = DirectivaSerializer
     permission_classes = [EsAdministrador]
+
+
+class DirectivaVigenteJuntaView(generics.GenericAPIView):
+    permission_classes = [EsAdministradorODirectiva]
+
+    def get(self, request, junta_id):
+        directiva = (
+            Directiva.objects.select_related("junta_vecinos")
+            .filter(
+                junta_vecinos_id=junta_id,
+                estado=Directiva.EstadoDirectiva.VIGENTE,
+            )
+            .order_by("-fecha_inicio")
+            .first()
+        )
+
+        if directiva is None:
+            return Response(
+                {"detail": ("La junta indicada no tiene " "una directiva vigente.")},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not es_administrador(request.user):
+            autorizado = IntegranteDirectiva.objects.filter(
+                directiva=directiva,
+                usuario=request.user,
+                activo=True,
+            ).exists()
+
+            if not autorizado:
+                raise PermissionDenied("No puede consultar la directiva de otra junta.")
+
+        integrantes = (
+            IntegranteDirectiva.objects.select_related(
+                "usuario",
+                "cargo",
+                "directiva",
+                "directiva__junta_vecinos",
+            )
+            .filter(
+                directiva=directiva,
+                activo=True,
+            )
+            .order_by(
+                "cargo__nombre",
+                "usuario__apellido_paterno",
+                "usuario__nombres",
+            )
+        )
+
+        return Response(
+            {
+                "directiva": DirectivaSerializer(directiva).data,
+                "integrantes": IntegranteDirectivaSerializer(
+                    integrantes,
+                    many=True,
+                ).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class UsuariosElegiblesDirectivaView(generics.ListAPIView):
@@ -367,6 +433,16 @@ class IntegranteDirectivaListCreateView(generics.ListCreateAPIView):
                 "activo": True,
             },
         )
+        HistorialGestionUsuario.objects.create(
+            usuario_objetivo=integrante.usuario,
+            realizado_por=self.request.user,
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
+            valor_anterior="SIN_CARGO_ACTIVO",
+            valor_nuevo=integrante.cargo.nombre,
+            detalle=(
+                f"Asignación de cargo en directiva " f"{integrante.directiva_id}."
+            ),
+        )
 
 
 class IntegranteDirectivaDetailView(generics.RetrieveUpdateAPIView):
@@ -416,64 +492,122 @@ class IntegranteDirectivaDetailView(generics.RetrieveUpdateAPIView):
                 ).update(
                     activo=False,
                 )
-
+            HistorialGestionUsuario.objects.create(
+                usuario_objetivo=integrante_actualizado.usuario,
+                realizado_por=self.request.user,
+                tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
+                valor_anterior=integrante_actualizado.cargo.nombre,
+                valor_nuevo="SIN_CARGO_ACTIVO",
+                detalle=(
+                    f"Revocación de cargo en directiva "
+                    f"{integrante_actualizado.directiva_id}."
+                ),
+            )
             return
 
         serializer.save()
 
-    def test_revocar_integrante_cierra_historial_y_desactiva_rol(self):
-        self.client.force_authenticate(user=self.admin)
 
-        url_crear = reverse("integrantes-directiva-list-create")
+class ReasignarCargoDirectivaView(generics.GenericAPIView):
+    permission_classes = [EsAdministradorODirectiva]
+    serializer_class = ReasignarCargoDirectivaSerializer
 
-        response_crear = self.client.post(
-            url_crear,
-            {
-                "directiva": self.directiva.id,
-                "usuario": self.vecino.id,
-                "cargo": self.cargo_presidente.id,
-                "fecha_inicio": "2026-01-01",
-                "activo": True,
-            },
-            format="json",
+    def get_queryset(self):
+        queryset = IntegranteDirectiva.objects.select_related(
+            "directiva",
+            "directiva__junta_vecinos",
+            "usuario",
+            "cargo",
+        ).all()
+
+        if es_administrador(self.request.user):
+            return queryset
+
+        return queryset.filter(
+            directiva__integrantes__usuario=self.request.user,
+            directiva__integrantes__activo=True,
+            directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+        ).distinct()
+
+    def post(self, request, pk):
+        integrante = self.get_object()
+
+        if not integrante.activo:
+            return Response(
+                {
+                    "detail": (
+                        "Solo se puede reasignar un cargo " "que se encuentre activo."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        nuevo_cargo = serializer.validated_data["cargo"]
+
+        fecha_inicio = serializer.validated_data.get(
+            "fecha_inicio",
+            timezone.localdate(),
         )
 
-        self.assertEqual(
-            response_crear.status_code,
-            status.HTTP_201_CREATED,
+        if nuevo_cargo.id == integrante.cargo_id:
+            return Response(
+                {"detail": ("El nuevo cargo debe ser distinto " "al cargo actual.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if fecha_inicio < integrante.fecha_inicio:
+            return Response(
+                {
+                    "detail": (
+                        "La fecha de inicio del nuevo cargo "
+                        "no puede ser anterior a la asignación actual."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cargo_anterior = integrante.cargo.nombre
+
+        with transaction.atomic():
+            integrante.activo = False
+            integrante.fecha_fin = fecha_inicio
+
+            integrante.save(
+                update_fields=[
+                    "activo",
+                    "fecha_fin",
+                ]
+            )
+
+            nuevo_integrante_serializer = IntegranteDirectivaSerializer(
+                data={
+                    "directiva": integrante.directiva_id,
+                    "usuario": integrante.usuario_id,
+                    "cargo": nuevo_cargo.id,
+                    "fecha_inicio": fecha_inicio,
+                    "activo": True,
+                }
+            )
+
+            nuevo_integrante_serializer.is_valid(raise_exception=True)
+
+            nuevo_integrante = nuevo_integrante_serializer.save()
+
+            HistorialGestionUsuario.objects.create(
+                usuario_objetivo=integrante.usuario,
+                realizado_por=request.user,
+                tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
+                valor_anterior=cargo_anterior,
+                valor_nuevo=nuevo_cargo.nombre,
+                detalle=(
+                    f"Reasignación de cargo en directiva " f"{integrante.directiva_id}."
+                ),
+            )
+
+        return Response(
+            IntegranteDirectivaSerializer(nuevo_integrante).data,
+            status=status.HTTP_201_CREATED,
         )
-
-        integrante = IntegranteDirectiva.objects.get(
-            directiva=self.directiva,
-            usuario=self.vecino,
-        )
-
-        url_detalle = reverse(
-            "integrantes-directiva-detail",
-            kwargs={"pk": integrante.id},
-        )
-
-        response_revocar = self.client.patch(
-            url_detalle,
-            {
-                "activo": False,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            response_revocar.status_code,
-            status.HTTP_200_OK,
-        )
-
-        integrante.refresh_from_db()
-
-        self.assertFalse(integrante.activo)
-        self.assertIsNotNone(integrante.fecha_fin)
-
-        rol_directiva = UsuarioRol.objects.get(
-            usuario=self.vecino,
-            rol=self.rol_directiva,
-        )
-
-        self.assertFalse(rol_directiva.activo)

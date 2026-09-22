@@ -174,6 +174,16 @@ class DirectivaSerializer(serializers.ModelSerializer):
             "id",
         ]
 
+class ReasignarCargoDirectivaSerializer(serializers.Serializer):
+    cargo = serializers.PrimaryKeyRelatedField(
+        queryset=Cargo.objects.filter(
+            activo=True
+        )
+    )
+
+    fecha_inicio = serializers.DateField(
+        required=False
+    )
 
 class IntegranteDirectivaSerializer(serializers.ModelSerializer):
     usuario_username = serializers.CharField(
@@ -229,6 +239,42 @@ class IntegranteDirectivaSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
+        if self.instance:
+            campos_historicos = (
+                "directiva",
+                "usuario",
+                "cargo",
+                "fecha_inicio",
+                "fecha_fin",
+            )
+
+            campos_modificados = [
+                campo
+                for campo in campos_historicos
+                if (campo in attrs and attrs[campo] != getattr(self.instance, campo))
+            ]
+
+            if campos_modificados:
+                raise serializers.ValidationError(
+                    {
+                        "detail": (
+                            "Los datos históricos de una asignación "
+                            "no pueden modificarse directamente. "
+                            "Debe utilizarse el flujo de revocación "
+                            "o reasignación."
+                        )
+                    }
+                )
+
+            if not self.instance.activo and attrs.get("activo") is True:
+                raise serializers.ValidationError(
+                    {
+                        "activo": (
+                            "Una asignación finalizada no puede "
+                            "reactivarse. Debe crearse una nueva."
+                        )
+                    }
+                )
         directiva = attrs.get(
             "directiva",
             getattr(self.instance, "directiva", None),

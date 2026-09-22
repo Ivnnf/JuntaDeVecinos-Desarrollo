@@ -10,28 +10,45 @@ from .views import (
     SolicitudRecuperacionView,
     health,
     PerfilVecinoView,
+    UsuarioAdministracionListView,
+    EstadoCuentaUsuarioView,
+    RolUsuarioAdministracionView,
 )
 
 urlpatterns = [
+    path(
+        "admin/usuarios/<int:usuario_id>/rol/",
+        RolUsuarioAdministracionView.as_view(),
+        name="admin-usuario-rol",
+    ),
+    path(
+        "admin/usuarios/",
+        UsuarioAdministracionListView.as_view(),
+        name="admin-usuarios-list",
+    ),
+    path(
+        "admin/usuarios/<int:usuario_id>/estado/",
+        EstadoCuentaUsuarioView.as_view(),
+        name="admin-usuario-estado",
+    ),
     path("health/", health, name="health"),
     path("login/", LoginView.as_view(), name="login"),
     path("registro/", RegistroVecinoView.as_view(), name="registro-vecino"),
     path(
-    "perfil/",
-    PerfilVecinoView.as_view(),
-    name="perfil-vecino",
-),
+        "perfil/",
+        PerfilVecinoView.as_view(),
+        name="perfil-vecino",
+    ),
     path(
-    "recuperar-password/",
-    SolicitudRecuperacionView.as_view(),
-    name="recuperar-password",
-    
-),
-path(
-    "restablecer-password/<uidb64>/<token>/",
-    RestablecerPasswordView.as_view(),
-    name="restablecer-password",
-),
+        "recuperar-password/",
+        SolicitudRecuperacionView.as_view(),
+        name="recuperar-password",
+    ),
+    path(
+        "restablecer-password/<uidb64>/<token>/",
+        RestablecerPasswordView.as_view(),
+        name="restablecer-password",
+    ),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("sesion/", SesionUsuarioView.as_view(), name="sesion-usuario"),
     path("refresh/", RefreshTokenView.as_view(), name="refresh-token"),

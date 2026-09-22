@@ -16,9 +16,16 @@ from .views import (
     IntegranteDirectivaListCreateView,
     IntegranteDirectivaDetailView,
     UsuariosElegiblesDirectivaView,
+    ReasignarCargoDirectivaView,
+    DirectivaVigenteJuntaView,
 )
 
 urlpatterns = [
+    path(
+        "juntas/<int:junta_id>/directiva-vigente/",
+        DirectivaVigenteJuntaView.as_view(),
+        name="directiva-vigente-junta",
+    ),
     path(
         "resolver-asociacion-sector/<int:usuario_id>/",
         ResolverAsociacionSectorView.as_view(),
@@ -88,6 +95,11 @@ urlpatterns = [
         "integrantes-directiva/<int:pk>/",
         IntegranteDirectivaDetailView.as_view(),
         name="integrantes-directiva-detail",
+    ),
+    path(
+        "integrantes-directiva/<int:pk>/reasignar/",
+        ReasignarCargoDirectivaView.as_view(),
+        name="integrantes-directiva-reasignar",
     ),
     path(
         "directivas/<int:directiva_id>/usuarios-elegibles/",

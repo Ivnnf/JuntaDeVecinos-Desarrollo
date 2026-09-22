@@ -2,8 +2,13 @@ from datetime import date
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from django.contrib.auth import get_user_model
 
-from profiles.models import Rol, Usuario, UsuarioRol
+from profiles.models import (
+    HistorialGestionUsuario,
+    Rol,
+    UsuarioRol,
+)
 
 from .models import (
     Cargo,
@@ -12,6 +17,8 @@ from .models import (
     JuntaVecinos,
     Sector,
 )
+
+Usuario = get_user_model()
 
 
 class AsociacionSectorTests(APITestCase):
@@ -313,6 +320,12 @@ class GestionDirectivaTests(APITestCase):
             permite_multiples=False,
             activo=True,
         )
+        self.cargo_secretario = Cargo.objects.create(
+            nombre="Secretario",
+            descripcion="Secretaría de la junta",
+            permite_multiples=False,
+            activo=True,
+        )
 
         self.directiva = Directiva.objects.create(
             junta_vecinos=self.junta,
@@ -357,6 +370,30 @@ class GestionDirectivaTests(APITestCase):
                 rol=self.rol_directiva,
                 activo=True,
             ).exists()
+        )
+        historial = HistorialGestionUsuario.objects.get(
+            usuario_objetivo=self.vecino,
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
+        )
+
+        self.assertEqual(
+            historial.realizado_por,
+            self.admin,
+        )
+
+        self.assertEqual(
+            historial.valor_anterior,
+            "SIN_CARGO_ACTIVO",
+        )
+
+        self.assertEqual(
+            historial.valor_nuevo,
+            self.cargo_presidente.nombre,
+        )
+
+        self.assertIn(
+            str(self.directiva.id),
+            historial.detalle,
         )
 
     def test_revocar_integrante_cierra_historial_y_desactiva_rol(self):
@@ -416,6 +453,38 @@ class GestionDirectivaTests(APITestCase):
 
         self.assertFalse(rol_directiva.activo)
 
+        historiales = HistorialGestionUsuario.objects.filter(
+            usuario_objetivo=self.vecino,
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
+        ).order_by("fecha_cambio", "id")
+
+        self.assertEqual(
+            historiales.count(),
+            2,
+        )
+
+        historial_revocacion = historiales.last()
+
+        self.assertEqual(
+            historial_revocacion.realizado_por,
+            self.admin,
+        )
+
+        self.assertEqual(
+            historial_revocacion.valor_anterior,
+            self.cargo_presidente.nombre,
+        )
+
+        self.assertEqual(
+            historial_revocacion.valor_nuevo,
+            "SIN_CARGO_ACTIVO",
+        )
+
+        self.assertIn(
+            str(self.directiva.id),
+            historial_revocacion.detalle,
+        )
+
     def test_cargo_no_multiple_rechaza_segundo_integrante(self):
         otro_vecino = Usuario.objects.create_user(
             username="otro_vecino_test",
@@ -473,12 +542,7 @@ class GestionDirectivaTests(APITestCase):
         )
 
     def test_usuario_no_puede_tener_dos_cargos_activos_misma_directiva(self):
-        cargo_secretario = Cargo.objects.create(
-            nombre="Secretario",
-            descripcion="Secretaría de la junta",
-            permite_multiples=False,
-            activo=True,
-        )
+        cargo_secretario = self.cargo_secretario
 
         IntegranteDirectiva.objects.create(
             directiva=self.directiva,
@@ -741,6 +805,7 @@ class GestionDirectivaTests(APITestCase):
             vecino_pendiente.id,
             usuarios_ids,
         )
+
     def test_usuarios_elegibles_excluye_usuario_inactivo(self):
         vecino_inactivo = Usuario.objects.create_user(
             username="vecino_inactivo_elegibles",
@@ -776,12 +841,236 @@ class GestionDirectivaTests(APITestCase):
             status.HTTP_200_OK,
         )
 
-        usuarios_ids = [
-            usuario["id"]
-            for usuario in response.data
-        ]
+        usuarios_ids = [usuario["id"] for usuario in response.data]
 
         self.assertNotIn(
             vecino_inactivo.id,
             usuarios_ids,
+        )
+
+    def test_admin_puede_reasignar_cargo_conservando_historial(self):
+        self.client.force_authenticate(user=self.admin)
+
+        response_crear = self.client.post(
+            reverse("integrantes-directiva-list-create"),
+            {
+                "directiva": self.directiva.id,
+                "usuario": self.vecino.id,
+                "cargo": self.cargo_presidente.id,
+                "fecha_inicio": "2026-01-01",
+                "activo": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_crear.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        integrante_anterior = IntegranteDirectiva.objects.get(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+        )
+
+        response_reasignar = self.client.post(
+            reverse(
+                "integrantes-directiva-reasignar",
+                kwargs={
+                    "pk": integrante_anterior.id,
+                },
+            ),
+            {
+                "cargo": self.cargo_secretario.id,
+                "fecha_inicio": "2026-06-01",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_reasignar.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        integrante_anterior.refresh_from_db()
+
+        self.assertFalse(integrante_anterior.activo)
+
+        self.assertEqual(
+            integrante_anterior.fecha_fin,
+            date(2026, 6, 1),
+        )
+
+        nuevo_integrante = IntegranteDirectiva.objects.get(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_secretario,
+            activo=True,
+        )
+
+        self.assertEqual(
+            nuevo_integrante.fecha_inicio,
+            date(2026, 6, 1),
+        )
+
+        self.assertEqual(
+            IntegranteDirectiva.objects.filter(
+                directiva=self.directiva,
+                usuario=self.vecino,
+                activo=True,
+            ).count(),
+            1,
+        )
+
+        self.assertEqual(
+            IntegranteDirectiva.objects.filter(
+                directiva=self.directiva,
+                usuario=self.vecino,
+            ).count(),
+            2,
+        )
+
+        self.assertTrue(
+            UsuarioRol.objects.filter(
+                usuario=self.vecino,
+                rol=self.rol_directiva,
+                activo=True,
+            ).exists()
+        )
+
+        historiales = HistorialGestionUsuario.objects.filter(
+            usuario_objetivo=self.vecino,
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
+        ).order_by(
+            "fecha_cambio",
+            "id",
+        )
+
+        self.assertEqual(
+            historiales.count(),
+            2,
+        )
+
+        historial_reasignacion = historiales.last()
+
+        self.assertEqual(
+            historial_reasignacion.realizado_por,
+            self.admin,
+        )
+
+        self.assertEqual(
+            historial_reasignacion.valor_anterior,
+            self.cargo_presidente.nombre,
+        )
+
+        self.assertEqual(
+            historial_reasignacion.valor_nuevo,
+            self.cargo_secretario.nombre,
+        )
+
+    def test_no_se_puede_cambiar_cargo_directamente_sin_historial(self):
+        self.client.force_authenticate(user=self.admin)
+
+        response_crear = self.client.post(
+            reverse("integrantes-directiva-list-create"),
+            {
+                "directiva": self.directiva.id,
+                "usuario": self.vecino.id,
+                "cargo": self.cargo_presidente.id,
+                "fecha_inicio": "2026-01-01",
+                "activo": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_crear.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        integrante = IntegranteDirectiva.objects.get(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+        )
+
+        response = self.client.patch(
+            reverse(
+                "integrantes-directiva-detail",
+                kwargs={
+                    "pk": integrante.id,
+                },
+            ),
+            {
+                "cargo": self.cargo_secretario.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        integrante.refresh_from_db()
+
+        self.assertEqual(
+            integrante.cargo,
+            self.cargo_presidente,
+        )
+
+        self.assertTrue(integrante.activo)
+
+        self.assertFalse(
+            IntegranteDirectiva.objects.filter(
+                directiva=self.directiva,
+                usuario=self.vecino,
+                cargo=self.cargo_secretario,
+            ).exists()
+        )
+
+    def test_admin_puede_consultar_directiva_vigente_de_junta(self):
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.get(
+            reverse(
+                "directiva-vigente-junta",
+                kwargs={
+                    "junta_id": self.junta.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["directiva"]["id"],
+            self.directiva.id,
+        )
+
+        self.assertEqual(
+            len(response.data["integrantes"]),
+            1,
+        )
+
+        self.assertEqual(
+            response.data["integrantes"][0]["usuario"],
+            self.vecino.id,
+        )
+
+        self.assertEqual(
+            response.data["integrantes"][0]["cargo"],
+            self.cargo_presidente.id,
         )

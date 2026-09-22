@@ -260,3 +260,83 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
             )
 
         return value.lower()
+
+
+class UsuarioAdministracionSerializer(serializers.ModelSerializer):
+    roles = serializers.SerializerMethodField()
+
+    class Meta:
+        model = get_user_model()
+
+        fields = [
+            "id",
+            "username",
+            "rut",
+            "nombres",
+            "apellido_paterno",
+            "apellido_materno",
+            "email",
+            "is_active",
+            "roles",
+        ]
+
+        read_only_fields = [
+            "id",
+            "username",
+            "rut",
+            "nombres",
+            "apellido_paterno",
+            "apellido_materno",
+            "email",
+            "roles",
+        ]
+
+    def get_roles(self, obj):
+        return [
+            {
+                "id": asignacion.rol_id,
+                "nombre": asignacion.rol.nombre,
+                "activo": asignacion.activo,
+            }
+            for asignacion in obj.roles_asignados.select_related(
+                "rol"
+            ).all()
+        ]
+class EstadoCuentaUsuarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+
+        fields = [
+            "is_active",
+        ]
+class RolUsuarioAdministracionSerializer(serializers.Serializer):
+    rol_id = serializers.IntegerField()
+    activo = serializers.BooleanField(default=True)
+
+    def validate_rol_id(self, value):
+        rol = Rol.objects.filter(
+            id=value,
+        ).first()
+
+        if rol is None:
+            raise serializers.ValidationError(
+             "El rol indicado no existe."
+            )
+
+        roles_permitidos = {
+            "Administrador",
+            "Directiva",
+            "Vecino",
+            "Municipal",
+        }
+
+        if rol.nombre not in roles_permitidos:
+            raise serializers.ValidationError(
+                (
+                    "El rol indicado no está permitido. "
+                    "Roles válidos: Administrador, Directiva, "
+                    "Vecino y Municipal."
+                )
+            )
+
+        return value
