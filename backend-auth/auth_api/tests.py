@@ -658,7 +658,44 @@ class AutenticacionTests(APITestCase):
             historial.valor_nuevo,
             "DESHABILITADA",
         )
+    def test_administrador_no_puede_deshabilitar_su_propia_cuenta(self):
+        rol_admin, _ = Rol.objects.get_or_create(
+            nombre="Administrador"
+        )
 
+        UsuarioRol.objects.update_or_create(
+            usuario=self.usuario,
+            rol=rol_admin,
+            defaults={
+                "activo": True,
+            },
+        )
+
+        self.client.force_authenticate(
+            user=self.usuario
+        )
+
+        response = self.client.patch(
+            (
+                f"/api/auth/admin/usuarios/"
+                f"{self.usuario.id}/estado/"
+            ),
+            {
+                "is_active": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.usuario.refresh_from_db()
+
+        self.assertTrue(
+            self.usuario.is_active
+    )
     def test_administrador_puede_habilitar_cuenta_usuario(self):
         Usuario = get_user_model()
 
@@ -697,6 +734,49 @@ class AutenticacionTests(APITestCase):
         otro_usuario.refresh_from_db()
 
         self.assertTrue(otro_usuario.is_active)
+
+    def test_administrador_no_puede_desactivar_su_propio_rol(self):
+            rol_admin, _ = Rol.objects.get_or_create(
+                nombre="Administrador"
+            )
+
+            UsuarioRol.objects.update_or_create(
+                usuario=self.usuario,
+                rol=rol_admin,
+                defaults={
+                    "activo": True,
+                },
+            )
+
+            self.client.force_authenticate(
+                user=self.usuario
+            )
+
+            response = self.client.patch(
+                (
+                    f"/api/auth/admin/usuarios/"
+                    f"{self.usuario.id}/rol/"
+                ),
+                {
+                    "rol_id": rol_admin.id,
+                    "activo": False,
+                },
+                format="json",
+            )
+
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+            asignacion = UsuarioRol.objects.get(
+                usuario=self.usuario,
+                rol=rol_admin,
+            )
+
+            self.assertTrue(
+                asignacion.activo
+            )
 
     def test_vecino_no_puede_cambiar_estado_cuenta_usuario(self):
         Usuario = get_user_model()
