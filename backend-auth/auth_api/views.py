@@ -35,6 +35,7 @@ from utils.token import generar_tokens, refresh_access_token, verificar_token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
 
+
 def health(request):
     return JsonResponse(
         {
@@ -399,7 +400,7 @@ class EstadoCuentaUsuarioView(APIView):
             usuario = Usuario.objects.get(id=usuario_id)
         except Usuario.DoesNotExist:
             return Response(
-                {"detail": ("Usuario no encontrado.")},
+                {"detail": "Usuario no encontrado."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -413,24 +414,51 @@ class EstadoCuentaUsuarioView(APIView):
 
         serializer.is_valid(raise_exception=True)
 
+        nuevo_estado = serializer.validated_data.get(
+            "is_active",
+            usuario.is_active,
+        )
+
+        if usuario.id == request.user.id and not nuevo_estado:
+            return Response(
+                {
+                    "detail": (
+                        "No puedes deshabilitar tu propia cuenta."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         usuario_actualizado = serializer.save()
 
         if estado_anterior != usuario_actualizado.is_active:
             HistorialGestionUsuario.objects.create(
                 usuario_objetivo=usuario_actualizado,
                 realizado_por=request.user,
-                tipo_cambio=(HistorialGestionUsuario.TipoCambio.ESTADO_CUENTA),
-                valor_anterior=("HABILITADA" if estado_anterior else "DESHABILITADA"),
+                tipo_cambio=(
+                    HistorialGestionUsuario.TipoCambio.ESTADO_CUENTA
+                ),
+                valor_anterior=(
+                    "HABILITADA"
+                    if estado_anterior
+                    else "DESHABILITADA"
+                ),
                 valor_nuevo=(
-                    "HABILITADA" if usuario_actualizado.is_active else "DESHABILITADA"
+                    "HABILITADA"
+                    if usuario_actualizado.is_active
+                    else "DESHABILITADA"
                 ),
                 detalle="Cambio de estado de cuenta.",
             )
 
         return Response(
             {
-                "message": ("Estado de cuenta actualizado correctamente."),
-                "usuario": UsuarioAdministracionSerializer(usuario_actualizado).data,
+                "message": (
+                    "Estado de cuenta actualizado correctamente."
+                ),
+                "usuario": UsuarioAdministracionSerializer(
+                    usuario_actualizado
+                ).data,
             },
             status=status.HTTP_200_OK,
         )
@@ -457,7 +485,15 @@ class RolUsuarioAdministracionView(APIView):
         rol = Rol.objects.get(id=serializer.validated_data["rol_id"])
 
         activo = serializer.validated_data["activo"]
-
+        if (
+            usuario.id == request.user.id
+            and rol.nombre.lower() == "administrador"
+            and not activo
+        ):
+            return Response(
+                {"detail": ("No puedes desactivar tu propio rol " "de Administrador.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if (
             not activo
             and rol.nombre.lower() == "directiva"

@@ -42,7 +42,15 @@ function UsuariosPage() {
 
     const [rolActualizando, setRolActualizando] =
         useState<number | null>(null)
-
+    const [confirmacionRol, setConfirmacionRol] =
+        useState<{
+            usuarioId: number
+            rolId: number
+            nombreRol: string
+            activo: boolean
+        } | null>(null)
+    const [confirmacionEstado, setConfirmacionEstado] =
+        useState<UsuarioAdministracion | null>(null)
     useEffect(() => {
         const cargarDatos = async () => {
             try {
@@ -153,6 +161,7 @@ function UsuariosPage() {
         rolId: number,
         activo: boolean
     ) => {
+
         try {
             setRolActualizando(usuarioId)
             setError('')
@@ -217,7 +226,7 @@ function UsuariosPage() {
                     </div>
                 )}
 
-                {!cargando && !error && (
+                {!cargando && (
                     <div className="mt-6 overflow-x-auto">
                         <table className="table table-zebra">
                             <thead>
@@ -289,11 +298,12 @@ function UsuariosPage() {
                                                                 rolActualizando === usuario.id
                                                             }
                                                             onClick={() =>
-                                                                cambiarRolUsuario(
-                                                                    usuario.id,
-                                                                    rolDisponible.id,
-                                                                    !rolActivo
-                                                                )
+                                                                setConfirmacionRol({
+                                                                    usuarioId: usuario.id,
+                                                                    rolId: rolDisponible.id,
+                                                                    nombreRol: rolDisponible.nombre,
+                                                                    activo: !rolActivo,
+                                                                })
                                                             }
                                                         >
                                                             {rolDisponible.nombre}
@@ -325,7 +335,7 @@ function UsuariosPage() {
                                                     usuarioActualizando === usuario.id
                                                 }
                                                 onClick={() =>
-                                                    cambiarEstadoUsuario(usuario)
+                                                    setConfirmacionEstado(usuario)
                                                 }
                                             >
                                                 {usuarioActualizando === usuario.id
@@ -342,6 +352,122 @@ function UsuariosPage() {
                     </div>
                 )}
             </section>
+            {confirmacionRol && (
+                <div className="modal modal-open">
+                    <div className="modal-box">
+                        <h3 className="text-lg font-bold">
+                            Confirmar cambio de rol
+                        </h3>
+
+                        <p className="py-4">
+                            ¿Seguro que deseas{' '}
+                            <strong>
+                                {confirmacionRol.activo
+                                    ? 'activar'
+                                    : 'desactivar'}
+                            </strong>{' '}
+                            el rol{' '}
+                            <strong>
+                                {confirmacionRol.nombreRol}
+                            </strong>
+                            ?
+                        </p>
+
+                        <div className="modal-action">
+                            <button
+                                className="btn"
+                                onClick={() =>
+                                    setConfirmacionRol(null)
+                                }
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    cambiarRolUsuario(
+                                        confirmacionRol.usuarioId,
+                                        confirmacionRol.rolId,
+                                        confirmacionRol.activo
+                                    )
+
+                                    setConfirmacionRol(null)
+                                }}
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        className="modal-backdrop"
+                        onClick={() =>
+                            setConfirmacionRol(null)
+                        }
+                    />
+                </div>
+            )}
+            {confirmacionEstado && (
+                <div className="modal modal-open">
+                    <div className="modal-box">
+                        <h3 className="text-lg font-bold">
+                            Confirmar cambio de estado
+                        </h3>
+
+                        <p className="py-4">
+                            ¿Seguro que deseas{' '}
+                            <strong>
+                                {confirmacionEstado.is_active
+                                    ? 'deshabilitar'
+                                    : 'habilitar'}
+                            </strong>{' '}
+                            la cuenta de{' '}
+                            <strong>
+                                {confirmacionEstado.username}
+                            </strong>
+                            ?
+                        </p>
+
+                        <div className="modal-action">
+                            <button
+                                className="btn"
+                                onClick={() =>
+                                    setConfirmacionEstado(null)
+                                }
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                className={
+                                    confirmacionEstado.is_active
+                                        ? 'btn btn-error'
+                                        : 'btn btn-success'
+                                }
+                                onClick={() => {
+                                    cambiarEstadoUsuario(
+                                        confirmacionEstado
+                                    )
+
+                                    setConfirmacionEstado(null)
+                                }}
+                            >
+                                {confirmacionEstado.is_active
+                                    ? 'Deshabilitar'
+                                    : 'Habilitar'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        className="modal-backdrop"
+                        onClick={() =>
+                            setConfirmacionEstado(null)
+                        }
+                    />
+                </div>
+            )}
         </main>
     )
 }
