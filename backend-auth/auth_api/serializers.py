@@ -298,10 +298,10 @@ class UsuarioAdministracionSerializer(serializers.ModelSerializer):
                 "nombre": asignacion.rol.nombre,
                 "activo": asignacion.activo,
             }
-            for asignacion in obj.roles_asignados.select_related(
-                "rol"
-            ).all()
+            for asignacion in obj.roles_asignados.select_related("rol").all()
         ]
+
+
 class EstadoCuentaUsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
@@ -309,6 +309,17 @@ class EstadoCuentaUsuarioSerializer(serializers.ModelSerializer):
         fields = [
             "is_active",
         ]
+
+
+class RolAdministracionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rol
+        fields = [
+            "id",
+            "nombre",
+        ]
+
+
 class RolUsuarioAdministracionSerializer(serializers.Serializer):
     rol_id = serializers.IntegerField()
     activo = serializers.BooleanField(default=True)
@@ -319,9 +330,7 @@ class RolUsuarioAdministracionSerializer(serializers.Serializer):
         ).first()
 
         if rol is None:
-            raise serializers.ValidationError(
-             "El rol indicado no existe."
-            )
+            raise serializers.ValidationError("El rol indicado no existe.")
 
         roles_permitidos = {
             "Administrador",

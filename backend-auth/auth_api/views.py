@@ -28,11 +28,12 @@ from .serializers import (
     PerfilVecinoSerializer,
     UsuarioAdministracionSerializer,
     EstadoCuentaUsuarioSerializer,
+    RolAdministracionSerializer,
     RolUsuarioAdministracionSerializer,
 )
 from utils.token import generar_tokens, refresh_access_token, verificar_token
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework import generics
 
 def health(request):
     return JsonResponse(
@@ -371,6 +372,21 @@ class UsuarioAdministracionListView(APIView):
             serializer.data,
             status=status.HTTP_200_OK,
         )
+
+
+class RolAdministracionListView(generics.ListAPIView):
+    serializer_class = RolAdministracionSerializer
+    permission_classes = [EsAdministrador]
+
+    def get_queryset(self):
+        return Rol.objects.filter(
+            nombre__in=[
+                "Administrador",
+                "Directiva",
+                "Vecino",
+                "Municipal",
+            ]
+        ).order_by("nombre")
 
 
 class EstadoCuentaUsuarioView(APIView):

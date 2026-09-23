@@ -562,9 +562,7 @@ class AutenticacionTests(APITestCase):
         )
 
     def test_administrador_puede_listar_usuarios(self):
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -574,13 +572,9 @@ class AutenticacionTests(APITestCase):
             },
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
-        response = self.client.get(
-            "/api/auth/admin/usuarios/"
-        )
+        response = self.client.get("/api/auth/admin/usuarios/")
 
         self.assertEqual(
             response.status_code,
@@ -596,25 +590,21 @@ class AutenticacionTests(APITestCase):
             response.data[0]["username"],
             self.usuario.username,
         )
-    def test_vecino_no_puede_listar_usuarios_administrativos(self):
-        self.client.force_authenticate(
-            user=self.usuario
-        )
 
-        response = self.client.get(
-            "/api/auth/admin/usuarios/"
-        )
+    def test_vecino_no_puede_listar_usuarios_administrativos(self):
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.get("/api/auth/admin/usuarios/")
 
         self.assertIn(
             response.status_code,
             [401, 403],
         )
+
     def test_administrador_puede_deshabilitar_cuenta_usuario(self):
         Usuario = get_user_model()
 
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -631,9 +621,7 @@ class AutenticacionTests(APITestCase):
             is_active=True,
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{otro_usuario.id}/estado/",
@@ -650,14 +638,10 @@ class AutenticacionTests(APITestCase):
 
         otro_usuario.refresh_from_db()
 
-        self.assertFalse(
-            otro_usuario.is_active
-        )
+        self.assertFalse(otro_usuario.is_active)
         historial = HistorialGestionUsuario.objects.get(
             usuario_objetivo=otro_usuario,
-            tipo_cambio=(
-                HistorialGestionUsuario.TipoCambio.ESTADO_CUENTA
-            ),
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.ESTADO_CUENTA),
         )
 
         self.assertEqual(
@@ -674,12 +658,11 @@ class AutenticacionTests(APITestCase):
             historial.valor_nuevo,
             "DESHABILITADA",
         )
+
     def test_administrador_puede_habilitar_cuenta_usuario(self):
         Usuario = get_user_model()
 
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -696,9 +679,7 @@ class AutenticacionTests(APITestCase):
             is_active=False,
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{otro_usuario.id}/estado/",
@@ -715,9 +696,7 @@ class AutenticacionTests(APITestCase):
 
         otro_usuario.refresh_from_db()
 
-        self.assertTrue(
-            otro_usuario.is_active
-        )
+        self.assertTrue(otro_usuario.is_active)
 
     def test_vecino_no_puede_cambiar_estado_cuenta_usuario(self):
         Usuario = get_user_model()
@@ -729,9 +708,7 @@ class AutenticacionTests(APITestCase):
             is_active=True,
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{otro_usuario.id}/estado/",
@@ -748,19 +725,14 @@ class AutenticacionTests(APITestCase):
 
         otro_usuario.refresh_from_db()
 
-        self.assertTrue(
-            otro_usuario.is_active
-        )
+        self.assertTrue(otro_usuario.is_active)
+
     def test_administrador_puede_activar_rol_usuario(self):
         Usuario = get_user_model()
 
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
-        rol_directiva, _ = Rol.objects.get_or_create(
-            nombre="Directiva"
-        )
+        rol_directiva, _ = Rol.objects.get_or_create(nombre="Directiva")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -782,9 +754,7 @@ class AutenticacionTests(APITestCase):
             activo=True,
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{otro_usuario.id}/rol/",
@@ -817,9 +787,7 @@ class AutenticacionTests(APITestCase):
         )
         historial = HistorialGestionUsuario.objects.get(
             usuario_objetivo=otro_usuario,
-            tipo_cambio=(
-                HistorialGestionUsuario.TipoCambio.ROL
-            ),
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.ROL),
         )
 
         self.assertEqual(
@@ -845,13 +813,9 @@ class AutenticacionTests(APITestCase):
     def test_administrador_puede_desactivar_rol_usuario(self):
         Usuario = get_user_model()
 
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
-        rol_directiva, _ = Rol.objects.get_or_create(
-            nombre="Directiva"
-        )
+        rol_directiva, _ = Rol.objects.get_or_create(nombre="Directiva")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -879,9 +843,7 @@ class AutenticacionTests(APITestCase):
             activo=True,
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{otro_usuario.id}/rol/",
@@ -902,14 +864,10 @@ class AutenticacionTests(APITestCase):
             rol=rol_directiva,
         )
 
-        self.assertFalse(
-            rol_directiva_usuario.activo
-        )
+        self.assertFalse(rol_directiva_usuario.activo)
         historial = HistorialGestionUsuario.objects.get(
             usuario_objetivo=otro_usuario,
-            tipo_cambio=(
-                HistorialGestionUsuario.TipoCambio.ROL
-            ),
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.ROL),
         )
 
         self.assertEqual(
@@ -939,16 +897,13 @@ class AutenticacionTests(APITestCase):
                 activo=True,
             ).exists()
         )
+
     def test_no_puede_desactivar_rol_directiva_con_cargo_activo(self):
         Usuario = get_user_model()
 
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
-        rol_directiva, _ = Rol.objects.get_or_create(
-            nombre="Directiva"
-        )
+        rol_directiva, _ = Rol.objects.get_or_create(nombre="Directiva")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -1014,15 +969,13 @@ class AutenticacionTests(APITestCase):
             activo=True,
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{usuario_directiva.id}/rol/",
             {
-             "rol_id": rol_directiva.id,
-             "activo": False,
+                "rol_id": rol_directiva.id,
+                "activo": False,
             },
             format="json",
         )
@@ -1037,24 +990,19 @@ class AutenticacionTests(APITestCase):
             rol=rol_directiva,
         )
 
-        self.assertTrue(
-            asignacion.activo
-        )
+        self.assertTrue(asignacion.activo)
 
         self.assertFalse(
             HistorialGestionUsuario.objects.filter(
                 usuario_objetivo=usuario_directiva,
-                tipo_cambio=(
-                    HistorialGestionUsuario.TipoCambio.ROL
-                ),
+                tipo_cambio=(HistorialGestionUsuario.TipoCambio.ROL),
             ).exists()
         )
+
     def test_vecino_no_puede_modificar_roles_usuario(self):
         Usuario = get_user_model()
 
-        rol_directiva, _ = Rol.objects.get_or_create(
-            nombre="Directiva"
-        )
+        rol_directiva, _ = Rol.objects.get_or_create(nombre="Directiva")
 
         otro_usuario = Usuario.objects.create_user(
             username="usuario_rol_protegido",
@@ -1068,9 +1016,7 @@ class AutenticacionTests(APITestCase):
             activo=True,
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{otro_usuario.id}/rol/",
@@ -1093,12 +1039,11 @@ class AutenticacionTests(APITestCase):
                 activo=True,
             ).exists()
         )
+
     def test_administrador_no_puede_asignar_rol_no_permitido(self):
         Usuario = get_user_model()
 
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -1114,13 +1059,9 @@ class AutenticacionTests(APITestCase):
             password="PasswordSeguro123!",
         )
 
-        rol_no_permitido = Rol.objects.create(
-            nombre="SupervisorPrueba"
-        )
+        rol_no_permitido = Rol.objects.create(nombre="SupervisorPrueba")
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
             f"/api/auth/admin/usuarios/{otro_usuario.id}/rol/",
@@ -1141,4 +1082,50 @@ class AutenticacionTests(APITestCase):
                 usuario=otro_usuario,
                 rol=rol_no_permitido,
             ).exists()
+        )
+
+
+    def test_administrador_puede_listar_roles_permitidos(self):
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
+
+        Rol.objects.get_or_create(nombre="Directiva")
+
+        Rol.objects.get_or_create(nombre="Vecino")
+
+        Rol.objects.get_or_create(nombre="Municipal")
+
+        Rol.objects.get_or_create(nombre="SupervisorPrueba")
+
+        UsuarioRol.objects.update_or_create(
+            usuario=self.usuario,
+            rol=rol_admin,
+            defaults={
+                "activo": True,
+            },
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.get("/api/auth/admin/roles/")
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        nombres = {rol["nombre"] for rol in response.data}
+
+        self.assertEqual(
+            nombres,
+            {
+                "Administrador",
+                "Directiva",
+                "Vecino",
+                "Municipal",
+            },
+        )
+
+        self.assertNotIn(
+            "SupervisorPrueba",
+            nombres,
         )

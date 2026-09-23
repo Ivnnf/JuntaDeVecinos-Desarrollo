@@ -17,10 +17,21 @@ import MiPerfilPage from './pages/vecino/MiPerfilPage'
 import JuntasVecinosPage from './pages/admin/JuntasVecinosPage'
 import SectoresPage from './pages/admin/SectoresPage'
 import AsociacionesSectorPage from './pages/admin/AsociacionesSectorPage'
+import UsuariosPage from './pages/admin/UsuariosPage'
 
 function App() {
   return (
     <Routes>
+
+      <Route
+        path="/admin/usuarios"
+        element={
+          <RutaProtegida rolPermitido={1}>
+            <UsuariosPage />
+          </RutaProtegida>
+        }
+      />
+
       <Route
         path="/admin/asociaciones"
         element={
@@ -29,6 +40,7 @@ function App() {
           </RutaProtegida>
         }
       />
+
       <Route
         path="/admin/sectores"
         element={
@@ -37,6 +49,7 @@ function App() {
           </RutaProtegida>
         }
       />
+
       <Route
         path="/admin/juntas"
         element={
@@ -45,6 +58,7 @@ function App() {
           </RutaProtegida>
         }
       />
+
       <Route
         path="/vecino/perfil"
         element={
@@ -53,6 +67,7 @@ function App() {
           </RutaProtegida>
         }
       />
+
       <Route
         path="/registro"
         element={<RegistroVecinoPage />}
@@ -76,6 +91,7 @@ function App() {
           </RutaProtegida>
         }
       />
+
       <Route
         path="/directiva"
         element={
@@ -84,6 +100,7 @@ function App() {
           </RutaProtegida>
         }
       />
+
       <Route
         path="/vecino"
         element={
@@ -106,10 +123,12 @@ function App() {
         path="/recuperar-password"
         element={<RecuperarPasswordPage />}
       />
+
       <Route
         path="/restablecer-password/:uid/:token"
         element={<RestablecerPasswordPage />}
       />
+
     </Routes>
   )
 }

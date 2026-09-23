@@ -13,9 +13,15 @@ from .views import (
     UsuarioAdministracionListView,
     EstadoCuentaUsuarioView,
     RolUsuarioAdministracionView,
+    RolAdministracionListView,
 )
 
 urlpatterns = [
+    path(
+        "admin/roles/",
+        RolAdministracionListView.as_view(),
+        name="admin-roles-list",
+    ),
     path(
         "admin/usuarios/<int:usuario_id>/rol/",
         RolUsuarioAdministracionView.as_view(),
