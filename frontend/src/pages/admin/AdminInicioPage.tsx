@@ -1,4 +1,6 @@
 import CerrarSesionButton from '../../components/auth/CerrarSesionButton'
+import { Link } from 'react-router-dom'
+
 
 function AdminInicioPage() {
   return (
@@ -14,6 +16,14 @@ function AdminInicioPage() {
               <p className="text-base-content/70 mt-2">
                 Sesión iniciada correctamente como Administrador.
               </p>
+              <div className="mt-6">
+                <Link
+                  to="/admin/usuarios"
+                  className="btn btn-primary"
+                >
+                  Gestión de Usuarios
+                </Link>
+              </div>
             </div>
 
             <CerrarSesionButton />

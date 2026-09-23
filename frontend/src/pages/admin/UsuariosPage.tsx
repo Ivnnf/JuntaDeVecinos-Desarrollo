@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+
 
 type RolUsuario = {
     id: number
@@ -213,6 +215,10 @@ function UsuariosPage() {
                 <h1 className="text-3xl font-bold">
                     Gestión de Usuarios
                 </h1>
+                <Link to="/admin" 
+                className="btn btn-primary mt-4"> 
+                Volver al Panel de Administración 
+                </Link>
 
                 {cargando && (
                     <div className="alert mt-6">
