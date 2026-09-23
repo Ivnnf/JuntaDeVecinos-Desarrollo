@@ -42,6 +42,9 @@ function UsuariosPage() {
     const [usuarioActualizando, setUsuarioActualizando] =
         useState<number | null>(null)
 
+    const [usuarioSesionId, setUsuarioSesionId] =
+        useState<number | null>(null)
+
     const [rolActualizando, setRolActualizando] =
         useState<number | null>(null)
     const [confirmacionRol, setConfirmacionRol] =
@@ -62,6 +65,7 @@ function UsuariosPage() {
                 const [
                     responseUsuarios,
                     responseRoles,
+                    responseSesion,
                 ] = await Promise.all([
                     fetch(
                         'http://localhost:8000/api/auth/admin/usuarios/',
@@ -71,6 +75,12 @@ function UsuariosPage() {
                     ),
                     fetch(
                         'http://localhost:8000/api/auth/admin/roles/',
+                        {
+                            credentials: 'include',
+                        }
+                    ),
+                    fetch(
+                        'http://localhost:8000/api/auth/sesion/',
                         {
                             credentials: 'include',
                         }
@@ -88,15 +98,21 @@ function UsuariosPage() {
                         'No fue posible cargar los roles.'
                     )
                 }
-
+                if (!responseSesion.ok) {
+                    throw new Error(
+                        'No fue posible obtener la sesión actual.'
+                    )
+                }
                 const usuariosData =
                     await responseUsuarios.json()
 
                 const rolesData =
                     await responseRoles.json()
-
+                const sesionData =
+                    await responseSesion.json()
                 setUsuarios(usuariosData)
                 setRoles(rolesData)
+                setUsuarioSesionId(sesionData.id)
             } catch (error) {
                 setError(
                     error instanceof Error
@@ -215,9 +231,9 @@ function UsuariosPage() {
                 <h1 className="text-3xl font-bold">
                     Gestión de Usuarios
                 </h1>
-                <Link to="/admin" 
-                className="btn btn-primary mt-4"> 
-                Volver al Panel de Administración 
+                <Link to="/admin"
+                    className="btn btn-primary mt-4">
+                    Volver al Panel de Administración
                 </Link>
 
                 {cargando && (
@@ -301,7 +317,12 @@ function UsuariosPage() {
                                                                     : 'btn btn-xs btn-outline'
                                                             }
                                                             disabled={
-                                                                rolActualizando === usuario.id
+                                                                rolActualizando === usuario.id ||
+                                                                (
+                                                                    usuario.id === usuarioSesionId &&
+                                                                    rolDisponible.nombre === 'Administrador' &&
+                                                                    rolActivo
+                                                                )
                                                             }
                                                             onClick={() =>
                                                                 setConfirmacionRol({
@@ -338,7 +359,8 @@ function UsuariosPage() {
                                                         : 'btn btn-sm btn-success'
                                                 }
                                                 disabled={
-                                                    usuarioActualizando === usuario.id
+                                                    usuarioActualizando === usuario.id ||
+                                                    usuario.id === usuarioSesionId
                                                 }
                                                 onClick={() =>
                                                     setConfirmacionEstado(usuario)
