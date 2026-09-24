@@ -16,12 +16,30 @@ function AdminInicioPage() {
               <p className="text-base-content/70 mt-2">
                 Sesión iniciada correctamente como Administrador.
               </p>
-              <div className="mt-6">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to="/admin/usuarios"
                   className="btn btn-primary"
                 >
                   Gestión de Usuarios
+                </Link>
+                <Link
+                  to="/admin/juntas"
+                  className="btn btn-outline"
+                >
+                  Juntas de Vecinos
+                </Link>
+                <Link
+                  to="/admin/sectores"
+                  className="btn btn-outline"
+                >
+                  Sectores
+                </Link>
+                <Link
+                  to="/admin/asociaciones"
+                  className="btn btn-outline"
+                >
+                  Asociaciones por Sector
                 </Link>
               </div>
             </div>

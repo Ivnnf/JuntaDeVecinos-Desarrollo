@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+
 
 type AsociacionPendiente = {
   id: number
@@ -90,7 +92,7 @@ function AsociacionesSectorPage() {
       if (!response.ok) {
         setError(
           data.detail ??
-            'No fue posible resolver la asociación.',
+          'No fue posible resolver la asociación.',
         )
         return
       }
@@ -127,6 +129,12 @@ function AsociacionesSectorPage() {
           <p className="text-base-content/70 mt-2">
             Confirma o rechaza las solicitudes de sector realizadas por vecinos.
           </p>
+          <Link
+            to="/admin"
+            className="btn btn-outline mt-4"
+          >
+            Volver al Panel de Administración
+          </Link>
         </div>
 
         {error && (

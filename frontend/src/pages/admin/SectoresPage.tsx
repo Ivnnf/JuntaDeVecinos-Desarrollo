@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEventHandler } from 'react'
-
+import { Link } from 'react-router-dom'
 
 type JuntaVecinos = {
     id: number
@@ -237,6 +237,12 @@ function SectoresPage() {
                     <p className="text-base-content/70 mt-2">
                         Administración de sectores asociados a las juntas de vecinos.
                     </p>
+                    <Link
+                        to="/admin"
+                        className="btn btn-outline mt-4"
+                    >
+                        Volver al Panel de Administración
+                    </Link>
                 </div>
 
                 {error && (

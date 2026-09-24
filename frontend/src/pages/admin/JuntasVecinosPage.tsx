@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 type JuntaVecinos = {
     id: number
@@ -248,6 +249,12 @@ function JuntasVecinosPage() {
                         Administración de juntas vecinales registradas.
                     </p>
                 </div>
+                <Link
+                    to="/admin"
+                    className="btn btn-outline mt-4"
+                >
+                    Volver al Panel de Administración
+                </Link>
                 <form
                     onSubmit={(event) => {
                         event.preventDefault()
