@@ -18,10 +18,13 @@ import JuntasVecinosPage from './pages/admin/JuntasVecinosPage'
 import SectoresPage from './pages/admin/SectoresPage'
 import AsociacionesSectorPage from './pages/admin/AsociacionesSectorPage'
 import UsuariosPage from './pages/admin/UsuariosPage'
+import GestionDirectivaPage from './pages/directiva/GestionDirectivaPage'
+
 
 function App() {
   return (
     <Routes>
+
 
       <Route
         path="/admin/usuarios"
@@ -100,7 +103,14 @@ function App() {
           </RutaProtegida>
         }
       />
-
+      <Route
+        path="/directiva/gestion"
+        element={
+          <RutaProtegida rolPermitido={2}>
+            <GestionDirectivaPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/vecino"
         element={

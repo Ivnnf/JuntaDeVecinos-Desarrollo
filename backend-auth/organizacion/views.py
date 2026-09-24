@@ -248,7 +248,21 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
 class CargoListCreateView(generics.ListCreateAPIView):
     queryset = Cargo.objects.all().order_by("nombre")
     serializer_class = CargoSerializer
-    permission_classes = [EsAdministrador]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            permission_classes = [
+                EsAdministradorODirectiva,
+            ]
+        else:
+            permission_classes = [
+                EsAdministrador,
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
 
 
 class CargoDetailView(generics.RetrieveUpdateAPIView):
@@ -359,6 +373,14 @@ class UsuariosElegiblesDirectivaView(generics.ListAPIView):
             if not autorizado:
                 raise PermissionDenied("No puede consultar usuarios de otra directiva.")
 
+        usuarios_con_cargo_activo = IntegranteDirectiva.objects.filter(
+            directiva=directiva,
+            activo=True,
+        ).values_list(
+            "usuario_id",
+            flat=True,
+        )
+
         return (
             Usuario.objects.select_related(
                 "sector",
@@ -368,6 +390,9 @@ class UsuariosElegiblesDirectivaView(generics.ListAPIView):
                 sector__junta_vecinos=directiva.junta_vecinos,
                 estado_asociacion_sector="CONFIRMADA",
                 is_active=True,
+            )
+            .exclude(
+                id__in=usuarios_con_cargo_activo,
             )
             .order_by(
                 "nombres",
