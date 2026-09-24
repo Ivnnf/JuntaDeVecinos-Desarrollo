@@ -25,6 +25,8 @@ import DirectivasPage from './pages/admin/DirectivasPage'
 function App() {
   return (
     <Routes>
+
+      
       <Route
         path="/admin/directivas"
         element={
@@ -123,7 +125,7 @@ function App() {
       <Route
         path="/directiva/gestion"
         element={
-          <RutaProtegida rolPermitido={2}>
+          <RutaProtegida rolPermitido={[1, 2]}>
             <GestionDirectivaPage />
           </RutaProtegida>
         }

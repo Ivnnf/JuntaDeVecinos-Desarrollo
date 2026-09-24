@@ -356,13 +356,22 @@ function DirectivasPage() {
                                         <td>{directiva.estado}</td>
                                         <td>
                                             {directiva.estado === 'VIGENTE' ? (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-outline btn-error"
-                                                    onClick={() => setDirectivaAFinalizar(directiva)}
-                                                >
-                                                    Finalizar
-                                                </button>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Link
+                                                        to={`/directiva/gestion?directivaId=${directiva.id}`}
+                                                        className="btn btn-sm btn-primary"
+                                                    >
+                                                        Gestionar integrantes
+                                                    </Link>
+
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-outline btn-error"
+                                                        onClick={() => setDirectivaAFinalizar(directiva)}
+                                                    >
+                                                        Finalizar
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <span className="text-base-content/60">
                                                     Sin acciones

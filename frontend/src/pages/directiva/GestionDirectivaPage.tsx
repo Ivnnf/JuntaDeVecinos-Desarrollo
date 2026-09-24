@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+    Link,
+    useSearchParams,
+} from 'react-router-dom'
 
 
 type UsuarioElegible = {
@@ -42,6 +45,11 @@ type Cargo = {
 }
 
 function GestionDirectivaPage() {
+    const [searchParams] = useSearchParams()
+
+    const directivaIdDesdeUrl =
+        searchParams.get('directivaId')
+
     const [usuariosElegibles, setUsuariosElegibles] =
         useState<UsuarioElegible[]>([])
 
@@ -99,6 +107,32 @@ function GestionDirectivaPage() {
                 const data =
                     (await response.json()) as IntegranteDirectivaActual[]
 
+                // Si viene una Directiva en la URL, estamos entrando
+                // desde el Panel de Administración.
+                if (directivaIdDesdeUrl) {
+                    const idDirectiva = Number(directivaIdDesdeUrl)
+
+                    if (Number.isNaN(idDirectiva)) {
+                        throw new Error(
+                            'El identificador de la directiva no es válido.',
+                        )
+                    }
+
+                    setDirectivaId(idDirectiva)
+
+                    setIntegrantesActuales(
+                        data.filter(
+                            (integrante) =>
+                                integrante.directiva === idDirectiva &&
+                                integrante.activo,
+                        ),
+                    )
+
+                    return
+                }
+
+                // Si no viene ID en la URL, corresponde al acceso
+                // normal de un integrante de Directiva.
                 if (data.length === 0) {
                     throw new Error(
                         'No se encontró una directiva vigente asociada al usuario.',
@@ -106,8 +140,13 @@ function GestionDirectivaPage() {
                 }
 
                 setIntegrantesActuales(
-                    data.filter((integrante) => integrante.activo),
+                    data.filter(
+                        (integrante) =>
+                            integrante.directiva === data[0].directiva &&
+                            integrante.activo,
+                    ),
                 )
+
                 setDirectivaId(data[0].directiva)
             } catch (error) {
                 setError(
@@ -121,7 +160,7 @@ function GestionDirectivaPage() {
         }
 
         void cargarDirectivaActual()
-    }, [])
+    }, [directivaIdDesdeUrl])
 
     useEffect(() => {
         if (directivaId === null) {
@@ -693,10 +732,16 @@ function GestionDirectivaPage() {
                     </div>
                 )}
                 <Link
-                    to="/directiva"
+                    to={
+                        directivaIdDesdeUrl
+                            ? '/admin/directivas'
+                            : '/directiva'
+                    }
                     className="btn btn-outline mt-4"
                 >
-                    Volver al Panel de Directiva
+                    {directivaIdDesdeUrl
+                        ? 'Volver a Gestión de Directivas'
+                        : 'Volver al Panel de Directiva'}
                 </Link>
             </section>
         </main>

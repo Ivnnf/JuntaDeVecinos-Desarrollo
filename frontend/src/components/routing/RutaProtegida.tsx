@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 
 type RutaProtegidaProps = {
-  rolPermitido: number
+  rolPermitido: number | number[]
   children: ReactNode
 }
 
@@ -67,8 +67,14 @@ function RutaProtegida({
         const sesion =
           (await response.json()) as SesionUsuario
 
+        const rolesPermitidos = Array.isArray(rolPermitido)
+          ? rolPermitido
+          : [rolPermitido]
+
         const tieneRol =
-          sesion.roles?.includes(rolPermitido) ?? false
+          sesion.roles?.some((rol) =>
+            rolesPermitidos.includes(rol)
+          ) ?? false
 
         if (componenteActivo) {
           setEstado(
