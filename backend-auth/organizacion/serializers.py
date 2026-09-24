@@ -158,6 +158,47 @@ class DirectivaSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    def validate(self, attrs):
+        junta_vecinos = attrs.get(
+            "junta_vecinos",
+            getattr(self.instance, "junta_vecinos", None),
+        )
+
+        estado = attrs.get(
+            "estado",
+            getattr(
+                self.instance,
+                "estado",
+                Directiva.EstadoDirectiva.VIGENTE,
+            ),
+        )
+
+        if (
+            junta_vecinos
+            and estado == Directiva.EstadoDirectiva.VIGENTE
+        ):
+            directivas_vigentes = Directiva.objects.filter(
+                junta_vecinos=junta_vecinos,
+                estado=Directiva.EstadoDirectiva.VIGENTE,
+            )
+
+            if self.instance:
+                directivas_vigentes = directivas_vigentes.exclude(
+                    pk=self.instance.pk
+                )
+
+            if directivas_vigentes.exists():
+                raise serializers.ValidationError(
+                    {
+                        "estado": (
+                            "Ya existe una directiva vigente "
+                            "para esta junta de vecinos."
+                        )
+                    }
+                )
+
+        return attrs
+
     class Meta:
         model = Directiva
         fields = [
@@ -174,16 +215,14 @@ class DirectivaSerializer(serializers.ModelSerializer):
             "id",
         ]
 
+
 class ReasignarCargoDirectivaSerializer(serializers.Serializer):
     cargo = serializers.PrimaryKeyRelatedField(
-        queryset=Cargo.objects.filter(
-            activo=True
-        )
+        queryset=Cargo.objects.filter(activo=True)
     )
 
-    fecha_inicio = serializers.DateField(
-        required=False
-    )
+    fecha_inicio = serializers.DateField(required=False)
+
 
 class IntegranteDirectivaSerializer(serializers.ModelSerializer):
     usuario_username = serializers.CharField(

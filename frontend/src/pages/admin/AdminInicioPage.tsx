@@ -41,6 +41,18 @@ function AdminInicioPage() {
                 >
                   Asociaciones por Sector
                 </Link>
+                <Link
+                  to="/admin/cargos"
+                  className="btn btn-primary"
+                >
+                  Gestión de Cargos
+                </Link>
+                <Link
+                  to="/admin/directivas"
+                  className="btn btn-primary"
+                >
+                  Gestión de Directivas
+                </Link>
               </div>
             </div>
 

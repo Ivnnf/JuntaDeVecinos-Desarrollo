@@ -19,12 +19,29 @@ import SectoresPage from './pages/admin/SectoresPage'
 import AsociacionesSectorPage from './pages/admin/AsociacionesSectorPage'
 import UsuariosPage from './pages/admin/UsuariosPage'
 import GestionDirectivaPage from './pages/directiva/GestionDirectivaPage'
-
+import CargosPage from './pages/admin/CargosPage'
+import DirectivasPage from './pages/admin/DirectivasPage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/admin/directivas"
+        element={
+          <RutaProtegida rolPermitido={1}>
+            <DirectivasPage />
+          </RutaProtegida>
+        }
+      />
 
+      <Route
+        path="/admin/cargos"
+        element={
+          <RutaProtegida rolPermitido={1}>
+            <CargosPage />
+          </RutaProtegida>
+        }
+      />
 
       <Route
         path="/admin/usuarios"

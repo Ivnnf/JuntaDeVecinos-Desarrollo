@@ -1074,3 +1074,116 @@ class GestionDirectivaTests(APITestCase):
             response.data["integrantes"][0]["cargo"],
             self.cargo_presidente.id,
         )
+
+    def test_finalizar_directiva_cierra_integrantes_y_desactiva_rol(self):
+        self.client.force_authenticate(user=self.admin)
+
+        # Primero asignamos al vecino como integrante de la directiva.
+        response_crear = self.client.post(
+            reverse("integrantes-directiva-list-create"),
+            {
+                "directiva": self.directiva.id,
+                "usuario": self.vecino.id,
+                "cargo": self.cargo_presidente.id,
+                "fecha_inicio": "2026-01-01",
+                "activo": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_crear.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        integrante = IntegranteDirectiva.objects.get(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            activo=True,
+        )
+
+        # El rol Directiva debe haberse activado.
+        rol_directiva = UsuarioRol.objects.get(
+            usuario=self.vecino,
+            rol=self.rol_directiva,
+        )
+
+        self.assertTrue(rol_directiva.activo)
+
+        # Finalizamos la directiva completa.
+        response_finalizar = self.client.patch(
+            reverse(
+                "directivas-detail",
+                kwargs={
+                    "pk": self.directiva.id,
+                },
+            ),
+            {
+                "estado": Directiva.EstadoDirectiva.FINALIZADA,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_finalizar.status_code,
+            status.HTTP_200_OK,
+        )
+
+        # La directiva debe quedar finalizada.
+        self.directiva.refresh_from_db()
+
+        self.assertEqual(
+            self.directiva.estado,
+            Directiva.EstadoDirectiva.FINALIZADA,
+        )
+
+        self.assertIsNotNone(self.directiva.fecha_fin)
+
+        # El integrante debe quedar cerrado.
+        integrante.refresh_from_db()
+
+        self.assertFalse(integrante.activo)
+
+        self.assertIsNotNone(integrante.fecha_fin)
+
+        self.assertEqual(
+            integrante.fecha_fin,
+            self.directiva.fecha_fin,
+        )
+
+        # El rol Directiva debe quedar desactivado.
+        rol_directiva.refresh_from_db()
+
+        self.assertFalse(rol_directiva.activo)
+
+        # Debe existir historial del cierre del cargo.
+        historial = (
+            HistorialGestionUsuario.objects.filter(
+                usuario_objetivo=self.vecino,
+                tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
+            )
+            .order_by("fecha_cambio", "id")
+            .last()
+        )
+
+        self.assertIsNotNone(historial)
+
+        self.assertEqual(
+            historial.realizado_por,
+            self.admin,
+        )
+
+        self.assertEqual(
+            historial.valor_anterior,
+            self.cargo_presidente.nombre,
+        )
+
+        self.assertEqual(
+            historial.valor_nuevo,
+            "SIN_CARGO_ACTIVO",
+        )
+
+        self.assertIn(
+            str(self.directiva.id),
+            historial.detalle,
+        )

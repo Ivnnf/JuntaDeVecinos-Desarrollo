@@ -288,6 +288,84 @@ class DirectivaDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = DirectivaSerializer
     permission_classes = [EsAdministrador]
 
+    def perform_update(self, serializer):
+        directiva = self.get_object()
+
+        nuevo_estado = serializer.validated_data.get(
+            "estado",
+            directiva.estado,
+        )
+
+        if (
+            directiva.estado == Directiva.EstadoDirectiva.VIGENTE
+            and nuevo_estado == Directiva.EstadoDirectiva.FINALIZADA
+        ):
+            fecha_fin = serializer.validated_data.get(
+                "fecha_fin",
+                timezone.localdate(),
+            )
+
+            with transaction.atomic():
+                directiva_actualizada = serializer.save(
+                    fecha_fin=fecha_fin,
+                )
+
+                integrantes_activos = (
+                    IntegranteDirectiva.objects
+                    .select_related(
+                        "usuario",
+                        "cargo",
+                    )
+                    .filter(
+                        directiva=directiva_actualizada,
+                        activo=True,
+                    )
+                )
+
+                for integrante in integrantes_activos:
+                    integrante.activo = False
+                    integrante.fecha_fin = fecha_fin
+                    integrante.save(
+                        update_fields=[
+                            "activo",
+                            "fecha_fin",
+                        ]
+                    )
+
+                    tiene_otra_asignacion_activa = (
+                        IntegranteDirectiva.objects.filter(
+                            usuario=integrante.usuario,
+                            activo=True,
+                        ).exists()
+                    )
+
+                    if not tiene_otra_asignacion_activa:
+                        UsuarioRol.objects.filter(
+                            usuario=integrante.usuario,
+                            rol__nombre__iexact="Directiva",
+                            activo=True,
+                        ).update(
+                            activo=False,
+                        )
+
+                    HistorialGestionUsuario.objects.create(
+                        usuario_objetivo=integrante.usuario,
+                        realizado_por=self.request.user,
+                        tipo_cambio=(
+                            HistorialGestionUsuario.TipoCambio.CARGO
+                        ),
+                        valor_anterior=integrante.cargo.nombre,
+                        valor_nuevo="SIN_CARGO_ACTIVO",
+                        detalle=(
+                            "Cargo finalizado por cierre de la "
+                            f"directiva {directiva_actualizada.id}."
+                        ),
+                    )
+
+            return
+
+        serializer.save()
+
 
 class DirectivaVigenteJuntaView(generics.GenericAPIView):
     permission_classes = [EsAdministradorODirectiva]
