@@ -176,6 +176,12 @@ function DirectivaInicioPage() {
                   >
                     Gestionar Directiva
                   </Link>
+                  <Link
+                    to="/directiva/publicaciones"
+                    className="btn btn-primary mt-4"
+                  >
+                    Comunicados
+                  </Link>
                 </div>
               )}
               {directivaVigente && (

@@ -21,12 +21,21 @@ import UsuariosPage from './pages/admin/UsuariosPage'
 import GestionDirectivaPage from './pages/directiva/GestionDirectivaPage'
 import CargosPage from './pages/admin/CargosPage'
 import DirectivasPage from './pages/admin/DirectivasPage'
+import PublicacionesPage from './pages/directiva/PublicacionesPage'
+
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/directiva/publicaciones"
+        element={
+          <RutaProtegida rolPermitido={2}>
+            <PublicacionesPage />
+          </RutaProtegida>
+        }
+      />
 
-      
       <Route
         path="/admin/directivas"
         element={
