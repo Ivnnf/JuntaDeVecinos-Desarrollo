@@ -1187,3 +1187,116 @@ class GestionDirectivaTests(APITestCase):
             str(self.directiva.id),
             historial.detalle,
         )
+
+    def test_no_permite_dos_directivas_vigentes_en_misma_junta(self):
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.post(
+            reverse("directivas-list-create"),
+            {
+                "junta_vecinos": self.junta.id,
+                "fecha_inicio": "2026-07-01",
+                "fecha_fin": None,
+                "estado": Directiva.EstadoDirectiva.VIGENTE,
+                "observacion": "Segunda directiva vigente de prueba",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertEqual(
+            Directiva.objects.filter(
+                junta_vecinos=self.junta,
+                estado=Directiva.EstadoDirectiva.VIGENTE,
+            ).count(),
+            1,
+        )
+
+        self.assertIn(
+            "estado",
+            response.data,
+        )
+
+    def test_usuarios_elegibles_excluye_integrante_con_cargo_activo(self):
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.get(
+            reverse(
+                "usuarios-elegibles-directiva",
+                kwargs={
+                    "directiva_id": self.directiva.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        usuarios_ids = [usuario["id"] for usuario in response.data]
+
+        self.assertNotIn(
+            self.vecino.id,
+            usuarios_ids,
+        )
+
+    def test_directiva_puede_consultar_cargos_pero_no_crearlos(self):
+        UsuarioRol.objects.create(
+            usuario=self.vecino,
+            rol=self.rol_directiva,
+            activo=True,
+        )
+
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        self.client.force_authenticate(user=self.vecino)
+
+        url = reverse("cargos-list-create")
+
+        response_get = self.client.get(url)
+
+        self.assertEqual(
+            response_get.status_code,
+            status.HTTP_200_OK,
+        )
+
+        response_post = self.client.post(
+            url,
+            {
+                "nombre": "Vicepresidente",
+                "descripcion": "Cargo de prueba",
+                "permite_multiples": False,
+                "activo": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_post.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertFalse(
+            Cargo.objects.filter(
+                nombre="Vicepresidente",
+            ).exists()
+        )
