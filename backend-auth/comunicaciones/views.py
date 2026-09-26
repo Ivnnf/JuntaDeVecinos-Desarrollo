@@ -5,15 +5,21 @@ from organizacion.models import (
     Directiva,
     IntegranteDirectiva,
 )
-from organizacion.permissions import EsDirectiva
 
+from django.utils import timezone
+
+from organizacion.permissions import EsDirectiva
+from django.contrib.auth import get_user_model
 
 from .models import (
     AdjuntoPublicacion,
+    Notificacion,
     Publicacion,
 )
+
 from .serializers import (
     AdjuntoPublicacionSerializer,
+    NotificacionSerializer,
     PublicacionSerializer,
 )
 
@@ -21,9 +27,12 @@ from rest_framework.parsers import (
     FormParser,
     MultiPartParser,
 )
+
 from django.http import FileResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+
+Usuario = get_user_model()
 
 
 class PublicacionDirectivaListCreateView(generics.ListCreateAPIView):
@@ -59,8 +68,29 @@ class PublicacionDirectivaListCreateView(generics.ListCreateAPIView):
         if not es_integrante_activo:
             raise PermissionDenied("No puedes publicar en esta directiva.")
 
-        serializer.save(
+        publicacion = serializer.save(
             autor=self.request.user,
+        )
+
+        junta_id = publicacion.directiva.junta_vecinos_id
+
+        usuarios_destinatarios = Usuario.objects.filter(
+            sector__junta_vecinos_id=junta_id,
+            estado_asociacion_sector="CONFIRMADA",
+            is_active=True,
+        ).exclude(
+            id=self.request.user.id,
+        )
+
+        Notificacion.objects.bulk_create(
+            [
+                Notificacion(
+                    publicacion=publicacion,
+                    usuario=usuario,
+                )
+                for usuario in usuarios_destinatarios
+            ],
+            ignore_conflicts=True,
         )
 
 
@@ -133,9 +163,62 @@ class AdjuntoPublicacionDescargaView(APIView):
 
         descargar = request.query_params.get("download") == "1"
 
-
         return FileResponse(
             adjunto.archivo,
             as_attachment=descargar,
             filename=adjunto.nombre_original,
         )
+
+
+class NotificacionListView(
+    generics.ListAPIView
+):
+    serializer_class = NotificacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return (
+            Notificacion.objects
+            .select_related(
+                "publicacion",
+                "publicacion__directiva",
+                "publicacion__directiva__junta_vecinos",
+            )
+            .filter(
+                usuario=self.request.user,
+            )
+            .order_by("-fecha_creacion")
+        )
+
+class NotificacionDetailView(
+    generics.RetrieveUpdateAPIView
+):
+    serializer_class = NotificacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notificacion.objects.filter(
+            usuario=self.request.user,
+        )
+
+    def perform_update(self, serializer):
+        notificacion = self.get_object()
+
+        nueva_leida = serializer.validated_data.get(
+            "leida",
+            notificacion.leida,
+        )
+
+        if nueva_leida and not notificacion.leida:
+            serializer.save(
+                fecha_lectura=timezone.now(),
+            )
+            return
+
+        if not nueva_leida:
+            serializer.save(
+                fecha_lectura=None,
+            )
+            return
+
+        serializer.save()

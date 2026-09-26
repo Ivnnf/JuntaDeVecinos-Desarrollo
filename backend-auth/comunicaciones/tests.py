@@ -17,6 +17,7 @@ from profiles.models import Rol, UsuarioRol
 
 from .models import (
     AdjuntoPublicacion,
+    Notificacion,
     Publicacion,
 )
 
@@ -270,9 +271,9 @@ class PublicacionesDirectivaTests(APITestCase):
 
         archivo = SimpleUploadedFile(
             "documento.txt",
-        b"Contenido protegido.",
+            b"Contenido protegido.",
             content_type="text/plain",
-            )
+        )
 
         with TemporaryDirectory() as media_root:
             with self.settings(MEDIA_ROOT=media_root):
@@ -282,9 +283,7 @@ class PublicacionesDirectivaTests(APITestCase):
                     nombre_original="documento.txt",
                 )
 
-                self.client.force_authenticate(
-                    user=self.usuario
-                )
+                self.client.force_authenticate(user=self.usuario)
 
                 response = self.client.get(
                     reverse(
@@ -309,3 +308,167 @@ class PublicacionesDirectivaTests(APITestCase):
                     closer()
 
                 response._resource_closers.clear()
+
+    def test_publicacion_genera_notificacion_para_vecino_misma_junta(self):
+        vecino_destinatario = Usuario.objects.create_user(
+            username="vecino_notificado",
+            email="vecino.notificado@test.cl",
+            password="ClaveSegura123!",
+            rut="33333333-3",
+            nombres="Vecino",
+            apellido_paterno="Notificado",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino_destinatario,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            reverse("publicaciones-directiva-list-create"),
+            {
+                "directiva": self.directiva.id,
+                "titulo": "Aviso para los vecinos",
+                "contenido": ("Este comunicado debe generar " "una notificación."),
+                "activa": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        publicacion = Publicacion.objects.get(titulo="Aviso para los vecinos")
+
+        self.assertTrue(
+            Notificacion.objects.filter(
+                publicacion=publicacion,
+                usuario=vecino_destinatario,
+                leida=False,
+            ).exists()
+        )
+
+        self.assertFalse(
+            Notificacion.objects.filter(
+                publicacion=publicacion,
+                usuario=self.usuario,
+            ).exists()
+        )
+
+    def test_usuario_solo_puede_ver_sus_notificaciones(self):
+        vecino_destinatario = Usuario.objects.create_user(
+            username="vecino_notificaciones",
+            email="vecino.notificaciones@test.cl",
+            password="ClaveSegura123!",
+            rut="44444444-4",
+            nombres="Vecino",
+            apellido_paterno="Notificaciones",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        otro_vecino = Usuario.objects.create_user(
+            username="otro_vecino_notificaciones",
+            email="otro.vecino.notificaciones@test.cl",
+            password="ClaveSegura123!",
+            rut="55555555-5",
+            nombres="Otro",
+            apellido_paterno="Vecino",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        publicacion = Publicacion.objects.create(
+            directiva=self.directiva,
+            autor=self.usuario,
+            titulo="Comunicado de notificaciones",
+            contenido="Contenido de prueba.",
+            activa=True,
+        )
+
+        notificacion_propia = Notificacion.objects.create(
+            publicacion=publicacion,
+            usuario=vecino_destinatario,
+        )
+
+        Notificacion.objects.create(
+            publicacion=publicacion,
+            usuario=otro_vecino,
+        )
+
+        self.client.force_authenticate(user=vecino_destinatario)
+
+        response = self.client.get(reverse("notificaciones-list"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["id"],
+            notificacion_propia.id,
+        )
+
+    def test_usuario_puede_marcar_notificacion_como_leida(self):
+        vecino_destinatario = Usuario.objects.create_user(
+            username="vecino_lectura",
+            email="vecino.lectura@test.cl",
+            password="ClaveSegura123!",
+            rut="66666666-6",
+            nombres="Vecino",
+            apellido_paterno="Lectura",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        publicacion = Publicacion.objects.create(
+            directiva=self.directiva,
+            autor=self.usuario,
+            titulo="Comunicado para lectura",
+            contenido="Contenido de prueba.",
+            activa=True,
+        )
+
+        notificacion = Notificacion.objects.create(
+            publicacion=publicacion,
+            usuario=vecino_destinatario,
+        )
+
+        self.client.force_authenticate(user=vecino_destinatario)
+
+        response = self.client.patch(
+            reverse(
+                "notificaciones-detail",
+                kwargs={
+                    "pk": notificacion.id,
+                },
+            ),
+            {
+                "leida": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        notificacion.refresh_from_db()
+
+        self.assertTrue(notificacion.leida)
+
+        self.assertIsNotNone(notificacion.fecha_lectura)

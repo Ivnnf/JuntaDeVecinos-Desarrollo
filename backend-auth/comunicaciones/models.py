@@ -60,3 +60,52 @@ class AdjuntoPublicacion(models.Model):
 
     def __str__(self):
         return self.nombre_original
+
+class Notificacion(models.Model):
+    publicacion = models.ForeignKey(
+        Publicacion,
+        on_delete=models.CASCADE,
+        related_name="notificaciones",
+    )
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notificaciones",
+    )
+
+    leida = models.BooleanField(
+        default=False,
+    )
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    fecha_lectura = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-fecha_creacion",
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "publicacion",
+                    "usuario",
+                ],
+                name=(
+                    "uq_notificacion_publicacion_usuario"
+                ),
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.usuario} - "
+            f"{self.publicacion.titulo}"
+        )
