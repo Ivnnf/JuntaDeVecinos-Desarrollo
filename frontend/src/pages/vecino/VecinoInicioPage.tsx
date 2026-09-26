@@ -133,6 +133,12 @@ function VecinoInicioPage() {
 
             <CerrarSesionButton />
           </div>
+          <Link
+            to="/vecino/eventos"
+            className="btn btn-primary"
+          >
+            Actividades y Eventos
+          </Link>
           <div className="mt-6">
             <h2 className="text-xl font-bold">
               Notificaciones
@@ -181,12 +187,14 @@ function VecinoInicioPage() {
                               ? 'Leída'
                               : 'Nueva'}
                           </span>
+
                           <Link
                             to={`/vecino/publicaciones/${notificacion.publicacion_id}?notificacion=${notificacion.id}`}
                             className="btn btn-sm btn-primary"
                           >
                             Ver comunicado
                           </Link>
+
                           {!notificacion.leida && (
                             <button
                               type="button"

@@ -23,10 +23,28 @@ import CargosPage from './pages/admin/CargosPage'
 import DirectivasPage from './pages/admin/DirectivasPage'
 import PublicacionesPage from './pages/directiva/PublicacionesPage'
 import PublicacionDetallePage from './pages/vecino/PublicacionDetallePage'
+import EventosPage from './pages/directiva/EventosPage'
+import EventosVecinoPage from './pages/vecino/EventosVecinoPage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/vecino/eventos"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <EventosVecinoPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/directiva/eventos"
+        element={
+          <RutaProtegida rolPermitido={2}>
+            <EventosPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/vecino/publicaciones/:id"
         element={

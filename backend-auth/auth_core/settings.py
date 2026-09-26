@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'auth_api.apps.AuthApiConfig',
     "organizacion",
     "comunicaciones",
+    "eventos",
 ]
 
 MIDDLEWARE = [
@@ -124,7 +125,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "America/Santiago"
 
 USE_I18N = True
 

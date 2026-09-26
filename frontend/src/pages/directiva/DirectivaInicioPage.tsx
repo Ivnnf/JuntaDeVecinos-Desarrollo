@@ -182,6 +182,12 @@ function DirectivaInicioPage() {
                   >
                     Comunicados
                   </Link>
+                  <Link
+                    to="/directiva/eventos"
+                    className="btn btn-primary"
+                  >
+                    Actividades y Eventos
+                  </Link>
                 </div>
               )}
               {directivaVigente && (
