@@ -170,16 +170,13 @@ class AdjuntoPublicacionDescargaView(APIView):
         )
 
 
-class NotificacionListView(
-    generics.ListAPIView
-):
+class NotificacionListView(generics.ListAPIView):
     serializer_class = NotificacionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return (
-            Notificacion.objects
-            .select_related(
+            Notificacion.objects.select_related(
                 "publicacion",
                 "publicacion__directiva",
                 "publicacion__directiva__junta_vecinos",
@@ -190,9 +187,8 @@ class NotificacionListView(
             .order_by("-fecha_creacion")
         )
 
-class NotificacionDetailView(
-    generics.RetrieveUpdateAPIView
-):
+
+class NotificacionDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = NotificacionSerializer
     permission_classes = [IsAuthenticated]
 
@@ -222,3 +218,34 @@ class NotificacionDetailView(
             return
 
         serializer.save()
+
+
+class PublicacionDetalleVecinoView(generics.RetrieveAPIView):
+    serializer_class = PublicacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        usuario = self.request.user
+
+        if (
+            not getattr(usuario, "sector_id", None)
+            or usuario.estado_asociacion_sector != "CONFIRMADA"
+        ):
+            return Publicacion.objects.none()
+
+        junta_id = usuario.sector.junta_vecinos_id
+
+        return (
+            Publicacion.objects.select_related(
+                "directiva",
+                "directiva__junta_vecinos",
+                "autor",
+            )
+            .prefetch_related(
+                "adjuntos",
+            )
+            .filter(
+                directiva__junta_vecinos_id=junta_id,
+                activa=True,
+            )
+        )

@@ -1,5 +1,6 @@
 import CerrarSesionButton from '../../components/auth/CerrarSesionButton'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 type Notificacion = {
   id: number
@@ -180,7 +181,12 @@ function VecinoInicioPage() {
                               ? 'Leída'
                               : 'Nueva'}
                           </span>
-
+                          <Link
+                            to={`/vecino/publicaciones/${notificacion.publicacion_id}?notificacion=${notificacion.id}`}
+                            className="btn btn-sm btn-primary"
+                          >
+                            Ver comunicado
+                          </Link>
                           {!notificacion.leida && (
                             <button
                               type="button"

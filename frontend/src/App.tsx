@@ -22,11 +22,19 @@ import GestionDirectivaPage from './pages/directiva/GestionDirectivaPage'
 import CargosPage from './pages/admin/CargosPage'
 import DirectivasPage from './pages/admin/DirectivasPage'
 import PublicacionesPage from './pages/directiva/PublicacionesPage'
-
+import PublicacionDetallePage from './pages/vecino/PublicacionDetallePage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/vecino/publicaciones/:id"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <PublicacionDetallePage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/directiva/publicaciones"
         element={

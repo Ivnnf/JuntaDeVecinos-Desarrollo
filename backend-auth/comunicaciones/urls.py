@@ -6,10 +6,16 @@ from .views import (
     AdjuntoPublicacionDescargaView,
     NotificacionDetailView,
     NotificacionListView,
+    PublicacionDetalleVecinoView,
     PublicacionDirectivaListCreateView,
 )
 
 urlpatterns = [
+    path(
+        "publicaciones/<int:pk>/detalle/",
+        PublicacionDetalleVecinoView.as_view(),
+        name="publicacion-detalle-vecino",
+    ),
     path(
         "notificaciones/<int:pk>/",
         NotificacionDetailView.as_view(),

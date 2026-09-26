@@ -472,3 +472,188 @@ class PublicacionesDirectivaTests(APITestCase):
         self.assertTrue(notificacion.leida)
 
         self.assertIsNotNone(notificacion.fecha_lectura)
+
+    def test_vecino_misma_junta_puede_ver_detalle_publicacion(self):
+        vecino = Usuario.objects.create_user(
+            username="vecino_detalle",
+            email="vecino.detalle@test.cl",
+            password="ClaveSegura123!",
+            rut="77777777-7",
+            nombres="Vecino",
+            apellido_paterno="Detalle",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        publicacion = Publicacion.objects.create(
+            directiva=self.directiva,
+            autor=self.usuario,
+            titulo="Comunicado visible para vecino",
+            contenido="Contenido completo del comunicado.",
+            activa=True,
+        )
+
+        self.client.force_authenticate(user=vecino)
+
+        response = self.client.get(
+            reverse(
+                "publicacion-detalle-vecino",
+                kwargs={
+                    "pk": publicacion.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["id"],
+            publicacion.id,
+        )
+
+        self.assertEqual(
+            response.data["titulo"],
+            "Comunicado visible para vecino",
+        )
+
+    def test_vecino_otra_junta_no_puede_ver_detalle_publicacion(self):
+        otra_junta = JuntaVecinos.objects.create(
+            nombre="Junta Vecino Externo",
+            comuna="Puente Alto",
+            activa=True,
+        )
+
+        otro_sector = Sector.objects.create(
+            junta_vecinos=otra_junta,
+            nombre="Sector Vecino Externo",
+            activo=True,
+        )
+
+        vecino_externo = Usuario.objects.create_user(
+            username="vecino_externo",
+            email="vecino.externo@test.cl",
+            password="ClaveSegura123!",
+            rut="88888888-8",
+            nombres="Vecino",
+            apellido_paterno="Externo",
+            sector=otro_sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino_externo,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        publicacion = Publicacion.objects.create(
+            directiva=self.directiva,
+            autor=self.usuario,
+            titulo="Comunicado privado de la junta",
+            contenido="Este contenido no pertenece a la junta del vecino externo.",
+            activa=True,
+        )
+
+        self.client.force_authenticate(user=vecino_externo)
+
+        response = self.client.get(
+            reverse(
+                "publicacion-detalle-vecino",
+                kwargs={
+                    "pk": publicacion.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+    def test_no_permite_adjunto_con_extension_no_valida(self):
+        publicacion = Publicacion.objects.create(
+            directiva=self.directiva,
+            autor=self.usuario,
+            titulo="Publicación con adjunto inválido",
+            contenido="Contenido de prueba.",
+            activa=True,
+        )
+
+        archivo = SimpleUploadedFile(
+            "archivo.exe",
+            b"contenido de prueba",
+            content_type="application/octet-stream",
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            reverse(
+                "adjuntos-publicacion-create",
+                kwargs={
+                    "publicacion_id": publicacion.id,
+                },
+            ),
+            {
+                "archivo": archivo,
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "archivo",
+            response.data,
+        )
+    def test_no_permite_adjunto_mayor_a_10_mb(self):
+        publicacion = Publicacion.objects.create(
+            directiva=self.directiva,
+            autor=self.usuario,
+            titulo="Publicación con archivo muy grande",
+            contenido="Contenido de prueba.",
+            activa=True,
+        )
+
+        archivo = SimpleUploadedFile(
+            "archivo_grande.pdf",
+            b"a" * (10 * 1024 * 1024 + 1),
+            content_type="application/pdf",
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            reverse(
+                "adjuntos-publicacion-create",
+                kwargs={
+                    "publicacion_id": publicacion.id,
+                },
+            ),
+            {
+                "archivo": archivo,
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "archivo",
+            response.data,
+        )
