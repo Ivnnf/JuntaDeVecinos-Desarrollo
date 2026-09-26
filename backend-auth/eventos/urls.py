@@ -4,9 +4,21 @@ from .views import (
     EventoDirectivaDetailView,
     EventoDirectivaListCreateView,
     EventoVecinoListView,
+    InscripcionEventoCancelarView,
+    InscripcionEventoCreateView,
 )
 
 urlpatterns = [
+    path(
+        "inscripciones/<int:pk>/cancelar/",
+        InscripcionEventoCancelarView.as_view(),
+        name="inscripciones-evento-cancelar",
+    ),
+    path(
+        "inscripciones/",
+        InscripcionEventoCreateView.as_view(),
+        name="inscripciones-evento-create",
+    ),
     path(
         "vecino/eventos/",
         EventoVecinoListView.as_view(),

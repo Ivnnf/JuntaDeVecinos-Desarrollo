@@ -64,3 +64,52 @@ class Evento(models.Model):
 
     def __str__(self):
         return self.titulo
+
+class InscripcionEvento(models.Model):
+    class Estado(models.TextChoices):
+        INSCRITO = "INSCRITO", "Inscrito"
+        CANCELADA = "CANCELADA", "Cancelada"
+
+    evento = models.ForeignKey(
+        Evento,
+        on_delete=models.CASCADE,
+        related_name="inscripciones",
+    )
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="inscripciones_eventos",
+    )
+
+    estado = models.CharField(
+        max_length=20,
+        choices=Estado.choices,
+        default=Estado.INSCRITO,
+    )
+
+    fecha_inscripcion = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    fecha_cancelacion = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "evento",
+                    "usuario",
+                ],
+                name="uq_inscripcion_evento_usuario",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.usuario} - "
+            f"{self.evento.titulo}"
+        )

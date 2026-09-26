@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Evento
+from .models import Evento, InscripcionEvento
 
 
 class EventoSerializer(serializers.ModelSerializer):
@@ -13,6 +13,10 @@ class EventoSerializer(serializers.ModelSerializer):
         source="directiva.junta_vecinos.nombre",
         read_only=True,
     )
+
+    inscrito = serializers.SerializerMethodField()
+    inscripcion_id = serializers.SerializerMethodField()
+    inscritos_actuales = serializers.SerializerMethodField()
 
     class Meta:
         model = Evento
@@ -29,6 +33,9 @@ class EventoSerializer(serializers.ModelSerializer):
             "fecha_fin",
             "cupo_maximo",
             "estado",
+            "inscrito",
+            "inscripcion_id",
+            "inscritos_actuales",
             "fecha_creacion",
             "fecha_actualizacion",
         ]
@@ -42,6 +49,22 @@ class EventoSerializer(serializers.ModelSerializer):
             "fecha_actualizacion",
         ]
 
+    def get_inscrito(self, obj):
+        request = self.context.get("request")
+
+        if not request or not request.user.is_authenticated:
+            return False
+
+        return obj.inscripciones.filter(
+            usuario=request.user,
+            estado=InscripcionEvento.Estado.INSCRITO,
+        ).exists()
+
+    def get_inscritos_actuales(self, obj):
+        return obj.inscripciones.filter(
+            estado=InscripcionEvento.Estado.INSCRITO,
+        ).count()
+
     def validate(self, attrs):
         fecha_inicio = attrs.get(
             "fecha_inicio",
@@ -53,11 +76,7 @@ class EventoSerializer(serializers.ModelSerializer):
             getattr(self.instance, "fecha_fin", None),
         )
 
-        if (
-            fecha_inicio
-            and fecha_fin
-            and fecha_fin <= fecha_inicio
-        ):
+        if fecha_inicio and fecha_fin and fecha_fin <= fecha_inicio:
             raise serializers.ValidationError(
                 {
                     "fecha_fin": (
@@ -74,11 +93,54 @@ class EventoSerializer(serializers.ModelSerializer):
 
         if cupo_maximo is not None and cupo_maximo < 1:
             raise serializers.ValidationError(
-                {
-                    "cupo_maximo": (
-                        "El cupo máximo debe ser mayor a cero."
-                    )
-                }
+                {"cupo_maximo": ("El cupo máximo debe ser mayor a cero.")}
             )
 
         return attrs
+
+    def get_inscripcion_id(self, obj):
+        request = self.context.get("request")
+
+        if not request or not request.user.is_authenticated:
+            return None
+
+        inscripcion = obj.inscripciones.filter(
+            usuario=request.user,
+            estado=InscripcionEvento.Estado.INSCRITO,
+        ).first()
+
+        return inscripcion.id if inscripcion else None
+
+
+class InscripcionEventoSerializer(serializers.ModelSerializer):
+    usuario_username = serializers.CharField(
+        source="usuario.username",
+        read_only=True,
+    )
+
+    evento_titulo = serializers.CharField(
+        source="evento.titulo",
+        read_only=True,
+    )
+
+    class Meta:
+        model = InscripcionEvento
+        fields = [
+            "id",
+            "evento",
+            "evento_titulo",
+            "usuario",
+            "usuario_username",
+            "estado",
+            "fecha_inscripcion",
+            "fecha_cancelacion",
+        ]
+
+        read_only_fields = [
+            "id",
+            "usuario",
+            "usuario_username",
+            "evento_titulo",
+            "fecha_inscripcion",
+            "fecha_cancelacion",
+        ]

@@ -16,6 +16,9 @@ type Evento = {
     estado: 'PROGRAMADO' | 'CANCELADO' | 'FINALIZADO'
     fecha_creacion: string
     fecha_actualizacion: string
+    inscrito: boolean
+    inscripcion_id: number | null
+    inscritos_actuales: number
 }
 
 function EventosVecinoPage() {
@@ -64,6 +67,106 @@ function EventosVecinoPage() {
 
         void cargarEventos()
     }, [])
+
+    const inscribirseEvento = async (
+        eventoId: number
+    ) => {
+        try {
+            const response = await fetch(
+                'http://localhost:8000/api/eventos/inscripciones/',
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        evento: eventoId,
+                    }),
+                }
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(
+                    data.evento?.[0] ||
+                    data.detail ||
+                    'No fue posible realizar la inscripción.'
+                )
+            }
+
+            setEventos((actuales) =>
+                actuales.map((evento) =>
+                    evento.id === eventoId
+                        ? {
+                            ...evento,
+                            inscrito: true,
+                            inscripcion_id: data.id,
+                            inscritos_actuales:
+                                evento.inscritos_actuales + 1,
+                        }
+                        : evento
+                )
+            )
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Ocurrió un error inesperado.'
+            )
+        }
+    }
+    const cancelarInscripcion = async (
+        eventoId: number,
+        inscripcionId: number
+    ) => {
+        try {
+            const response = await fetch(
+                `http://localhost:8000/api/eventos/inscripciones/${inscripcionId}/cancelar/`,
+                {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                }
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(
+                    data.estado?.[0] ||
+                    data.detail ||
+                    'No fue posible cancelar la inscripción.'
+                )
+            }
+
+            setEventos((actuales) =>
+                actuales.map((evento) =>
+                    evento.id === eventoId
+                        ? {
+                            ...evento,
+                            inscrito: false,
+                            inscripcion_id: null,
+                            inscritos_actuales: Math.max(
+                                0,
+                                evento.inscritos_actuales - 1
+                            ),
+                        }
+                        : evento
+                )
+            )
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Ocurrió un error inesperado.'
+            )
+        }
+    }
     return (
         <main className="min-h-screen bg-base-200 p-6">
             <section className="max-w-5xl mx-auto">
@@ -84,7 +187,7 @@ function EventosVecinoPage() {
                     >
                         Volver al Panel
                     </Link>
-                    
+
                 </div>
                 {cargando && (
                     <div className="alert">
@@ -155,9 +258,48 @@ function EventosVecinoPage() {
                                         )}
 
                                         <p>
-                                            <strong>Cupo:</strong>{' '}
-                                            {evento.cupo_maximo ?? 'Sin límite'}
+                                            <strong>Inscritos:</strong>{' '}
+                                            {evento.inscritos_actuales}
+                                            {evento.cupo_maximo !== null
+                                                ? ` de ${evento.cupo_maximo}`
+                                                : ' (sin límite)'}
                                         </p>
+                                    </div>
+                                    <div className="card-actions justify-end mt-4">
+                                        {evento.inscrito ? (
+                                            <button
+                                                type="button"
+                                                className="btn btn-error btn-outline"
+                                                disabled={!evento.inscripcion_id}
+                                                onClick={() => {
+                                                    if (evento.inscripcion_id) {
+                                                        void cancelarInscripcion(
+                                                            evento.id,
+                                                            evento.inscripcion_id
+                                                        )
+                                                    }
+                                                }}
+                                            >
+                                                Cancelar inscripción
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                disabled={
+                                                    evento.cupo_maximo !== null &&
+                                                    evento.inscritos_actuales >= evento.cupo_maximo
+                                                }
+                                                onClick={() => {
+                                                    void inscribirseEvento(evento.id)
+                                                }}
+                                            >
+                                                {evento.cupo_maximo !== null &&
+                                                    evento.inscritos_actuales >= evento.cupo_maximo
+                                                    ? 'Sin cupos'
+                                                    : 'Inscribirse'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </article>
