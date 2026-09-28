@@ -6,8 +6,16 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from organizacion.models import IntegranteDirectiva
 from organizacion.permissions import EsDirectiva
 
-from .models import Evento, InscripcionEvento
-from .serializers import EventoSerializer, InscripcionEventoSerializer
+from .models import (
+    AsistenciaEvento,
+    Evento,
+    InscripcionEvento,
+)
+from .serializers import (
+    AsistenciaEventoSerializer,
+    EventoSerializer,
+    InscripcionEventoSerializer,
+)
 
 
 class EventoDirectivaListCreateView(generics.ListCreateAPIView):
@@ -202,4 +210,117 @@ class InscripcionEventoCancelarView(generics.UpdateAPIView):
         serializer.save(
             estado=InscripcionEvento.Estado.CANCELADA,
             fecha_cancelacion=timezone.now(),
+        )
+
+
+class AsistenciaEventoListCreateView(generics.ListCreateAPIView):
+    serializer_class = AsistenciaEventoSerializer
+    permission_classes = [EsDirectiva]
+
+    def get_queryset(self):
+        evento_id = self.kwargs["evento_id"]
+
+        return (
+            AsistenciaEvento.objects.select_related(
+                "inscripcion",
+                "inscripcion__usuario",
+                "inscripcion__evento",
+                "registrado_por",
+            )
+            .filter(
+                inscripcion__evento_id=evento_id,
+                inscripcion__evento__directiva__integrantes__usuario=self.request.user,
+                inscripcion__evento__directiva__integrantes__activo=True,
+                inscripcion__evento__directiva__estado="VIGENTE",
+            )
+            .distinct()
+        )
+
+    def perform_create(self, serializer):
+
+        inscripcion = serializer.validated_data["inscripcion"]
+
+        evento_id = self.kwargs["evento_id"]
+
+        if inscripcion.evento_id != evento_id:
+            raise ValidationError(
+                {"inscripcion": ("La inscripción no pertenece al evento indicado.")}
+            )
+
+        es_integrante_activo = IntegranteDirectiva.objects.filter(
+            directiva=inscripcion.evento.directiva,
+            usuario=self.request.user,
+            activo=True,
+            directiva__estado="VIGENTE",
+        ).exists()
+
+        if not es_integrante_activo:
+            raise PermissionDenied("No puedes registrar asistencia para este evento.")
+
+        if inscripcion.estado != InscripcionEvento.Estado.INSCRITO:
+            raise ValidationError(
+                {
+                    "inscripcion": (
+                        "Solo se puede registrar asistencia "
+                        "para inscripciones activas."
+                    )
+                }
+            )
+
+        serializer.save(
+            registrado_por=self.request.user,
+        )
+
+
+class InscripcionesEventoDirectivaListView(generics.ListAPIView):
+    serializer_class = InscripcionEventoSerializer
+    permission_classes = [EsDirectiva]
+
+    def get_queryset(self):
+        evento_id = self.kwargs["evento_id"]
+
+        return (
+            InscripcionEvento.objects.select_related(
+                "evento",
+                "evento__directiva",
+                "usuario",
+            )
+            .filter(
+                evento_id=evento_id,
+                estado=InscripcionEvento.Estado.INSCRITO,
+                evento__directiva__integrantes__usuario=self.request.user,
+                evento__directiva__integrantes__activo=True,
+                evento__directiva__estado="VIGENTE",
+            )
+            .distinct()
+            .order_by(
+                "usuario__apellido_paterno",
+                "usuario__nombres",
+            )
+        )
+
+
+class AsistenciaEventoDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = AsistenciaEventoSerializer
+    permission_classes = [EsDirectiva]
+
+    def get_queryset(self):
+        return (
+            AsistenciaEvento.objects.select_related(
+                "inscripcion",
+                "inscripcion__evento",
+                "inscripcion__evento__directiva",
+                "registrado_por",
+            )
+            .filter(
+                inscripcion__evento__directiva__integrantes__usuario=self.request.user,
+                inscripcion__evento__directiva__integrantes__activo=True,
+                inscripcion__evento__directiva__estado="VIGENTE",
+            )
+            .distinct()
+        )
+
+    def perform_update(self, serializer):
+        serializer.save(
+            registrado_por=self.request.user,
         )

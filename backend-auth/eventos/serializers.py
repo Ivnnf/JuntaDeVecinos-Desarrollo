@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
-from .models import Evento, InscripcionEvento
+from .models import (
+    AsistenciaEvento,
+    Evento,
+    InscripcionEvento,
+)
 
 
 class EventoSerializer(serializers.ModelSerializer):
@@ -143,4 +147,43 @@ class InscripcionEventoSerializer(serializers.ModelSerializer):
             "evento_titulo",
             "fecha_inscripcion",
             "fecha_cancelacion",
+        ]
+class AsistenciaEventoSerializer(serializers.ModelSerializer):
+    usuario_username = serializers.CharField(
+        source="inscripcion.usuario.username",
+        read_only=True,
+    )
+
+    evento_titulo = serializers.CharField(
+        source="inscripcion.evento.titulo",
+        read_only=True,
+    )
+
+    registrado_por_username = serializers.CharField(
+        source="registrado_por.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = AsistenciaEvento
+        fields = [
+            "id",
+            "inscripcion",
+            "usuario_username",
+            "evento_titulo",
+            "estado",
+            "registrado_por",
+            "registrado_por_username",
+            "fecha_registro",
+            "fecha_actualizacion",
+        ]
+
+        read_only_fields = [
+            "id",
+            "registrado_por",
+            "registrado_por_username",
+            "usuario_username",
+            "evento_titulo",
+            "fecha_registro",
+            "fecha_actualizacion",
         ]

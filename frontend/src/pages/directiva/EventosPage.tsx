@@ -546,6 +546,12 @@ function EventosPage() {
                                         </p>
                                         {evento.estado === 'PROGRAMADO' && (
                                             <div className="card-actions justify-end mt-4">
+                                                <Link
+                                                    to={`/directiva/eventos/${evento.id}/asistencia`}
+                                                    className="btn btn-primary"
+                                                >
+                                                    Registrar asistencia
+                                                </Link>
                                                 <button
                                                     type="button"
                                                     className="btn btn-outline"

@@ -113,3 +113,39 @@ class InscripcionEvento(models.Model):
             f"{self.usuario} - "
             f"{self.evento.titulo}"
         )
+class AsistenciaEvento(models.Model):
+    class Estado(models.TextChoices):
+        PRESENTE = "PRESENTE", "Presente"
+        AUSENTE = "AUSENTE", "Ausente"
+
+    inscripcion = models.OneToOneField(
+        InscripcionEvento,
+        on_delete=models.CASCADE,
+        related_name="asistencia",
+    )
+
+    estado = models.CharField(
+        max_length=20,
+        choices=Estado.choices,
+    )
+
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="asistencias_registradas",
+    )
+
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return (
+            f"{self.inscripcion.usuario} - "
+            f"{self.inscripcion.evento.titulo} - "
+            f"{self.estado}"
+        )

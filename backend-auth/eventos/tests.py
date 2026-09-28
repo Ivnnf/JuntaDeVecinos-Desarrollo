@@ -12,7 +12,11 @@ from organizacion.models import (
 )
 from profiles.models import Rol, Usuario, UsuarioRol
 
-from .models import Evento, InscripcionEvento
+from .models import (
+    AsistenciaEvento,
+    Evento,
+    InscripcionEvento,
+)
 
 
 class EventosDirectivaTests(APITestCase):
@@ -1052,4 +1056,462 @@ class EventosDirectivaTests(APITestCase):
         self.assertEqual(
             response.data[0]["inscritos_actuales"],
             1,
+        )
+
+    def test_directiva_puede_registrar_asistencia_de_vecino_inscrito(self):
+        rol_vecino = Rol.objects.get(
+            nombre="Vecino",
+        )
+
+        vecino = Usuario.objects.create_user(
+            username="vecino_asistencia",
+            email="vecino.asistencia@test.cl",
+            password="ClaveSegura123!",
+            rut="11223344-5",
+            nombres="Vecino",
+            apellido_paterno="Asistencia",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        evento = Evento.objects.create(
+            directiva=self.directiva,
+            creador=self.usuario,
+            titulo="Evento control asistencia",
+            descripcion="Evento de prueba.",
+            lugar="Sede vecinal",
+            fecha_inicio="2026-12-15T18:00:00-03:00",
+            cupo_maximo=20,
+            estado="PROGRAMADO",
+        )
+
+        inscripcion = InscripcionEvento.objects.create(
+            evento=evento,
+            usuario=vecino,
+            estado="INSCRITO",
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            reverse(
+                "asistencias-evento-list-create",
+                kwargs={
+                    "evento_id": evento.id,
+                },
+            ),
+            {
+                "inscripcion": inscripcion.id,
+                "estado": "PRESENTE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            AsistenciaEvento.objects.count(),
+            1,
+        )
+
+        asistencia = AsistenciaEvento.objects.get()
+
+        self.assertEqual(
+            asistencia.inscripcion,
+            inscripcion,
+        )
+
+        self.assertEqual(
+            asistencia.estado,
+            "PRESENTE",
+        )
+
+        self.assertEqual(
+            asistencia.registrado_por,
+            self.usuario,
+        )
+
+    def test_no_permite_asistencia_para_inscripcion_cancelada(self):
+        rol_vecino = Rol.objects.get(
+            nombre="Vecino",
+        )
+
+        vecino = Usuario.objects.create_user(
+            username="vecino_asistencia_cancelada",
+            email="vecino.asistencia.cancelada@test.cl",
+            password="ClaveSegura123!",
+            rut="22334455-6",
+            nombres="Vecino",
+            apellido_paterno="Cancelada",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        evento = Evento.objects.create(
+            directiva=self.directiva,
+            creador=self.usuario,
+            titulo="Evento asistencia inválida",
+            descripcion="Prueba de inscripción cancelada.",
+            lugar="Sede vecinal",
+            fecha_inicio="2026-12-16T18:00:00-03:00",
+            cupo_maximo=20,
+            estado="PROGRAMADO",
+        )
+
+        inscripcion = InscripcionEvento.objects.create(
+            evento=evento,
+            usuario=vecino,
+            estado="CANCELADA",
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            reverse(
+                "asistencias-evento-list-create",
+                kwargs={
+                    "evento_id": evento.id,
+                },
+            ),
+            {
+                "inscripcion": inscripcion.id,
+                "estado": "PRESENTE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertEqual(
+            AsistenciaEvento.objects.count(),
+            0,
+        )
+
+    def test_no_permite_asistencia_con_inscripcion_de_otro_evento(self):
+        rol_vecino = Rol.objects.get(
+            nombre="Vecino",
+        )
+
+        vecino = Usuario.objects.create_user(
+            username="vecino_otro_evento",
+            email="vecino.otro.evento@test.cl",
+            password="ClaveSegura123!",
+            rut="33445566-7",
+            nombres="Vecino",
+            apellido_paterno="OtroEvento",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        evento_1 = Evento.objects.create(
+            directiva=self.directiva,
+            creador=self.usuario,
+            titulo="Evento uno",
+            descripcion="Primer evento.",
+            lugar="Sede vecinal",
+            fecha_inicio="2026-12-17T18:00:00-03:00",
+            estado="PROGRAMADO",
+        )
+
+        evento_2 = Evento.objects.create(
+            directiva=self.directiva,
+            creador=self.usuario,
+            titulo="Evento dos",
+            descripcion="Segundo evento.",
+            lugar="Sede vecinal",
+            fecha_inicio="2026-12-18T18:00:00-03:00",
+            estado="PROGRAMADO",
+        )
+
+        inscripcion_evento_2 = InscripcionEvento.objects.create(
+            evento=evento_2,
+            usuario=vecino,
+            estado="INSCRITO",
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            reverse(
+                "asistencias-evento-list-create",
+                kwargs={
+                    "evento_id": evento_1.id,
+                },
+            ),
+            {
+                "inscripcion": inscripcion_evento_2.id,
+                "estado": "PRESENTE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertEqual(
+            AsistenciaEvento.objects.count(),
+            0,
+        )
+
+    def test_no_permite_registrar_asistencia_dos_veces(self):
+        rol_vecino = Rol.objects.get(
+            nombre="Vecino",
+        )
+
+        vecino = Usuario.objects.create_user(
+            username="vecino_asistencia_duplicada",
+            email="vecino.asistencia.duplicada@test.cl",
+            password="ClaveSegura123!",
+            rut="44556677-8",
+            nombres="Vecino",
+            apellido_paterno="Duplicada",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        evento = Evento.objects.create(
+            directiva=self.directiva,
+            creador=self.usuario,
+            titulo="Evento asistencia duplicada",
+            descripcion="Prueba de asistencia duplicada.",
+            lugar="Sede vecinal",
+            fecha_inicio="2026-12-19T18:00:00-03:00",
+            estado="PROGRAMADO",
+        )
+
+        inscripcion = InscripcionEvento.objects.create(
+            evento=evento,
+            usuario=vecino,
+            estado="INSCRITO",
+        )
+
+        AsistenciaEvento.objects.create(
+            inscripcion=inscripcion,
+            estado="PRESENTE",
+            registrado_por=self.usuario,
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            reverse(
+                "asistencias-evento-list-create",
+                kwargs={
+                    "evento_id": evento.id,
+                },
+            ),
+            {
+                "inscripcion": inscripcion.id,
+                "estado": "AUSENTE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertEqual(
+            AsistenciaEvento.objects.filter(
+                inscripcion=inscripcion,
+            ).count(),
+            1,
+        )
+
+
+    def test_directiva_ve_solo_inscripciones_activas_de_su_evento(self):
+        rol_vecino = Rol.objects.get(
+            nombre="Vecino",
+        )
+
+        vecino_activo = Usuario.objects.create_user(
+            username="vecino_lista_activo",
+            email="vecino.lista.activo@test.cl",
+            password="ClaveSegura123!",
+            rut="55667788-9",
+            nombres="Vecino",
+            apellido_paterno="Activo",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        vecino_cancelado = Usuario.objects.create_user(
+            username="vecino_lista_cancelado",
+            email="vecino.lista.cancelado@test.cl",
+            password="ClaveSegura123!",
+            rut="66778899-0",
+            nombres="Vecino",
+            apellido_paterno="Cancelado",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino_activo,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino_cancelado,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        evento = Evento.objects.create(
+            directiva=self.directiva,
+            creador=self.usuario,
+            titulo="Evento lista asistencia",
+            descripcion="Prueba de inscritos activos.",
+            lugar="Sede vecinal",
+            fecha_inicio="2026-12-20T18:00:00-03:00",
+            estado="PROGRAMADO",
+        )
+
+        InscripcionEvento.objects.create(
+            evento=evento,
+            usuario=vecino_activo,
+            estado="INSCRITO",
+        )
+
+        InscripcionEvento.objects.create(
+            evento=evento,
+            usuario=vecino_cancelado,
+            estado="CANCELADA",
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.get(
+            reverse(
+                "inscripciones-evento-directiva-list",
+                kwargs={
+                    "evento_id": evento.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["usuario_username"],
+            "vecino_lista_activo",
+        )
+    def test_directiva_puede_corregir_asistencia_registrada(self):
+        rol_vecino = Rol.objects.get(
+            nombre="Vecino",
+        )
+
+        vecino = Usuario.objects.create_user(
+            username="vecino_corrige_asistencia",
+            email="vecino.corrige.asistencia@test.cl",
+            password="ClaveSegura123!",
+            rut="77889900-1",
+            nombres="Vecino",
+            apellido_paterno="Correccion",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        evento = Evento.objects.create(
+            directiva=self.directiva,
+            creador=self.usuario,
+            titulo="Evento corrección asistencia",
+            descripcion="Prueba de corrección.",
+            lugar="Sede vecinal",
+            fecha_inicio="2026-12-21T18:00:00-03:00",
+            estado="PROGRAMADO",
+        )
+
+        inscripcion = InscripcionEvento.objects.create(
+            evento=evento,
+            usuario=vecino,
+            estado="INSCRITO",
+        )
+
+        asistencia = AsistenciaEvento.objects.create(
+            inscripcion=inscripcion,
+            estado="PRESENTE",
+            registrado_por=self.usuario,
+        )
+
+        self.client.force_authenticate(
+            user=self.usuario
+        )
+
+        response = self.client.patch(
+            reverse(
+                "asistencia-evento-detail",
+                kwargs={
+                    "pk": asistencia.id,
+                },
+            ),
+            {
+                "estado": "AUSENTE",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        asistencia.refresh_from_db()
+
+        self.assertEqual(
+            asistencia.estado,
+            "AUSENTE",
+        )
+
+        self.assertEqual(
+            asistencia.registrado_por,
+            self.usuario,
         )
