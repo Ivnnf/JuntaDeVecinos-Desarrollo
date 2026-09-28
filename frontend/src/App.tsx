@@ -26,11 +26,20 @@ import PublicacionDetallePage from './pages/vecino/PublicacionDetallePage'
 import EventosPage from './pages/directiva/EventosPage'
 import EventosVecinoPage from './pages/vecino/EventosVecinoPage'
 import AsistenciaEventoPage from './pages/directiva/AsistenciaEventoPage'
-
+import SolicitudesVecinoPage from './pages/vecino/SolicitudesVecinoPage'
 
 function App() {
   return (
     <Routes>
+
+      <Route
+        path="/vecino/solicitudes"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <SolicitudesVecinoPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/directiva/eventos/:id/asistencia"
         element={

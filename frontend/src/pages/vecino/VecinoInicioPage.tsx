@@ -133,12 +133,21 @@ function VecinoInicioPage() {
 
             <CerrarSesionButton />
           </div>
-          <Link
-            to="/vecino/eventos"
-            className="btn btn-primary"
-          >
-            Actividades y Eventos
-          </Link>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Link
+              to="/vecino/eventos"
+              className="btn btn-primary"
+            >
+              Actividades y Eventos
+            </Link>
+
+            <Link
+              to="/vecino/solicitudes"
+              className="btn btn-primary"
+            >
+              Consultas, Reclamos y Solicitudes
+            </Link>
+          </div>
           <div className="mt-6">
             <h2 className="text-xl font-bold">
               Notificaciones
