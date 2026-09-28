@@ -61,3 +61,21 @@ class SolicitudVecino(models.Model):
 
     def __str__(self):
         return f"{self.tipo} - {self.asunto}"
+    
+    respuesta = models.TextField(
+    blank=True,
+    default="",
+    )
+
+    respondido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="solicitudes_respondidas",
+        null=True,
+        blank=True,
+    )
+
+    fecha_respuesta = models.DateTimeField(
+        null=True,
+        blank=True,
+    )

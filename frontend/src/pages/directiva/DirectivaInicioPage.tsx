@@ -188,6 +188,12 @@ function DirectivaInicioPage() {
                   >
                     Actividades y Eventos
                   </Link>
+                  <Link
+                    to="/directiva/solicitudes"
+                    className="btn btn-primary"
+                  >
+                    Consultas, Reclamos y Solicitudes
+                  </Link>
                 </div>
               )}
               {directivaVigente && (

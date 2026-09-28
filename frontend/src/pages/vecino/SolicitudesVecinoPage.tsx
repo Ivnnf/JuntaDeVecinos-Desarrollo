@@ -11,6 +11,10 @@ type SolicitudVecino = {
     asunto: string
     descripcion: string
     estado: 'PENDIENTE' | 'EN_PROCESO' | 'RESPONDIDA' | 'CERRADA'
+    respuesta: string
+    respondido_por: number | null
+    respondido_por_username: string | null
+    fecha_respuesta: string | null
     fecha_creacion: string
     fecha_actualizacion: string
 }
@@ -313,11 +317,41 @@ function SolicitudesVecinoPage() {
                                             {solicitud.descripcion}
                                         </p>
 
+                                        {solicitud.respuesta && (
+                                            <div className="mt-4 rounded-lg border border-base-300 bg-base-200 p-4">
+                                                <p className="mb-2 font-semibold">
+                                                    Respuesta de la Directiva
+                                                </p>
+
+                                                <p className="whitespace-pre-wrap">
+                                                    {solicitud.respuesta}
+                                                </p>
+
+                                                {solicitud.respondido_por_username && (
+                                                    <p className="mt-3 text-sm text-base-content/60">
+                                                        Respondido por{' '}
+                                                        <strong>
+                                                            {solicitud.respondido_por_username}
+                                                        </strong>
+
+                                                        {solicitud.fecha_respuesta && (
+                                                            <>
+                                                                {' '}el{' '}
+                                                                {new Date(
+                                                                    solicitud.fecha_respuesta
+                                                                ).toLocaleString('es-CL')}
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
                                         <p className="text-sm text-base-content/60">
                                             Enviada el{' '}
                                             {new Date(
                                                 solicitud.fecha_creacion
-                                            ).toLocaleString()}
+                                            ).toLocaleString('es-CL')}
                                         </p>
                                     </div>
                                 </article>
