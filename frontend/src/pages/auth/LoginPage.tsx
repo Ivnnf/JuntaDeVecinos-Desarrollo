@@ -41,47 +41,50 @@ function LoginPage() {
       if (!response.ok) {
         setError(
           data.detail ??
-            data.motivo ??
-            'No fue posible iniciar sesión.',
+          data.motivo ??
+          'No fue posible iniciar sesión.',
         )
         return
       }
 
       const sesionResponse = await fetch(
-  'http://localhost:8000/api/auth/sesion/',
-  {
-    credentials: 'include',
-  },
-)
+        'http://localhost:8000/api/auth/sesion/',
+        {
+          credentials: 'include',
+        },
+      )
 
-const sesion = await sesionResponse.json()
+      const sesion = await sesionResponse.json()
 
-if (!sesionResponse.ok) {
-  setError('No fue posible obtener la sesión del usuario.')
-  return
-}
+      if (!sesionResponse.ok) {
+        setError('No fue posible obtener la sesión del usuario.')
+        return
+      }
+      if (sesion.roles?.length > 1) {
+        navigate('/seleccionar-perfil')
+        return
+      }
+      if (sesion.roles?.includes(1)) {
+        navigate('/admin')
+        return
+      }
 
-if (sesion.roles?.includes(1)) {
-  navigate('/admin')
-  return
-}
+      if (sesion.roles?.includes(2)) {
+        navigate('/directiva')
+        return
+      }
 
-if (sesion.roles?.includes(2)) {
-  navigate('/directiva')
-  return
-}
+      if (sesion.roles?.includes(3)) {
+        navigate('/vecino')
+        return
+      }
 
-if (sesion.roles?.includes(3)) {
-  navigate('/vecino')
-  return
-}
+      if (sesion.roles?.includes(4)) {
+        navigate('/municipal')
+        return
+      }
 
-if (sesion.roles?.includes(4)) {
-  navigate('/municipal')
-  return
-}
-
-setMensaje('Autenticación correcta.')
+      setMensaje('Autenticación correcta.')
     } catch {
       setError(
         'No fue posible comunicarse con el servidor.',

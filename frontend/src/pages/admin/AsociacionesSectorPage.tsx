@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-
 type AsociacionPendiente = {
   id: number
   username: string
@@ -118,146 +117,301 @@ function AsociacionesSectorPage() {
     }
   }
 
+  const obtenerNombreCompleto = (
+    asociacion: AsociacionPendiente,
+  ) => {
+    return [
+      asociacion.nombres,
+      asociacion.apellido_paterno,
+      asociacion.apellido_materno,
+    ]
+      .filter(Boolean)
+      .join(' ') || asociacion.username
+  }
+
+  const obtenerIniciales = (
+    asociacion: AsociacionPendiente,
+  ) => {
+    const nombre = obtenerNombreCompleto(asociacion)
+
+    return nombre
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((parte) =>
+        parte.charAt(0).toUpperCase(),
+      )
+      .join('')
+  }
+
   return (
     <main className="min-h-screen bg-base-200 px-4 py-8">
-      <section className="mx-auto max-w-7xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">
-            Asociaciones territoriales pendientes
-          </h1>
+      <section className="mx-auto w-full max-w-7xl">
 
-          <p className="text-base-content/70 mt-2">
-            Confirma o rechaza las solicitudes de sector realizadas por vecinos.
-          </p>
-          <Link
-            to="/admin"
-            className="btn btn-outline mt-4"
-          >
-            Volver al Panel de Administración
-          </Link>
+        {/* Encabezado */}
+        <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-bold">
+                  Asociaciones Territoriales
+                </h1>
+
+                <span className="badge badge-warning badge-lg">
+                  Administración
+                </span>
+              </div>
+
+              <p className="max-w-2xl text-base-content/70">
+                Revisa las solicitudes de asociación territorial
+                realizadas por los vecinos y confirma o rechaza
+                su pertenencia a un sector.
+              </p>
+            </div>
+
+            <Link
+              to="/admin"
+              className="btn btn-outline"
+            >
+              ← Volver al Panel
+            </Link>
+          </div>
         </div>
 
+        {/* Resumen */}
+        {!cargando && (
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-2xl border border-violet-500/30 bg-base-100 p-5 shadow-sm">
+              <p className="text-sm font-medium text-base-content/60">
+                Solicitudes pendientes
+              </p>
+
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <span className="text-3xl font-bold">
+                  {asociaciones.length}
+                </span>
+
+                <span className="badge badge-warning badge-outline">
+                  Por revisar
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
+              <p className="text-sm font-medium text-base-content/60">
+                Tipo de gestión
+              </p>
+
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <span className="text-xl font-bold">
+                  Territorial
+                </span>
+
+                <span className="badge badge-primary badge-outline">
+                  Sectores
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+              <p className="text-sm font-medium text-base-content/60">
+                Estado
+              </p>
+
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <span className="text-xl font-bold">
+                  Gestión activa
+                </span>
+
+                <span className="badge badge-success">
+                  Disponible
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mensajes */}
         {error && (
-          <div className="alert alert-error mb-4">
+          <div className="alert alert-error mb-6 shadow-sm">
             <span>{error}</span>
           </div>
         )}
 
         {mensaje && (
-          <div className="alert alert-success mb-4">
+          <div className="alert alert-success mb-6 shadow-sm">
             <span>{mensaje}</span>
           </div>
         )}
 
-        {cargando ? (
-          <div className="flex justify-center py-10">
+        {/* Cargando */}
+        {cargando && (
+          <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
             <span className="loading loading-spinner loading-lg" />
+
+            <p className="mt-4 text-base-content/60">
+              Cargando asociaciones pendientes...
+            </p>
           </div>
-        ) : (
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body">
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Vecino</th>
-                      <th>RUT</th>
-                      <th>Correo</th>
-                      <th>Junta</th>
-                      <th>Sector</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
+        )}
 
-                  <tbody>
-                    {asociaciones.map((asociacion) => {
-                      const nombreCompleto = [
-                        asociacion.nombres,
-                        asociacion.apellido_paterno,
-                        asociacion.apellido_materno,
-                      ]
-                        .filter(Boolean)
-                        .join(' ')
+        {!cargando && (
+          <>
+            {/* Título sección */}
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-bold">
+                  Solicitudes pendientes
+                </h2>
 
-                      return (
-                        <tr key={asociacion.id}>
-                          <td>
-                            {nombreCompleto ||
-                              asociacion.username}
-                          </td>
-
-                          <td>
-                            {asociacion.rut ?? '-'}
-                          </td>
-
-                          <td>
-                            {asociacion.email}
-                          </td>
-
-                          <td>
-                            {asociacion.junta_nombre}
-                          </td>
-
-                          <td>
-                            {asociacion.sector_nombre}
-                          </td>
-
-                          <td>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-success"
-                                disabled={
-                                  procesandoId ===
-                                  asociacion.id
-                                }
-                                onClick={() =>
-                                  void resolverAsociacion(
-                                    asociacion.id,
-                                    'CONFIRMAR',
-                                  )
-                                }
-                              >
-                                Confirmar
-                              </button>
-
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-error"
-                                disabled={
-                                  procesandoId ===
-                                  asociacion.id
-                                }
-                                onClick={() =>
-                                  void resolverAsociacion(
-                                    asociacion.id,
-                                    'RECHAZAR',
-                                  )
-                                }
-                              >
-                                Rechazar
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-
-                    {asociaciones.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="text-center"
-                        >
-                          No existen asociaciones pendientes.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                <p className="mt-1 text-base-content/60">
+                  Verifica los datos del vecino antes de resolver la solicitud.
+                </p>
               </div>
+
+              {asociaciones.length > 0 && (
+                <span className="badge badge-outline badge-lg">
+                  {asociaciones.length}{' '}
+                  {asociaciones.length === 1
+                    ? 'solicitud'
+                    : 'solicitudes'}
+                </span>
+              )}
             </div>
-          </div>
+
+            {asociaciones.length === 0 ? (
+              <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                <div className="mx-auto max-w-md">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
+                    ✓
+                  </div>
+
+                  <h3 className="text-xl font-bold">
+                    No existen asociaciones pendientes
+                  </h3>
+
+                  <p className="mt-2 text-base-content/60">
+                    Todas las solicitudes territoriales se encuentran
+                    resueltas por el momento.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="table">
+                    <thead className="bg-base-200/70">
+                      <tr>
+                        <th>Vecino</th>
+                        <th>RUT</th>
+                        <th>Correo</th>
+                        <th>Junta</th>
+                        <th>Sector</th>
+                        <th className="text-right">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {asociaciones.map((asociacion) => {
+                        const nombreCompleto =
+                          obtenerNombreCompleto(asociacion)
+
+                        const procesando =
+                          procesandoId === asociacion.id
+
+                        return (
+                          <tr
+                            key={asociacion.id}
+                            className="hover"
+                          >
+                            <td>
+                              <div className="flex min-w-[190px] items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-sm font-bold text-violet-700">
+                                  {obtenerIniciales(asociacion)}
+                                </div>
+
+                                <div>
+                                  <p className="font-semibold">
+                                    {nombreCompleto}
+                                  </p>
+
+                                  <p className="text-xs text-base-content/50">
+                                    @{asociacion.username}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td>
+                              <span className="whitespace-nowrap">
+                                {asociacion.rut ?? '-'}
+                              </span>
+                            </td>
+
+                            <td>
+                              <span className="break-all text-sm">
+                                {asociacion.email}
+                              </span>
+                            </td>
+
+                            <td>
+                              <span className="font-medium">
+                                {asociacion.junta_nombre}
+                              </span>
+                            </td>
+
+                            <td>
+                              <span className="badge badge-info badge-outline">
+                                {asociacion.sector_nombre}
+                              </span>
+                            </td>
+
+                            <td>
+                              <div className="flex min-w-[190px] justify-end gap-2">
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-success"
+                                  disabled={procesando}
+                                  onClick={() =>
+                                    void resolverAsociacion(
+                                      asociacion.id,
+                                      'CONFIRMAR',
+                                    )
+                                  }
+                                >
+                                  {procesando && (
+                                    <span className="loading loading-spinner loading-xs" />
+                                  )}
+
+                                  Confirmar
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-error btn-outline"
+                                  disabled={procesando}
+                                  onClick={() =>
+                                    void resolverAsociacion(
+                                      asociacion.id,
+                                      'RECHAZAR',
+                                    )
+                                  }
+                                >
+                                  Rechazar
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>

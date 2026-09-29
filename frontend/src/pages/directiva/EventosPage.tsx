@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-
 type Evento = {
     id: number
     directiva: number
@@ -25,6 +24,8 @@ type IntegranteDirectiva = {
     activo: boolean
 }
 
+type TipoMensaje = 'success' | 'error' | ''
+
 function EventosPage() {
     const [eventos, setEventos] =
         useState<Evento[]>([])
@@ -35,18 +36,42 @@ function EventosPage() {
     const [error, setError] =
         useState('')
 
-    const [titulo, setTitulo] = useState('')
-    const [descripcion, setDescripcion] = useState('')
-    const [lugar, setLugar] = useState('')
-    const [fechaInicio, setFechaInicio] = useState('')
-    const [fechaFin, setFechaFin] = useState('')
-    const [cupoMaximo, setCupoMaximo] = useState('')
-    const [directivaId, setDirectivaId] = useState<number | null>(null)
+    const [titulo, setTitulo] =
+        useState('')
 
-    const [creando, setCreando] = useState(false)
-    const [mensaje, setMensaje] = useState('')
+    const [descripcion, setDescripcion] =
+        useState('')
+
+    const [lugar, setLugar] =
+        useState('')
+
+    const [fechaInicio, setFechaInicio] =
+        useState('')
+
+    const [fechaFin, setFechaFin] =
+        useState('')
+
+    const [cupoMaximo, setCupoMaximo] =
+        useState('')
+
+    const [directivaId, setDirectivaId] =
+        useState<number | null>(null)
+
+    const [creando, setCreando] =
+        useState(false)
+
+    const [cancelando, setCancelando] =
+        useState(false)
+
+    const [mensaje, setMensaje] =
+        useState('')
+
+    const [tipoMensaje, setTipoMensaje] =
+        useState<TipoMensaje>('')
+
     const [eventoACancelar, setEventoACancelar] =
         useState<Evento | null>(null)
+
     const [eventoAEditar, setEventoAEditar] =
         useState<Evento | null>(null)
 
@@ -126,6 +151,16 @@ function EventosPage() {
         void cargarDirectivaActiva()
     }, [])
 
+    const limpiarFormulario = () => {
+        setTitulo('')
+        setDescripcion('')
+        setLugar('')
+        setFechaInicio('')
+        setFechaFin('')
+        setCupoMaximo('')
+        setEventoAEditar(null)
+    }
+
     const crearEvento = async (
         event: React.FormEvent<HTMLFormElement>
     ) => {
@@ -135,12 +170,14 @@ function EventosPage() {
             setMensaje(
                 'No se encontró una directiva activa para este usuario.'
             )
+            setTipoMensaje('error')
             return
         }
 
         try {
             setCreando(true)
             setMensaje('')
+            setTipoMensaje('')
 
             const url = eventoAEditar
                 ? `http://localhost:8000/api/eventos/eventos/${eventoAEditar.id}/`
@@ -183,7 +220,8 @@ function EventosPage() {
                 )
             }
 
-            const eventoGuardado = data as Evento
+            const eventoGuardado =
+                data as Evento
 
             if (eventoAEditar) {
                 setEventos((actuales) =>
@@ -208,29 +246,29 @@ function EventosPage() {
                 )
             }
 
-            setTitulo('')
-            setDescripcion('')
-            setLugar('')
-            setFechaInicio('')
-            setFechaFin('')
-            setCupoMaximo('')
-            setEventoAEditar(null)
+            setTipoMensaje('success')
+            limpiarFormulario()
         } catch (error) {
             setMensaje(
                 error instanceof Error
                     ? error.message
                     : 'Ocurrió un error inesperado.'
             )
+
+            setTipoMensaje('error')
         } finally {
             setCreando(false)
         }
     }
 
-
     const cancelarEvento = async (
         eventoId: number
     ) => {
         try {
+            setCancelando(true)
+            setMensaje('')
+            setTipoMensaje('')
+
             const response = await fetch(
                 `http://localhost:8000/api/eventos/eventos/${eventoId}/`,
                 {
@@ -261,15 +299,29 @@ function EventosPage() {
                         : evento
                 )
             )
+
+            setMensaje(
+                'Evento cancelado correctamente.'
+            )
+
+            setTipoMensaje('success')
+            setEventoACancelar(null)
         } catch (error) {
             setMensaje(
                 error instanceof Error
                     ? error.message
                     : 'Ocurrió un error inesperado.'
             )
+
+            setTipoMensaje('error')
+        } finally {
+            setCancelando(false)
         }
     }
-    const prepararEdicion = (evento: Evento) => {
+
+    const prepararEdicion = (
+        evento: Evento
+    ) => {
         setEventoAEditar(evento)
 
         setTitulo(evento.titulo)
@@ -292,91 +344,323 @@ function EventosPage() {
                 : ''
         )
 
+        setMensaje('')
+        setTipoMensaje('')
+
         window.scrollTo({
             top: 0,
             behavior: 'smooth',
         })
     }
+
+    const cancelarEdicion = () => {
+        limpiarFormulario()
+        setMensaje('')
+        setTipoMensaje('')
+    }
+
+    const formatearFecha = (
+        fecha: string
+    ) => {
+        return new Date(fecha).toLocaleString(
+            'es-CL',
+            {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+            }
+        )
+    }
+
+    const obtenerClaseEstado = (
+        estado: Evento['estado']
+    ) => {
+        switch (estado) {
+            case 'PROGRAMADO':
+                return 'badge badge-info badge-outline'
+            case 'CANCELADO':
+                return 'badge badge-error badge-outline'
+            case 'FINALIZADO':
+                return 'badge badge-success badge-outline'
+            default:
+                return 'badge badge-ghost'
+        }
+    }
+
+    const obtenerTextoEstado = (
+        estado: Evento['estado']
+    ) => {
+        switch (estado) {
+            case 'PROGRAMADO':
+                return 'Programado'
+            case 'CANCELADO':
+                return 'Cancelado'
+            case 'FINALIZADO':
+                return 'Finalizado'
+            default:
+                return estado
+        }
+    }
+
+    const obtenerBordeEvento = (
+        estado: Evento['estado']
+    ) => {
+        switch (estado) {
+            case 'PROGRAMADO':
+                return 'border-blue-500/30'
+            case 'CANCELADO':
+                return 'border-red-500/30'
+            case 'FINALIZADO':
+                return 'border-emerald-500/30'
+            default:
+                return 'border-base-300'
+        }
+    }
+
+    const totalProgramados =
+        eventos.filter(
+            (evento) =>
+                evento.estado === 'PROGRAMADO'
+        ).length
+
+    const totalFinalizados =
+        eventos.filter(
+            (evento) =>
+                evento.estado === 'FINALIZADO'
+        ).length
+
+    const totalCancelados =
+        eventos.filter(
+            (evento) =>
+                evento.estado === 'CANCELADO'
+        ).length
+
     return (
-        <main className="min-h-screen bg-base-200 p-6">
-            <section className="max-w-6xl mx-auto">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold">
-                            Actividades y Eventos
-                        </h1>
+        <main className="min-h-screen bg-base-200 px-4 py-8">
+            <section className="mx-auto w-full max-w-6xl">
 
-                        <p className="text-base-content/70 mt-1">
-                            Gestión de actividades comunitarias.
-                        </p>
+                {/* Encabezado */}
+                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div>
+                            <div className="mb-3 flex flex-wrap items-center gap-3">
+                                <h1 className="text-3xl font-bold">
+                                    Actividades y Eventos
+                                </h1>
+
+                                <span className="badge badge-primary badge-lg">
+                                    Gestión
+                                </span>
+                            </div>
+
+                            <p className="max-w-2xl text-base-content/70">
+                                Crea y administra actividades comunitarias,
+                                controla sus fechas, cupos y asistencia de
+                                participantes.
+                            </p>
+                        </div>
+
+                        <Link
+                            to="/directiva"
+                            className="btn btn-outline"
+                        >
+                            ← Volver al Panel
+                        </Link>
                     </div>
-
-                    <Link
-                        to="/directiva"
-                        className="btn btn-outline"
-                    >
-                        Volver al Panel
-                    </Link>
                 </div>
 
+                {/* Resumen */}
+                {!cargando && !error && (
+                    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+                        <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Total de eventos
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {eventos.length}
+                                </span>
+
+                                <span className="badge badge-outline">
+                                    Registrados
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Programados
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {totalProgramados}
+                                </span>
+
+                                <span className="badge badge-info badge-outline">
+                                    Próximos
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Finalizados
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {totalFinalizados}
+                                </span>
+
+                                <span className="badge badge-success badge-outline">
+                                    Completados
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-red-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Cancelados
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {totalCancelados}
+                                </span>
+
+                                <span className="badge badge-error badge-outline">
+                                    Cancelados
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Formulario */}
                 <form
                     onSubmit={crearEvento}
-                    className="card bg-base-100 shadow mb-6"
+                    className={`mb-6 overflow-hidden rounded-2xl border bg-base-100 shadow-sm ${
+                        eventoAEditar
+                            ? 'border-amber-500/40'
+                            : 'border-base-300'
+                    }`}
                 >
-                    <div className="card-body">
-                        <h2 className="card-title">
-                            {eventoAEditar
-                                ? 'Editar evento'
-                                : 'Crear nuevo evento'}
-                        </h2>
+                    <div className="border-b border-base-300 p-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div className="mb-2 flex flex-wrap items-center gap-3">
+                                    <h2 className="text-2xl font-bold">
+                                        {eventoAEditar
+                                            ? 'Editar evento'
+                                            : 'Crear nuevo evento'}
+                                    </h2>
+
+                                    <span
+                                        className={
+                                            eventoAEditar
+                                                ? 'badge badge-warning badge-outline'
+                                                : 'badge badge-primary badge-outline'
+                                        }
+                                    >
+                                        {eventoAEditar
+                                            ? 'Modo edición'
+                                            : 'Nuevo'}
+                                    </span>
+                                </div>
+
+                                <p className="text-base-content/60">
+                                    {eventoAEditar
+                                        ? 'Modifica la información del evento seleccionado.'
+                                        : 'Completa los datos para registrar una nueva actividad comunitaria.'}
+                                </p>
+                            </div>
+
+                            {eventoAEditar && (
+                                <span className="text-sm text-base-content/50">
+                                    Evento #{eventoAEditar.id}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="p-6">
 
                         {mensaje && (
-                            <div className="alert">
-                                {mensaje}
+                            <div
+                                className={`alert mb-6 ${
+                                    tipoMensaje === 'error'
+                                        ? 'alert-error'
+                                        : 'alert-success'
+                                }`}
+                            >
+                                <span>{mensaje}</span>
                             </div>
                         )}
 
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-5 md:grid-cols-2">
+
                             <label className="form-control">
-                                <span className="label-text mb-1">
-                                    Título
-                                </span>
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Título
+                                    </span>
+
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
 
                                 <input
                                     type="text"
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     value={titulo}
                                     onChange={(e) =>
                                         setTitulo(e.target.value)
                                     }
+                                    placeholder="Ej: Reunión comunitaria"
                                     required
                                 />
                             </label>
 
                             <label className="form-control">
-                                <span className="label-text mb-1">
-                                    Lugar
-                                </span>
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Lugar
+                                    </span>
+
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
 
                                 <input
                                     type="text"
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     value={lugar}
                                     onChange={(e) =>
                                         setLugar(e.target.value)
                                     }
+                                    placeholder="Ej: Sede vecinal"
                                     required
                                 />
                             </label>
 
                             <label className="form-control">
-                                <span className="label-text mb-1">
-                                    Fecha de inicio
-                                </span>
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Fecha de inicio
+                                    </span>
+
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
 
                                 <input
                                     type="datetime-local"
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     value={fechaInicio}
                                     onChange={(e) =>
                                         setFechaInicio(e.target.value)
@@ -386,13 +670,19 @@ function EventosPage() {
                             </label>
 
                             <label className="form-control">
-                                <span className="label-text mb-1">
-                                    Fecha de término
-                                </span>
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Fecha de término
+                                    </span>
+
+                                    <span className="label-text-alt">
+                                        Opcional
+                                    </span>
+                                </div>
 
                                 <input
                                     type="datetime-local"
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     value={fechaFin}
                                     onChange={(e) =>
                                         setFechaFin(e.target.value)
@@ -400,63 +690,81 @@ function EventosPage() {
                                 />
                             </label>
 
-                            <label className="form-control">
-                                <span className="label-text mb-1">
-                                    Cupo máximo
-                                </span>
+                            <label className="form-control md:col-span-1">
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Cupo máximo
+                                    </span>
+
+                                    <span className="label-text-alt">
+                                        Opcional
+                                    </span>
+                                </div>
 
                                 <input
                                     type="number"
                                     min="1"
-                                    className="input input-bordered"
+                                    className="input input-bordered w-full"
                                     value={cupoMaximo}
                                     onChange={(e) =>
                                         setCupoMaximo(e.target.value)
                                     }
                                     placeholder="Sin límite"
                                 />
+
+                                <span className="mt-2 text-xs text-base-content/50">
+                                    Déjalo vacío si la actividad no tiene límite.
+                                </span>
+                            </label>
+
+                            <label className="form-control md:col-span-2">
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Descripción
+                                    </span>
+
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
+
+                                <textarea
+                                    className="textarea textarea-bordered min-h-32 w-full resize-y"
+                                    value={descripcion}
+                                    onChange={(e) =>
+                                        setDescripcion(e.target.value)
+                                    }
+                                    placeholder="Describe el objetivo, detalles o información importante del evento..."
+                                    required
+                                />
                             </label>
                         </div>
 
-                        <label className="form-control">
-                            <span className="label-text mb-1">
-                                Descripción
-                            </span>
-
-                            <textarea
-                                className="textarea textarea-bordered min-h-28"
-                                value={descripcion}
-                                onChange={(e) =>
-                                    setDescripcion(e.target.value)
-                                }
-                                required
-                            />
-                        </label>
-
-                        <div className="card-actions justify-end">
+                        <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-base-300 pt-6">
                             {eventoAEditar && (
                                 <button
                                     type="button"
                                     className="btn btn-outline"
-                                    onClick={() => {
-                                        setEventoAEditar(null)
-                                        setTitulo('')
-                                        setDescripcion('')
-                                        setLugar('')
-                                        setFechaInicio('')
-                                        setFechaFin('')
-                                        setCupoMaximo('')
-                                        setMensaje('')
-                                    }}
+                                    disabled={creando}
+                                    onClick={cancelarEdicion}
                                 >
                                     Cancelar edición
                                 </button>
                             )}
+
                             <button
                                 type="submit"
-                                className="btn btn-primary"
+                                className={
+                                    eventoAEditar
+                                        ? 'btn btn-warning'
+                                        : 'btn btn-primary'
+                                }
                                 disabled={creando}
                             >
+                                {creando && (
+                                    <span className="loading loading-spinner loading-sm" />
+                                )}
+
                                 {creando
                                     ? 'Guardando...'
                                     : eventoAEditar
@@ -467,135 +775,251 @@ function EventosPage() {
                     </div>
                 </form>
 
+                {/* Cargando */}
                 {cargando && (
-                    <div className="alert">
-                        Cargando eventos...
+                    <div className="alert mb-6 border border-base-300 bg-base-100 shadow-sm">
+                        <span className="loading loading-spinner loading-sm" />
+
+                        <span>
+                            Cargando actividades y eventos...
+                        </span>
                     </div>
                 )}
 
+                {/* Error */}
                 {error && (
-                    <div className="alert alert-error">
-                        {error}
+                    <div className="alert alert-error mb-6 shadow-sm">
+                        <span>{error}</span>
                     </div>
                 )}
 
-                {!cargando && !error && eventos.length === 0 && (
-                    <div className="alert">
-                        No hay eventos registrados.
-                    </div>
-                )}
+                {/* Eventos */}
+                {!cargando && !error && (
+                    <div>
+                        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                                <h2 className="text-2xl font-bold">
+                                    Eventos registrados
+                                </h2>
 
-                {!cargando && !error && eventos.length > 0 && (
-                    <div className="grid gap-4">
-                        {eventos.map((evento) => (
-                            <article
-                                key={evento.id}
-                                className="card bg-base-100 shadow"
-                            >
-                                <div className="card-body">
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-sm text-base-content/60">
-                                                {evento.junta_nombre}
+                                <p className="mt-1 text-base-content/60">
+                                    Revisa y administra las actividades de la
+                                    junta de vecinos.
+                                </p>
+                            </div>
+
+                            {eventos.length > 0 && (
+                                <span className="badge badge-outline badge-lg">
+                                    {eventos.length}{' '}
+                                    {eventos.length === 1
+                                        ? 'evento'
+                                        : 'eventos'}
+                                </span>
+                            )}
+                        </div>
+
+                        {eventos.length === 0 ? (
+                            <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                                <div className="mx-auto max-w-md">
+                                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl text-primary">
+                                        +
+                                    </div>
+
+                                    <h3 className="text-xl font-bold">
+                                        No hay eventos registrados
+                                    </h3>
+
+                                    <p className="mt-2 text-base-content/60">
+                                        Utiliza el formulario superior para
+                                        crear la primera actividad de la junta.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid gap-5 lg:grid-cols-2">
+                                {eventos.map((evento) => (
+                                    <article
+                                        key={evento.id}
+                                        className={`flex h-full flex-col rounded-2xl border bg-base-100 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${obtenerBordeEvento(
+                                            evento.estado
+                                        )}`}
+                                    >
+                                        <div className="flex-1 p-6">
+
+                                            {/* Cabecera */}
+                                            <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-base-content/45">
+                                                        {evento.junta_nombre}
+                                                    </p>
+
+                                                    <h3 className="text-xl font-bold leading-snug">
+                                                        {evento.titulo}
+                                                    </h3>
+                                                </div>
+
+                                                <span
+                                                    className={obtenerClaseEstado(
+                                                        evento.estado
+                                                    )}
+                                                >
+                                                    {obtenerTextoEstado(
+                                                        evento.estado
+                                                    )}
+                                                </span>
+                                            </div>
+
+                                            {/* Descripción */}
+                                            <p className="mb-5 whitespace-pre-wrap leading-relaxed text-base-content/70">
+                                                {evento.descripcion}
                                             </p>
 
-                                            <h2 className="card-title">
-                                                {evento.titulo}
-                                            </h2>
+                                            {/* Datos */}
+                                            <div className="grid gap-3 sm:grid-cols-2">
+
+                                                <div className="rounded-xl bg-base-200/60 p-4">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-base-content/45">
+                                                        Lugar
+                                                    </p>
+
+                                                    <p className="mt-1 font-medium">
+                                                        {evento.lugar}
+                                                    </p>
+                                                </div>
+
+                                                <div className="rounded-xl bg-base-200/60 p-4">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-base-content/45">
+                                                        Cupo
+                                                    </p>
+
+                                                    <p className="mt-1 font-medium">
+                                                        {evento.cupo_maximo !== null
+                                                            ? `${evento.cupo_maximo} personas`
+                                                            : 'Sin límite'}
+                                                    </p>
+                                                </div>
+
+                                                <div className="rounded-xl bg-base-200/60 p-4">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-base-content/45">
+                                                        Inicio
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-medium">
+                                                        {formatearFecha(
+                                                            evento.fecha_inicio
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <div className="rounded-xl bg-base-200/60 p-4">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-base-content/45">
+                                                        Término
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-medium">
+                                                        {evento.fecha_fin
+                                                            ? formatearFecha(
+                                                                evento.fecha_fin
+                                                            )
+                                                            : 'Sin definir'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 flex flex-wrap items-center justify-between gap-2 text-sm text-base-content/50">
+                                                <span>
+                                                    Creado por{' '}
+                                                    <strong className="font-semibold text-base-content/70">
+                                                        {evento.creador_username}
+                                                    </strong>
+                                                </span>
+
+                                                <span>
+                                                    Evento #{evento.id}
+                                                </span>
+                                            </div>
                                         </div>
 
-                                        <span className="badge badge-outline">
-                                            {evento.estado}
-                                        </span>
-                                    </div>
-
-                                    <p className="whitespace-pre-wrap">
-                                        {evento.descripcion}
-                                    </p>
-
-                                    <div className="text-sm space-y-1">
-                                        <p>
-                                            <strong>Lugar:</strong>{' '}
-                                            {evento.lugar}
-                                        </p>
-
-                                        <p>
-                                            <strong>Inicio:</strong>{' '}
-                                            {new Date(
-                                                evento.fecha_inicio
-                                            ).toLocaleString()}
-                                        </p>
-
-                                        {evento.fecha_fin && (
-                                            <p>
-                                                <strong>Término:</strong>{' '}
-                                                {new Date(
-                                                    evento.fecha_fin
-                                                ).toLocaleString()}
-                                            </p>
-                                        )}
-
-                                        <p>
-                                            <strong>Cupo:</strong>{' '}
-                                            {evento.cupo_maximo ?? 'Sin límite'}
-                                        </p>
-
-                                        <p>
-                                            <strong>Creado por:</strong>{' '}
-                                            {evento.creador_username}
-                                        </p>
+                                        {/* Acciones */}
                                         {evento.estado === 'PROGRAMADO' && (
-                                            <div className="card-actions justify-end mt-4">
-                                                <Link
-                                                    to={`/directiva/eventos/${evento.id}/asistencia`}
-                                                    className="btn btn-primary"
-                                                >
-                                                    Registrar asistencia
-                                                </Link>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-outline"
-                                                    onClick={() => prepararEdicion(evento)}
-                                                >
-                                                    Editar evento
-                                                </button>
+                                            <div className="border-t border-base-300 p-4">
+                                                <div className="flex flex-wrap justify-end gap-2">
 
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-error btn-outline"
-                                                    onClick={() => setEventoACancelar(evento)}
-                                                >
-                                                    Cancelar evento
-                                                </button>
+                                                    <Link
+                                                        to={`/directiva/eventos/${evento.id}/asistencia`}
+                                                        className="btn btn-sm btn-primary"
+                                                    >
+                                                        Registrar asistencia
+                                                    </Link>
+
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-outline"
+                                                        onClick={() =>
+                                                            prepararEdicion(evento)
+                                                        }
+                                                    >
+                                                        Editar
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-error btn-outline"
+                                                        onClick={() =>
+                                                            setEventoACancelar(evento)
+                                                        }
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
-                                    </div>
-                                </div>
-                            </article>
-                        ))}
+                                    </article>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </section>
+
+            {/* Modal de cancelación */}
             {eventoACancelar && (
                 <dialog
                     open
-                    className="modal"
+                    className="modal modal-open"
                 >
-                    <div className="modal-box">
-                        <h3 className="font-bold text-lg">
-                            Confirmar cancelación
+                    <div className="modal-box rounded-2xl border border-base-300">
+
+                        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-error/10 text-xl font-bold text-error">
+                            !
+                        </div>
+
+                        <h3 className="text-xl font-bold">
+                            Cancelar evento
                         </h3>
 
-                        <p className="py-4">
-                            ¿Deseas cancelar el evento{' '}
-                            <strong>{eventoACancelar.titulo}</strong>?
+                        <p className="mt-2 leading-relaxed text-base-content/70">
+                            Estás a punto de cancelar el evento{' '}
+                            <strong className="text-base-content">
+                                {eventoACancelar.titulo}
+                            </strong>
+                            .
                         </p>
+
+                        <div className="alert alert-warning mt-5">
+                            <span>
+                                El evento quedará registrado como cancelado.
+                            </span>
+                        </div>
 
                         <div className="modal-action">
                             <button
                                 type="button"
-                                className="btn"
-                                onClick={() => setEventoACancelar(null)}
+                                className="btn btn-outline"
+                                disabled={cancelando}
+                                onClick={() =>
+                                    setEventoACancelar(null)
+                                }
                             >
                                 Volver
                             </button>
@@ -603,15 +1027,32 @@ function EventosPage() {
                             <button
                                 type="button"
                                 className="btn btn-error"
+                                disabled={cancelando}
                                 onClick={() => {
-                                    void cancelarEvento(eventoACancelar.id)
-                                    setEventoACancelar(null)
+                                    void cancelarEvento(
+                                        eventoACancelar.id
+                                    )
                                 }}
                             >
-                                Sí, cancelar
+                                {cancelando && (
+                                    <span className="loading loading-spinner loading-sm" />
+                                )}
+
+                                {cancelando
+                                    ? 'Cancelando...'
+                                    : 'Sí, cancelar evento'}
                             </button>
                         </div>
                     </div>
+
+                    <div
+                        className="modal-backdrop bg-black/30"
+                        onClick={() => {
+                            if (!cancelando) {
+                                setEventoACancelar(null)
+                            }
+                        }}
+                    />
                 </dialog>
             )}
         </main>

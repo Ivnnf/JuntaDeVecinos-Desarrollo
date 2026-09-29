@@ -52,78 +52,188 @@ function RecuperarPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-base-200 flex items-center justify-center px-4 py-8">
-      <section className="card w-full max-w-md bg-base-100 shadow-xl">
-        <div className="card-body">
-          <div className="text-center mb-4">
-            <h1 className="text-3xl font-bold">
-              Recuperar contraseña
-            </h1>
+    <main className="min-h-screen bg-base-200 px-4 py-8">
+      <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center">
+        <div className="grid w-full overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm lg:grid-cols-[0.85fr_1.15fr]">
 
-            <p className="text-base-content/70 mt-2">
-              Ingresa el correo asociado a tu cuenta.
-            </p>
+          {/* Panel informativo */}
+          <div className="border-b border-base-300 bg-primary/5 p-6 sm:p-8 lg:border-b-0 lg:border-r">
+            <div className="flex h-full flex-col justify-between gap-8">
+              <div>
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-xl font-bold text-primary">
+                  JV
+                </div>
+
+                <span className="badge badge-primary badge-outline">
+                  Seguridad
+                </span>
+
+                <h1 className="mt-4 text-3xl font-bold leading-tight">
+                  Recuperar contraseña
+                </h1>
+
+                <p className="mt-3 leading-relaxed text-base-content/70">
+                  Ingresa el correo electrónico asociado a tu cuenta para
+                  iniciar el proceso de recuperación.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-xl border border-base-300 bg-base-100/70 p-4">
+                  <p className="font-semibold">
+                    ¿Qué ocurrirá después?
+                  </p>
+
+                  <div className="mt-3 space-y-3 text-sm text-base-content/70">
+                    <div className="flex gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        1
+                      </span>
+
+                      <p>
+                        Ingresa el correo asociado a tu cuenta.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        2
+                      </span>
+
+                      <p>
+                        Recibirás las instrucciones disponibles para recuperar
+                        tu acceso.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        3
+                      </span>
+
+                      <p>
+                        Sigue las indicaciones para establecer una nueva
+                        contraseña.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-base-300 bg-base-100/70 p-4">
+                  <p className="text-sm text-base-content/60">
+                    Si recuerdas tu contraseña, puedes volver directamente al
+                    inicio de sesión.
+                  </p>
+
+                  <Link
+                    to="/login"
+                    className="btn btn-outline mt-3 w-full"
+                  >
+                    Volver al inicio de sesión
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {error && (
-            <div className="alert alert-error">
-              <span>{error}</span>
-            </div>
-          )}
+          {/* Formulario */}
+          <div className="flex items-center p-6 sm:p-8 lg:p-10">
+            <div className="w-full">
+              <div className="mb-6">
+                <div className="mb-2 flex flex-wrap items-center gap-3">
+                  <h2 className="text-2xl font-bold">
+                    Recuperar acceso
+                  </h2>
 
-          {mensaje && (
-            <div className="alert alert-success">
-              <span>{mensaje}</span>
-            </div>
-          )}
+                  <span className="badge badge-info badge-outline">
+                    Cuenta
+                  </span>
+                </div>
 
-          <form
-            className="space-y-4"
-            onSubmit={handleSubmit}
-          >
-            <div>
-              <label
-                className="label"
-                htmlFor="email"
+                <p className="text-base-content/60">
+                  Escribe el correo electrónico registrado en tu cuenta.
+                </p>
+              </div>
+
+              {error && (
+                <div className="alert alert-error mb-6">
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {mensaje && (
+                <div className="alert alert-success mb-6">
+                  <span>{mensaje}</span>
+                </div>
+              )}
+
+              <form
+                className="space-y-5"
+                onSubmit={handleSubmit}
               >
-                <span className="label-text">
-                  Correo electrónico
-                </span>
-              </label>
+                <label className="form-control">
+                  <div className="label">
+                    <span className="label-text font-semibold">
+                      Correo electrónico
+                    </span>
 
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="correo@ejemplo.com"
-                className="input input-bordered w-full"
-                value={email}
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
-                required
-              />
+                    <span className="label-text-alt text-error">
+                      Obligatorio
+                    </span>
+                  </div>
+
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="correo@ejemplo.cl"
+                    className="input input-bordered w-full"
+                    value={email}
+                    onChange={(event) =>
+                      setEmail(event.target.value)
+                    }
+                    required
+                  />
+
+                  <span className="mt-2 text-xs text-base-content/50">
+                    Usa el mismo correo con el que registraste tu cuenta.
+                  </span>
+                </label>
+
+                <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
+                  <p className="text-sm text-base-content/60">
+                    Por seguridad, asegúrate de ingresar correctamente tu
+                    dirección de correo antes de continuar.
+                  </p>
+                </div>
+
+                <div className="border-t border-base-300 pt-5">
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-full"
+                    disabled={cargando}
+                  >
+                    {cargando && (
+                      <span className="loading loading-spinner loading-sm" />
+                    )}
+
+                    {cargando
+                      ? 'Enviando...'
+                      : 'Enviar instrucciones'}
+                  </button>
+                </div>
+              </form>
+
+              <div className="mt-6 text-center lg:hidden">
+                <Link
+                  to="/login"
+                  className="link link-primary"
+                >
+                  Volver al inicio de sesión
+                </Link>
+              </div>
             </div>
-
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={cargando}
-            >
-              {cargando
-                ? 'Enviando...'
-                : 'Enviar instrucciones'}
-            </button>
-          </form>
-
-          <div className="text-center mt-4">
-            <Link
-              to="/login"
-              className="link link-primary"
-            >
-              Volver al inicio de sesión
-            </Link>
           </div>
         </div>
       </section>

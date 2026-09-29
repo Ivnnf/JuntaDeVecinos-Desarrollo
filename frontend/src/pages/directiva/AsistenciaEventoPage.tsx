@@ -25,28 +25,38 @@ type AsistenciaEvento = {
 }
 
 function AsistenciaEventoPage() {
-
-    const [asistencias, setAsistencias] =
-        useState<AsistenciaEvento[]>([])
-
     const { id } = useParams()
 
     const [inscripciones, setInscripciones] =
         useState<InscripcionEvento[]>([])
 
-    const [cargando, setCargando] =
+    const [asistencias, setAsistencias] =
+        useState<AsistenciaEvento[]>([])
+
+    const [cargandoInscripciones, setCargandoInscripciones] =
         useState(true)
+
+    const [cargandoAsistencias, setCargandoAsistencias] =
+        useState(true)
+
+    const [procesandoInscripcionId, setProcesandoInscripcionId] =
+        useState<number | null>(null)
 
     const [error, setError] =
         useState('')
+
+    const cargando =
+        cargandoInscripciones || cargandoAsistencias
+
     useEffect(() => {
         const cargarInscripciones = async () => {
             if (!id) {
+                setCargandoInscripciones(false)
                 return
             }
 
             try {
-                setCargando(true)
+                setCargandoInscripciones(true)
                 setError('')
 
                 const response = await fetch(
@@ -73,7 +83,7 @@ function AsistenciaEventoPage() {
                         : 'Ocurrió un error inesperado.'
                 )
             } finally {
-                setCargando(false)
+                setCargandoInscripciones(false)
             }
         }
 
@@ -83,10 +93,13 @@ function AsistenciaEventoPage() {
     useEffect(() => {
         const cargarAsistencias = async () => {
             if (!id) {
+                setCargandoAsistencias(false)
                 return
             }
 
             try {
+                setCargandoAsistencias(true)
+
                 const response = await fetch(
                     `http://localhost:8000/api/eventos/eventos/${id}/asistencias/`,
                     {
@@ -110,6 +123,8 @@ function AsistenciaEventoPage() {
                         ? error.message
                         : 'Ocurrió un error inesperado.'
                 )
+            } finally {
+                setCargandoAsistencias(false)
             }
         }
 
@@ -126,6 +141,7 @@ function AsistenciaEventoPage() {
 
         try {
             setError('')
+            setProcesandoInscripcionId(inscripcionId)
 
             const response = await fetch(
                 `http://localhost:8000/api/eventos/eventos/${id}/asistencias/`,
@@ -165,6 +181,8 @@ function AsistenciaEventoPage() {
                     ? error.message
                     : 'Ocurrió un error inesperado.'
             )
+        } finally {
+            setProcesandoInscripcionId(null)
         }
     }
 
@@ -179,10 +197,12 @@ function AsistenciaEventoPage() {
 
     const actualizarAsistencia = async (
         asistenciaId: number,
+        inscripcionId: number,
         estado: 'PRESENTE' | 'AUSENTE'
     ) => {
         try {
             setError('')
+            setProcesandoInscripcionId(inscripcionId)
 
             const response = await fetch(
                 `http://localhost:8000/api/eventos/asistencias/${asistenciaId}/`,
@@ -223,157 +243,422 @@ function AsistenciaEventoPage() {
                     ? error.message
                     : 'Ocurrió un error inesperado.'
             )
+        } finally {
+            setProcesandoInscripcionId(null)
         }
     }
+
+    const inscritosActivos =
+        inscripciones.filter(
+            (inscripcion) =>
+                inscripcion.estado === 'INSCRITO'
+        )
+
+    const presentes =
+        asistencias.filter(
+            (asistencia) =>
+                asistencia.estado === 'PRESENTE'
+        ).length
+
+    const ausentes =
+        asistencias.filter(
+            (asistencia) =>
+                asistencia.estado === 'AUSENTE'
+        ).length
+
+    const pendientes =
+        inscritosActivos.filter(
+            (inscripcion) =>
+                !obtenerAsistencia(inscripcion.id)
+        ).length
+
+    const tituloEvento =
+        inscripciones[0]?.evento_titulo ?? 'Evento seleccionado'
+
     return (
-        <main className="min-h-screen bg-base-200 p-6">
-            <section className="max-w-5xl mx-auto">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold">
-                            Registro de Asistencia
-                        </h1>
+        <main className="min-h-screen bg-base-200 px-4 py-8">
+            <section className="mx-auto w-full max-w-6xl">
 
-                        <p className="text-base-content/70 mt-1">
-                            Evento seleccionado: {id}
-                        </p>
+                {/* Encabezado */}
+                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div>
+                            <div className="mb-3 flex flex-wrap items-center gap-3">
+                                <h1 className="text-3xl font-bold">
+                                    Registro de Asistencia
+                                </h1>
+
+                                <span className="badge badge-primary badge-lg">
+                                    Evento #{id}
+                                </span>
+                            </div>
+
+                            <p className="text-base-content/70">
+                                Registra y administra la asistencia de los
+                                vecinos inscritos en la actividad.
+                            </p>
+                        </div>
+
+                        <Link
+                            to="/directiva/eventos"
+                            className="btn btn-outline"
+                        >
+                            ← Volver a Eventos
+                        </Link>
                     </div>
-
-                    <Link
-                        to="/directiva/eventos"
-                        className="btn btn-outline"
-                    >
-                        Volver a Eventos
-                    </Link>
                 </div>
-                {cargando && (
-                    <div className="alert">
-                        Cargando vecinos inscritos...
-                    </div>
-                )}
 
-                {error && (
-                    <div className="alert alert-error">
-                        {error}
-                    </div>
-                )}
-
-                {!cargando && !error && inscripciones.length === 0 && (
-                    <div className="alert">
-                        No hay vecinos inscritos en este evento.
-                    </div>
-                )}
-
+                {/* Información del evento */}
                 {!cargando && !error && inscripciones.length > 0 && (
-                    <div className="card bg-base-100 shadow">
-                        <div className="card-body">
-                            <h2 className="card-title">
-                                Vecinos inscritos
-                            </h2>
+                    <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-base-content/50">
+                                    Actividad
+                                </p>
+
+                                <h2 className="text-2xl font-bold">
+                                    {tituloEvento}
+                                </h2>
+
+                                <p className="mt-2 text-sm text-base-content/60">
+                                    Control de participantes y asistencia
+                                    registrada.
+                                </p>
+                            </div>
+
+                            <span className="badge badge-success badge-lg">
+                                Registro habilitado
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Cargando */}
+                {cargando && (
+                    <div className="alert mb-6 border border-base-300 bg-base-100 shadow-sm">
+                        <span className="loading loading-spinner loading-sm" />
+
+                        <span>
+                            Cargando información de asistencia...
+                        </span>
+                    </div>
+                )}
+
+                {/* Error */}
+                {error && (
+                    <div className="alert alert-error mb-6 shadow-sm">
+                        <span>{error}</span>
+                    </div>
+                )}
+
+                {/* Resumen */}
+                {!cargando && !error && inscripciones.length > 0 && (
+                    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+                        <div className="rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Inscritos
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {inscritosActivos.length}
+                                </span>
+
+                                <span className="badge badge-info badge-outline">
+                                    Activos
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Presentes
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {presentes}
+                                </span>
+
+                                <span className="badge badge-success">
+                                    Presente
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-red-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Ausentes
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {ausentes}
+                                </span>
+
+                                <span className="badge badge-error">
+                                    Ausente
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-amber-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Pendientes
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {pendientes}
+                                </span>
+
+                                <span className="badge badge-warning badge-outline">
+                                    Sin registrar
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Sin inscritos */}
+                {!cargando &&
+                    !error &&
+                    inscripciones.length === 0 && (
+                        <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                            <div className="mx-auto max-w-md">
+                                <h2 className="text-xl font-bold">
+                                    No hay vecinos inscritos
+                                </h2>
+
+                                <p className="mt-2 text-base-content/60">
+                                    Todavía no existen participantes
+                                    registrados para este evento.
+                                </p>
+
+                                <Link
+                                    to="/directiva/eventos"
+                                    className="btn btn-primary mt-6"
+                                >
+                                    Volver a Eventos
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
+                {/* Tabla */}
+                {!cargando &&
+                    !error &&
+                    inscripciones.length > 0 && (
+                        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+
+                            <div className="border-b border-base-300 p-6">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <h2 className="text-2xl font-bold">
+                                            Vecinos inscritos
+                                        </h2>
+
+                                        <p className="mt-1 text-base-content/60">
+                                            Marca a cada participante como
+                                            presente o ausente.
+                                        </p>
+                                    </div>
+
+                                    <span className="badge badge-outline badge-lg">
+                                        {inscripciones.length}{' '}
+                                        {inscripciones.length === 1
+                                            ? 'registro'
+                                            : 'registros'}
+                                    </span>
+                                </div>
+                            </div>
 
                             <div className="overflow-x-auto">
-                                <table className="table">
-                                    <thead>
+                                <table className="table min-w-[760px]">
+
+                                    <thead className="bg-base-200/60">
                                         <tr>
-                                            <th>Vecino</th>
-                                            <th>Estado inscripción</th>
-                                            <th>Asistencia</th>
+                                            <th className="pl-6">
+                                                Vecino
+                                            </th>
+
+                                            <th>
+                                                Estado inscripción
+                                            </th>
+
+                                            <th>
+                                                Asistencia
+                                            </th>
+
+                                            <th className="pr-6 text-right">
+                                                Acción
+                                            </th>
                                         </tr>
                                     </thead>
 
                                     <tbody>
-                                        {inscripciones.map((inscripcion) => (
-                                            <tr key={inscripcion.id}>
-                                                <td>
-                                                    {inscripcion.usuario_username}
-                                                </td>
+                                        {inscripciones.map(
+                                            (inscripcion) => {
+                                                const asistencia =
+                                                    obtenerAsistencia(
+                                                        inscripcion.id
+                                                    )
 
-                                                <td>
-                                                    <span className="badge badge-success">
-                                                        Inscrito
-                                                    </span>
-                                                </td>
+                                                const procesando =
+                                                    procesandoInscripcionId ===
+                                                    inscripcion.id
 
-                                                <td>
-                                                    {(() => {
-                                                        const asistencia = obtenerAsistencia(
-                                                            inscripcion.id
-                                                        )
+                                                const cancelada =
+                                                    inscripcion.estado ===
+                                                    'CANCELADA'
 
-                                                        if (asistencia) {
-                                                            return (
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <span
-                                                                        className={
-                                                                            asistencia.estado === 'PRESENTE'
-                                                                                ? 'badge badge-success'
-                                                                                : 'badge badge-error'
+                                                return (
+                                                    <tr
+                                                        key={inscripcion.id}
+                                                        className="transition-colors hover:bg-base-200/50"
+                                                    >
+                                                        <td className="pl-6">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                                                                    {inscripcion.usuario_username
+                                                                        .charAt(0)
+                                                                        .toUpperCase()}
+                                                                </div>
+
+                                                                <div>
+                                                                    <p className="font-semibold">
+                                                                        {
+                                                                            inscripcion.usuario_username
                                                                         }
-                                                                    >
-                                                                        {asistencia.estado === 'PRESENTE'
-                                                                            ? 'Presente'
-                                                                            : 'Ausente'}
-                                                                    </span>
+                                                                    </p>
 
+                                                                    <p className="text-xs text-base-content/50">
+                                                                        Participante
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                        <td>
+                                                            {cancelada ? (
+                                                                <span className="badge badge-ghost">
+                                                                    Cancelada
+                                                                </span>
+                                                            ) : (
+                                                                <span className="badge badge-success badge-outline">
+                                                                    Inscrito
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        <td>
+                                                            {cancelada ? (
+                                                                <span className="text-sm text-base-content/40">
+                                                                    No aplica
+                                                                </span>
+                                                            ) : asistencia ? (
+                                                                asistencia.estado ===
+                                                                'PRESENTE' ? (
+                                                                    <span className="badge badge-success">
+                                                                        Presente
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="badge badge-error">
+                                                                        Ausente
+                                                                    </span>
+                                                                )
+                                                            ) : (
+                                                                <span className="badge badge-warning badge-outline">
+                                                                    Pendiente
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        <td className="pr-6">
+                                                            <div className="flex justify-end">
+                                                                {cancelada ? (
+                                                                    <span className="text-sm text-base-content/40">
+                                                                        Sin acciones
+                                                                    </span>
+                                                                ) : asistencia ? (
                                                                     <button
                                                                         type="button"
-                                                                        className="btn btn-xs btn-outline"
+                                                                        disabled={
+                                                                            procesando
+                                                                        }
+                                                                        className="btn btn-sm btn-outline"
                                                                         onClick={() => {
                                                                             void actualizarAsistencia(
                                                                                 asistencia.id,
-                                                                                asistencia.estado === 'PRESENTE'
+                                                                                inscripcion.id,
+                                                                                asistencia.estado ===
+                                                                                    'PRESENTE'
                                                                                     ? 'AUSENTE'
                                                                                     : 'PRESENTE'
                                                                             )
                                                                         }}
                                                                     >
-                                                                        {asistencia.estado === 'PRESENTE'
-                                                                            ? 'Cambiar a Ausente'
-                                                                            : 'Cambiar a Presente'}
+                                                                        {procesando && (
+                                                                            <span className="loading loading-spinner loading-xs" />
+                                                                        )}
+
+                                                                        {asistencia.estado ===
+                                                                        'PRESENTE'
+                                                                            ? 'Marcar Ausente'
+                                                                            : 'Marcar Presente'}
                                                                     </button>
-                                                                </div>
-                                                            )
-                                                        }
+                                                                ) : (
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={
+                                                                                procesando
+                                                                            }
+                                                                            className="btn btn-sm btn-success"
+                                                                            onClick={() => {
+                                                                                void registrarAsistencia(
+                                                                                    inscripcion.id,
+                                                                                    'PRESENTE'
+                                                                                )
+                                                                            }}
+                                                                        >
+                                                                            {procesando && (
+                                                                                <span className="loading loading-spinner loading-xs" />
+                                                                            )}
 
-                                                        return (
-                                                            <div className="flex flex-wrap gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-sm btn-success"
-                                                                    onClick={() => {
-                                                                        void registrarAsistencia(
-                                                                            inscripcion.id,
-                                                                            'PRESENTE'
-                                                                        )
-                                                                    }}
-                                                                >
-                                                                    Presente
-                                                                </button>
+                                                                            Presente
+                                                                        </button>
 
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-sm btn-error btn-outline"
-                                                                    onClick={() => {
-                                                                        void registrarAsistencia(
-                                                                            inscripcion.id,
-                                                                            'AUSENTE'
-                                                                        )
-                                                                    }}
-                                                                >
-                                                                    Ausente
-                                                                </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={
+                                                                                procesando
+                                                                            }
+                                                                            className="btn btn-sm btn-outline btn-error"
+                                                                            onClick={() => {
+                                                                                void registrarAsistencia(
+                                                                                    inscripcion.id,
+                                                                                    'AUSENTE'
+                                                                                )
+                                                                            }}
+                                                                        >
+                                                                            Ausente
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        )
-                                                    })()}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            }
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
             </section>
         </main>
     )

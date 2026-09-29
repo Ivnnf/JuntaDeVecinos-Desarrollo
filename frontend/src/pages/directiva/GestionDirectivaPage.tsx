@@ -76,6 +76,7 @@ function GestionDirectivaPage() {
 
     const [error, setError] =
         useState('')
+
     const [integranteReasignando, setIntegranteReasignando] =
         useState<IntegranteDirectivaActual | null>(null)
 
@@ -368,87 +369,227 @@ function GestionDirectivaPage() {
             setReasignandoCargo(false)
         }
     }
+
     return (
         <main className="min-h-screen bg-base-200 px-4 py-8">
-            <section className="mx-auto max-w-6xl">
-                <h1 className="text-3xl font-bold">
-                    Gestión de Directiva
-                </h1>
+            <section className="mx-auto w-full max-w-6xl">
+                {/* Encabezado */}
+                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div>
+                            <div className="mb-3 flex flex-wrap items-center gap-3">
+                                <h1 className="text-3xl font-bold">
+                                    Gestión de Directiva
+                                </h1>
 
-                <p className="text-base-content/70 mt-2">
-                    Administración de integrantes y cargos de la directiva vigente.
-                </p>
+                                <span className="badge badge-primary badge-lg">
+                                    Directiva
+                                </span>
+
+                                {directivaIdDesdeUrl && (
+                                    <span className="badge badge-secondary badge-outline badge-lg">
+                                        Administración
+                                    </span>
+                                )}
+                            </div>
+
+                            <p className="max-w-2xl text-base-content/70">
+                                Administración de integrantes y cargos de la directiva vigente.
+                            </p>
+                        </div>
+
+                        <Link
+                            to={
+                                directivaIdDesdeUrl
+                                    ? '/admin/directivas'
+                                    : '/directiva'
+                            }
+                            className="btn btn-outline"
+                        >
+                            ←{' '}
+                            {directivaIdDesdeUrl
+                                ? 'Volver a Gestión de Directivas'
+                                : 'Volver al Panel'}
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Estado de carga */}
                 {cargando && (
-                    <div className="alert mt-4">
-                        Cargando información de la directiva...
+                    <div className="alert mb-6 border border-base-300 bg-base-100 shadow-sm">
+                        <span className="loading loading-spinner loading-sm" />
+                        <span>
+                            Cargando información de la directiva...
+                        </span>
                     </div>
                 )}
 
+                {/* Error */}
                 {error && (
-                    <div className="alert alert-error mt-4">
-                        {error}
+                    <div className="alert alert-error mb-6 shadow-sm">
+                        <span>{error}</span>
                     </div>
                 )}
+
                 {!cargando && !error && (
-                    <p className="mt-4 text-base-content/70">
-                        Cargos disponibles: {cargos.length}
-                    </p>
-                )}
-                {!cargando && !error && (
-                    <div className="mt-6">
-                        <div className="mt-6">
-                            <h2 className="text-xl font-semibold mb-3">
-                                Integrantes actuales
-                            </h2>
+                    <>
+                        {/* Resumen */}
+                        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
+                                <p className="text-sm font-medium text-base-content/60">
+                                    Integrantes actuales
+                                </p>
+
+                                <div className="mt-2 flex items-end justify-between gap-3">
+                                    <span className="text-3xl font-bold">
+                                        {integrantesActuales.length}
+                                    </span>
+
+                                    <span className="badge badge-primary badge-outline">
+                                        Activos
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
+                                <p className="text-sm font-medium text-base-content/60">
+                                    Usuarios elegibles
+                                </p>
+
+                                <div className="mt-2 flex items-end justify-between gap-3">
+                                    <span className="text-3xl font-bold">
+                                        {usuariosElegibles.length}
+                                    </span>
+
+                                    <span className="badge badge-success badge-outline">
+                                        Disponibles
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-cyan-500/30 bg-base-100 p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+                                <p className="text-sm font-medium text-base-content/60">
+                                    Cargos disponibles
+                                </p>
+
+                                <div className="mt-2 flex items-end justify-between gap-3">
+                                    <span className="text-3xl font-bold">
+                                        {cargos.length}
+                                    </span>
+
+                                    <span className="badge badge-info badge-outline">
+                                        Activos
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Integrantes actuales */}
+                        <div className="mb-6 overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                            <div className="border-b border-base-300 p-6">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div>
+                                        <h2 className="text-2xl font-bold">
+                                            Integrantes actuales
+                                        </h2>
+
+                                        <p className="mt-1 text-base-content/60">
+                                            Miembros activos y cargos asignados dentro de la directiva.
+                                        </p>
+                                    </div>
+
+                                    <span className="badge badge-outline badge-lg">
+                                        {integrantesActuales.length}{' '}
+                                        {integrantesActuales.length === 1
+                                            ? 'integrante'
+                                            : 'integrantes'}
+                                    </span>
+                                </div>
+                            </div>
 
                             <div className="overflow-x-auto">
-                                <table className="table">
-                                    <thead>
+                                <table className="table min-w-[820px]">
+                                    <thead className="bg-base-200/60">
                                         <tr>
-                                            <th>Nombre</th>
+                                            <th className="pl-6">Nombre</th>
                                             <th>Usuario</th>
                                             <th>Cargo</th>
                                             <th>Estado</th>
-                                            <th>Acciones</th>
+                                            <th className="pr-6 text-right">
+                                                Acciones
+                                            </th>
                                         </tr>
                                     </thead>
 
                                     <tbody>
                                         {integrantesActuales.map((integrante) => (
-                                            <tr key={integrante.id}>
-                                                <td>
-                                                    {[
-                                                        integrante.usuario_nombres,
-                                                        integrante.usuario_apellido_paterno,
-                                                    ]
-                                                        .filter(Boolean)
-                                                        .join(' ') || '-'}
+                                            <tr
+                                                key={integrante.id}
+                                                className="transition-colors hover:bg-base-200/50"
+                                            >
+                                                <td className="pl-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                                                            {(
+                                                                integrante.usuario_nombres ||
+                                                                integrante.usuario_username
+                                                            )
+                                                                .charAt(0)
+                                                                .toUpperCase()}
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="font-semibold">
+                                                                {[
+                                                                    integrante.usuario_nombres,
+                                                                    integrante.usuario_apellido_paterno,
+                                                                ]
+                                                                    .filter(Boolean)
+                                                                    .join(' ') || '-'}
+                                                            </p>
+
+                                                            <p className="text-xs text-base-content/50">
+                                                                Integrante de directiva
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 </td>
 
-                                                <td>
+                                                <td className="font-medium">
                                                     {integrante.usuario_username}
                                                 </td>
 
                                                 <td>
-                                                    {integrante.cargo_nombre}
+                                                    <span className="badge badge-outline">
+                                                        {integrante.cargo_nombre}
+                                                    </span>
                                                 </td>
 
                                                 <td>
-                                                    {integrante.activo
-                                                        ? 'Activo'
-                                                        : 'Inactivo'}
+                                                    {integrante.activo ? (
+                                                        <span className="badge badge-success">
+                                                            Activo
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge badge-ghost">
+                                                            Inactivo
+                                                        </span>
+                                                    )}
                                                 </td>
-                                                <td>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-outline"
-                                                        onClick={() => {
-                                                            setIntegranteReasignando(integrante)
-                                                            setNuevoCargoSeleccionado('')
-                                                        }}
-                                                    >
-                                                        Reasignar cargo
-                                                    </button>
+
+                                                <td className="pr-6">
+                                                    <div className="flex justify-end">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-outline"
+                                                            onClick={() => {
+                                                                setIntegranteReasignando(integrante)
+                                                                setNuevoCargoSeleccionado('')
+                                                            }}
+                                                        >
+                                                            Reasignar cargo
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -456,8 +597,8 @@ function GestionDirectivaPage() {
                                         {integrantesActuales.length === 0 && (
                                             <tr>
                                                 <td
-                                                    colSpan={4}
-                                                    className="text-center text-base-content/60"
+                                                    colSpan={5}
+                                                    className="py-10 text-center text-base-content/60"
                                                 >
                                                     No existen integrantes registrados.
                                                 </td>
@@ -467,125 +608,193 @@ function GestionDirectivaPage() {
                                 </table>
                             </div>
                         </div>
-                        <div className="card bg-base-100 shadow mb-6">
-                            <div className="card-body">
-                                <h3 className="card-title">
-                                    Asignar integrante
-                                </h3>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Asignar integrante */}
+                        <div className="mb-6 overflow-hidden rounded-2xl border border-indigo-500/30 bg-base-100 shadow-sm">
+                            <div className="border-b border-base-300 p-6">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
                                     <div>
-                                        <label className="label">
-                                            <span className="label-text">
-                                                Usuario
+                                        <div className="mb-2 flex flex-wrap items-center gap-3">
+                                            <h2 className="text-2xl font-bold">
+                                                Asignar integrante
+                                            </h2>
+
+                                            <span className="badge badge-primary badge-outline">
+                                                Nueva incorporación
                                             </span>
-                                        </label>
+                                        </div>
 
-                                        <select
-                                            className="select select-bordered w-full"
-                                            value={usuarioSeleccionado}
-                                            onChange={(event) =>
-                                                setUsuarioSeleccionado(event.target.value)
-                                            }
-                                        >
-                                            <option value="">
-                                                Seleccione un usuario
-                                            </option>
-
-                                            {usuariosElegibles.map((usuario) => (
-                                                <option
-                                                    key={usuario.id}
-                                                    value={usuario.id}
-                                                >
-                                                    {[
-                                                        usuario.nombres,
-                                                        usuario.apellido_paterno,
-                                                    ]
-                                                        .filter(Boolean)
-                                                        .join(' ') || usuario.username}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <p className="text-base-content/60">
+                                            Selecciona un usuario elegible y el cargo que ocupará en la directiva.
+                                        </p>
                                     </div>
-
-                                    <div>
-                                        <label className="label">
-                                            <span className="label-text">
-                                                Cargo
-                                            </span>
-                                        </label>
-
-                                        <select
-                                            className="select select-bordered w-full"
-                                            value={cargoSeleccionado}
-                                            onChange={(event) =>
-                                                setCargoSeleccionado(event.target.value)
-                                            }
-                                        >
-                                            <option value="">
-                                                Seleccione un cargo
-                                            </option>
-
-                                            {cargos.map((cargo) => (
-                                                <option
-                                                    key={cargo.id}
-                                                    value={cargo.id}
-                                                >
-                                                    {cargo.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="card-actions justify-end mt-4">
-                                    <button
-                                        type="button"
-                                        className="btn btn-primary"
-                                        disabled={
-                                            guardandoAsignacion ||
-                                            !usuarioSeleccionado ||
-                                            !cargoSeleccionado
-                                        }
-                                        onClick={() =>
-                                            void asignarIntegrante()
-                                        }
-                                    >
-                                        {guardandoAsignacion
-                                            ? 'Asignando...'
-                                            : 'Asignar integrante'}
-                                    </button>
                                 </div>
                             </div>
+
+                            <div className="p-6">
+                                {usuariosElegibles.length === 0 ? (
+                                    <div className="alert">
+                                        <span>
+                                            No existen usuarios elegibles para asignar a la Directiva.
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text font-semibold">
+                                                        Usuario
+                                                    </span>
+                                                </div>
+
+                                                <select
+                                                    className="select select-bordered w-full"
+                                                    value={usuarioSeleccionado}
+                                                    onChange={(event) =>
+                                                        setUsuarioSeleccionado(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                >
+                                                    <option value="">
+                                                        Seleccione un usuario
+                                                    </option>
+
+                                                    {usuariosElegibles.map((usuario) => (
+                                                        <option
+                                                            key={usuario.id}
+                                                            value={usuario.id}
+                                                        >
+                                                            {[
+                                                                usuario.nombres,
+                                                                usuario.apellido_paterno,
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(' ') || usuario.username}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </label>
+
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text font-semibold">
+                                                        Cargo
+                                                    </span>
+                                                </div>
+
+                                                <select
+                                                    className="select select-bordered w-full"
+                                                    value={cargoSeleccionado}
+                                                    onChange={(event) =>
+                                                        setCargoSeleccionado(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                >
+                                                    <option value="">
+                                                        Seleccione un cargo
+                                                    </option>
+
+                                                    {cargos.map((cargo) => (
+                                                        <option
+                                                            key={cargo.id}
+                                                            value={cargo.id}
+                                                        >
+                                                            {cargo.nombre}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </label>
+                                        </div>
+
+                                        <div className="mt-6 flex justify-end border-t border-base-300 pt-6">
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                disabled={
+                                                    guardandoAsignacion ||
+                                                    !usuarioSeleccionado ||
+                                                    !cargoSeleccionado
+                                                }
+                                                onClick={() =>
+                                                    void asignarIntegrante()
+                                                }
+                                            >
+                                                {guardandoAsignacion && (
+                                                    <span className="loading loading-spinner loading-sm" />
+                                                )}
+
+                                                {guardandoAsignacion
+                                                    ? 'Asignando...'
+                                                    : 'Asignar integrante'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Reasignación de cargo */}
                         {integranteReasignando && (
-                            <div className="card bg-base-100 shadow mb-6">
-                                <div className="card-body">
-                                    <h3 className="card-title">
-                                        Reasignar cargo
-                                    </h3>
+                            <div className="mb-6 overflow-hidden rounded-2xl border border-amber-500/30 bg-base-100 shadow-sm">
+                                <div className="border-b border-base-300 p-6">
+                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                                        <div>
+                                            <div className="mb-2 flex flex-wrap items-center gap-3">
+                                                <h2 className="text-2xl font-bold">
+                                                    Reasignar cargo
+                                                </h2>
 
-                                    <p className="text-base-content/70">
-                                        Usuario: {integranteReasignando.usuario_username}
-                                    </p>
+                                                <span className="badge badge-warning badge-outline">
+                                                    Cambio de cargo
+                                                </span>
+                                            </div>
 
-                                    <p className="text-base-content/70">
-                                        Cargo actual: {integranteReasignando.cargo_nombre}
-                                    </p>
+                                            <p className="text-base-content/60">
+                                                Selecciona el nuevo cargo para el integrante indicado.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                    <div className="mt-4">
-                                        <label className="label">
-                                            <span className="label-text">
+                                <div className="p-6">
+                                    <div className="mb-5 grid gap-4 sm:grid-cols-2">
+                                        <div className="rounded-xl bg-base-200/60 p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-base-content/45">
+                                                Usuario
+                                            </p>
+
+                                            <p className="mt-1 font-semibold">
+                                                {integranteReasignando.usuario_username}
+                                            </p>
+                                        </div>
+
+                                        <div className="rounded-xl bg-base-200/60 p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-base-content/45">
+                                                Cargo actual
+                                            </p>
+
+                                            <p className="mt-1 font-semibold">
+                                                {integranteReasignando.cargo_nombre}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <label className="form-control">
+                                        <div className="label">
+                                            <span className="label-text font-semibold">
                                                 Nuevo cargo
                                             </span>
-                                        </label>
+                                        </div>
 
                                         <select
                                             className="select select-bordered w-full"
                                             value={nuevoCargoSeleccionado}
                                             onChange={(event) =>
                                                 setNuevoCargoSeleccionado(
-                                                    event.target.value
+                                                    event.target.value,
                                                 )
                                             }
                                         >
@@ -611,7 +820,7 @@ function GestionDirectivaPage() {
                                                                 integrante.activo &&
                                                                 integrante.cargo === cargo.id &&
                                                                 integrante.id !==
-                                                                integranteReasignando.id
+                                                                integranteReasignando.id,
                                                         )
 
                                                     return !cargoOcupado
@@ -625,35 +834,39 @@ function GestionDirectivaPage() {
                                                     </option>
                                                 ))}
                                         </select>
-                                        {cargos.filter((cargo) => {
-                                            if (
-                                                cargo.id === integranteReasignando.cargo
-                                            ) {
-                                                return false
-                                            }
+                                    </label>
 
-                                            if (cargo.permite_multiples) {
-                                                return true
-                                            }
+                                    {cargos.filter((cargo) => {
+                                        if (
+                                            cargo.id === integranteReasignando.cargo
+                                        ) {
+                                            return false
+                                        }
 
-                                            return !integrantesActuales.some(
-                                                (integrante) =>
-                                                    integrante.activo &&
-                                                    integrante.cargo === cargo.id &&
-                                                    integrante.id !==
-                                                    integranteReasignando.id,
-                                            )
-                                        }).length === 0 && (
-                                                <p className="text-sm text-warning mt-2">
-                                                    No existen otros cargos disponibles para reasignar.
-                                                </p>
-                                            )}
-                                    </div>
+                                        if (cargo.permite_multiples) {
+                                            return true
+                                        }
 
-                                    <div className="card-actions justify-end mt-4">
+                                        return !integrantesActuales.some(
+                                            (integrante) =>
+                                                integrante.activo &&
+                                                integrante.cargo === cargo.id &&
+                                                integrante.id !==
+                                                integranteReasignando.id,
+                                        )
+                                    }).length === 0 && (
+                                        <div className="alert alert-warning mt-4">
+                                            <span>
+                                                No existen otros cargos disponibles para reasignar.
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-base-300 pt-6">
                                         <button
                                             type="button"
-                                            className="btn"
+                                            className="btn btn-outline"
+                                            disabled={reasignandoCargo}
                                             onClick={() => {
                                                 setIntegranteReasignando(null)
                                                 setNuevoCargoSeleccionado('')
@@ -673,6 +886,10 @@ function GestionDirectivaPage() {
                                                 void reasignarCargoIntegrante()
                                             }
                                         >
+                                            {reasignandoCargo && (
+                                                <span className="loading loading-spinner loading-sm" />
+                                            )}
+
                                             {reasignandoCargo
                                                 ? 'Reasignando...'
                                                 : 'Confirmar reasignación'}
@@ -681,68 +898,108 @@ function GestionDirectivaPage() {
                                 </div>
                             </div>
                         )}
-                        <h2 className="text-xl font-semibold mb-3">
-                            Usuarios elegibles
-                        </h2>
 
-                        <div className="overflow-x-auto">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Usuario</th>
-                                        <th>RUT</th>
-                                        <th>Sector</th>
-                                    </tr>
-                                </thead>
+                        {/* Usuarios elegibles */}
+                        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                            <div className="border-b border-base-300 p-6">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div>
+                                        <h2 className="text-2xl font-bold">
+                                            Usuarios elegibles
+                                        </h2>
 
-                                <tbody>
-                                    {usuariosElegibles.map((usuario) => (
-                                        <tr key={usuario.id}>
-                                            <td>
-                                                {[
-                                                    usuario.nombres,
-                                                    usuario.apellido_paterno,
-                                                    usuario.apellido_materno,
-                                                ]
-                                                    .filter(Boolean)
-                                                    .join(' ') || '-'}
-                                            </td>
+                                        <p className="mt-1 text-base-content/60">
+                                            Vecinos que actualmente pueden ser asignados a la directiva.
+                                        </p>
+                                    </div>
 
-                                            <td>{usuario.username}</td>
+                                    <span className="badge badge-outline badge-lg">
+                                        {usuariosElegibles.length}{' '}
+                                        {usuariosElegibles.length === 1
+                                            ? 'disponible'
+                                            : 'disponibles'}
+                                    </span>
+                                </div>
+                            </div>
 
-                                            <td>{usuario.rut ?? '-'}</td>
-
-                                            <td>{usuario.sector_nombre}</td>
-                                        </tr>
-                                    ))}
-                                    {usuariosElegibles.length === 0 && (
+                            <div className="overflow-x-auto">
+                                <table className="table min-w-[760px]">
+                                    <thead className="bg-base-200/60">
                                         <tr>
-                                            <td
-                                                colSpan={4}
-                                                className="text-center text-base-content/60"
-                                            >
-                                                No existen usuarios elegibles para asignar a la Directiva.
-                                            </td>
+                                            <th className="pl-6">Nombre</th>
+                                            <th>Usuario</th>
+                                            <th>RUT</th>
+                                            <th className="pr-6">Sector</th>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                    </thead>
+
+                                    <tbody>
+                                        {usuariosElegibles.map((usuario) => (
+                                            <tr
+                                                key={usuario.id}
+                                                className="transition-colors hover:bg-base-200/50"
+                                            >
+                                                <td className="pl-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-sm font-bold text-emerald-700">
+                                                            {(
+                                                                usuario.nombres ||
+                                                                usuario.username
+                                                            )
+                                                                .charAt(0)
+                                                                .toUpperCase()}
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="font-semibold">
+                                                                {[
+                                                                    usuario.nombres,
+                                                                    usuario.apellido_paterno,
+                                                                    usuario.apellido_materno,
+                                                                ]
+                                                                    .filter(Boolean)
+                                                                    .join(' ') || '-'}
+                                                            </p>
+
+                                                            <p className="text-xs text-base-content/50">
+                                                                {usuario.email}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td className="font-medium">
+                                                    {usuario.username}
+                                                </td>
+
+                                                <td>
+                                                    {usuario.rut ?? '-'}
+                                                </td>
+
+                                                <td className="pr-6">
+                                                    <span className="badge badge-ghost">
+                                                        {usuario.sector_nombre}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+
+                                        {usuariosElegibles.length === 0 && (
+                                            <tr>
+                                                <td
+                                                    colSpan={4}
+                                                    className="py-10 text-center text-base-content/60"
+                                                >
+                                                    No existen usuarios elegibles para asignar a la Directiva.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    </>
                 )}
-                <Link
-                    to={
-                        directivaIdDesdeUrl
-                            ? '/admin/directivas'
-                            : '/directiva'
-                    }
-                    className="btn btn-outline mt-4"
-                >
-                    {directivaIdDesdeUrl
-                        ? 'Volver a Gestión de Directivas'
-                        : 'Volver al Panel de Directiva'}
-                </Link>
             </section>
         </main>
     )

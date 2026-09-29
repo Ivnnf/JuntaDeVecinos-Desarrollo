@@ -61,10 +61,10 @@ class SolicitudVecino(models.Model):
 
     def __str__(self):
         return f"{self.tipo} - {self.asunto}"
-    
+
     respuesta = models.TextField(
-    blank=True,
-    default="",
+        blank=True,
+        default="",
     )
 
     respondido_por = models.ForeignKey(
@@ -79,3 +79,172 @@ class SolicitudVecino(models.Model):
         null=True,
         blank=True,
     )
+
+
+class TipoDocumento(models.Model):
+    nombre = models.CharField(
+        max_length=120,
+        unique=True,
+    )
+
+    descripcion = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    activo = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
+class SolicitudDocumento(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        EN_REVISION = "EN_REVISION", "En revisión"
+        APROBADA = "APROBADA", "Aprobada"
+        RECHAZADA = "RECHAZADA", "Rechazada"
+
+    numero_seguimiento = models.CharField(
+        max_length=30,
+        unique=True,
+    )
+
+    tipo_documento = models.ForeignKey(
+        TipoDocumento,
+        on_delete=models.PROTECT,
+        related_name="solicitudes",
+    )
+
+    vecino = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="solicitudes_documento",
+    )
+
+    junta_vecinos = models.ForeignKey(
+        JuntaVecinos,
+        on_delete=models.PROTECT,
+        related_name="solicitudes_documento",
+    )
+
+    motivo = models.TextField()
+
+    estado_actual = models.CharField(
+        max_length=20,
+        choices=Estado.choices,
+        default=Estado.PENDIENTE,
+    )
+
+    responsable = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="solicitudes_documento_responsable",
+        null=True,
+        blank=True,
+    )
+
+    fecha_solicitud = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    fecha_resolucion = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["-fecha_solicitud"]
+
+    def __str__(self):
+        return f"{self.numero_seguimiento} - " f"{self.tipo_documento.nombre}"
+
+
+class HistorialSolicitudDocumento(models.Model):
+    solicitud = models.ForeignKey(
+        SolicitudDocumento,
+        on_delete=models.CASCADE,
+        related_name="historial",
+    )
+
+    estado_anterior = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+    )
+
+    estado_nuevo = models.CharField(
+        max_length=20,
+    )
+
+    usuario_responsable = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="historial_solicitudes_documento",
+    )
+
+    comentario_respuesta = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    fecha_cambio = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = ["fecha_cambio"]
+
+    def __str__(self):
+        return f"{self.solicitud.numero_seguimiento} - " f"{self.estado_nuevo}"
+
+
+class SolicitudDocumentoArchivo(models.Model):
+    class TipoUso(models.TextChoices):
+        ADJUNTO = "ADJUNTO", "Adjunto"
+        DOCUMENTO_EMITIDO = (
+            "DOCUMENTO_EMITIDO",
+            "Documento emitido",
+        )
+
+    solicitud = models.ForeignKey(
+        SolicitudDocumento,
+        on_delete=models.CASCADE,
+        related_name="archivos",
+    )
+
+    archivo = models.FileField(
+        upload_to="solicitudes_documentos/",
+    )
+
+    nombre_original = models.CharField(
+        max_length=255,
+    )
+
+    tipo_uso = models.CharField(
+        max_length=30,
+        choices=TipoUso.choices,
+        default=TipoUso.ADJUNTO,
+    )
+
+    subido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="archivos_solicitudes_documento",
+    )
+
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = ["fecha_subida"]
+
+    def __str__(self):
+        return f"{self.solicitud.numero_seguimiento} - " f"{self.nombre_original}"

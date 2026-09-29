@@ -43,6 +43,7 @@ function SolicitudesVecinoPage() {
 
     const [mensaje, setMensaje] =
         useState('')
+
     useEffect(() => {
         const cargarSolicitudes = async () => {
             try {
@@ -140,225 +141,591 @@ function SolicitudesVecinoPage() {
             setEnviando(false)
         }
     }
+
+    const nombreTipo = (
+        tipoSolicitud: SolicitudVecino['tipo']
+    ) => {
+        switch (tipoSolicitud) {
+            case 'CONSULTA':
+                return 'Consulta'
+            case 'RECLAMO':
+                return 'Reclamo'
+            case 'SOLICITUD':
+                return 'Solicitud'
+            default:
+                return tipoSolicitud
+        }
+    }
+
+    const nombreEstado = (
+        estado: SolicitudVecino['estado']
+    ) => {
+        switch (estado) {
+            case 'PENDIENTE':
+                return 'Pendiente'
+            case 'EN_PROCESO':
+                return 'En proceso'
+            case 'RESPONDIDA':
+                return 'Respondida'
+            case 'CERRADA':
+                return 'Cerrada'
+            default:
+                return estado
+        }
+    }
+
+    const claseTipo = (
+        tipoSolicitud: SolicitudVecino['tipo']
+    ) => {
+        switch (tipoSolicitud) {
+            case 'CONSULTA':
+                return 'badge badge-info badge-outline'
+            case 'RECLAMO':
+                return 'badge badge-error badge-outline'
+            case 'SOLICITUD':
+                return 'badge badge-primary badge-outline'
+            default:
+                return 'badge badge-outline'
+        }
+    }
+
+    const claseEstado = (
+        estado: SolicitudVecino['estado']
+    ) => {
+        switch (estado) {
+            case 'PENDIENTE':
+                return 'badge badge-warning badge-outline'
+            case 'EN_PROCESO':
+                return 'badge badge-info badge-outline'
+            case 'RESPONDIDA':
+                return 'badge badge-success'
+            case 'CERRADA':
+                return 'badge badge-ghost'
+            default:
+                return 'badge badge-outline'
+        }
+    }
+
+    const bordeTipo = (
+        tipoSolicitud: SolicitudVecino['tipo']
+    ) => {
+        switch (tipoSolicitud) {
+            case 'CONSULTA':
+                return 'border-blue-500/30'
+            case 'RECLAMO':
+                return 'border-red-500/30'
+            case 'SOLICITUD':
+                return 'border-indigo-500/30'
+            default:
+                return 'border-base-300'
+        }
+    }
+
+    const formatearFecha = (fecha: string) => {
+        return new Date(fecha).toLocaleString(
+            'es-CL',
+            {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+            }
+        )
+    }
+
+    const pendientes =
+        solicitudes.filter(
+            (solicitud) =>
+                solicitud.estado === 'PENDIENTE'
+        ).length
+
+    const enProceso =
+        solicitudes.filter(
+            (solicitud) =>
+                solicitud.estado === 'EN_PROCESO'
+        ).length
+
+    const respondidas =
+        solicitudes.filter(
+            (solicitud) =>
+                solicitud.estado === 'RESPONDIDA'
+        ).length
+
+    const cerradas =
+        solicitudes.filter(
+            (solicitud) =>
+                solicitud.estado === 'CERRADA'
+        ).length
+
     return (
-        <main className="min-h-screen bg-base-200 p-6">
-            <section className="max-w-5xl mx-auto">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold">
-                            Consultas, Reclamos y Solicitudes
-                        </h1>
+        <main className="min-h-screen bg-base-200 px-4 py-8">
+            <section className="mx-auto w-full max-w-6xl">
 
-                        <p className="text-base-content/70 mt-1">
-                            Envía y revisa tus solicitudes a la Junta de Vecinos.
-                        </p>
+                {/* Encabezado */}
+                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div>
+                            <div className="mb-3 flex flex-wrap items-center gap-3">
+                                <h1 className="text-3xl font-bold">
+                                    Consultas, Reclamos y Solicitudes
+                                </h1>
+
+                                <span className="badge badge-primary badge-lg">
+                                    Vecino
+                                </span>
+                            </div>
+
+                            <p className="max-w-2xl text-base-content/70">
+                                Envía nuevas solicitudes a tu Junta de Vecinos
+                                y revisa el estado de las gestiones que ya has
+                                realizado.
+                            </p>
+                        </div>
+
+                        <Link
+                            to="/vecino"
+                            className="btn btn-outline"
+                        >
+                            ← Volver al Panel
+                        </Link>
                     </div>
-
-                    <Link
-                        to="/vecino"
-                        className="btn btn-outline"
-                    >
-                        Volver al Panel
-                    </Link>
                 </div>
+
+                {/* Resumen */}
+                {!cargando && (
+                    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+                        <div className="rounded-2xl border border-amber-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Pendientes
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {pendientes}
+                                </span>
+
+                                <span className="badge badge-warning badge-outline">
+                                    Pendientes
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                En proceso
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {enProceso}
+                                </span>
+
+                                <span className="badge badge-info badge-outline">
+                                    Gestionando
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Respondidas
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {respondidas}
+                                </span>
+
+                                <span className="badge badge-success badge-outline">
+                                    Respondidas
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+                            <p className="text-sm font-medium text-base-content/60">
+                                Cerradas
+                            </p>
+
+                            <div className="mt-2 flex items-end justify-between gap-3">
+                                <span className="text-3xl font-bold">
+                                    {cerradas}
+                                </span>
+
+                                <span className="badge badge-ghost">
+                                    Finalizadas
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Formulario */}
                 <form
                     onSubmit={crearSolicitud}
-                    className="card bg-base-100 shadow mb-6"
+                    className="mb-6 overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm"
                 >
-                    <div className="card-body">
-                        <h2 className="card-title">
-                            Nueva solicitud
-                        </h2>
+                    <div className="border-b border-base-300 p-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div className="mb-2 flex flex-wrap items-center gap-3">
+                                    <h2 className="text-2xl font-bold">
+                                        Nueva solicitud
+                                    </h2>
+
+                                    <span className="badge badge-primary badge-outline">
+                                        Nuevo
+                                    </span>
+                                </div>
+
+                                <p className="text-base-content/60">
+                                    Completa los datos para enviar una nueva
+                                    gestión a la directiva.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-6">
 
                         {mensaje && (
-                            <div className="alert alert-success">
-                                {mensaje}
+                            <div className="alert alert-success mb-6">
+                                <span>{mensaje}</span>
                             </div>
                         )}
 
                         {error && (
-                            <div className="alert alert-error">
-                                {error}
+                            <div className="alert alert-error mb-6">
+                                <span>{error}</span>
                             </div>
                         )}
 
-                        <label className="form-control">
-                            <span className="label-text mb-1">
-                                Tipo
-                            </span>
+                        <div className="grid gap-5 md:grid-cols-2">
 
-                            <select
-                                className="select select-bordered"
-                                value={tipo}
-                                onChange={(e) =>
-                                    setTipo(
-                                        e.target.value as
-                                        | 'CONSULTA'
-                                        | 'RECLAMO'
-                                        | 'SOLICITUD'
-                                    )
-                                }
-                            >
-                                <option value="CONSULTA">
-                                    Consulta
-                                </option>
+                            <label className="form-control">
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Tipo
+                                    </span>
 
-                                <option value="RECLAMO">
-                                    Reclamo
-                                </option>
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
 
-                                <option value="SOLICITUD">
-                                    Solicitud
-                                </option>
-                            </select>
-                        </label>
+                                <select
+                                    className="select select-bordered w-full"
+                                    value={tipo}
+                                    onChange={(e) =>
+                                        setTipo(
+                                            e.target.value as
+                                                | 'CONSULTA'
+                                                | 'RECLAMO'
+                                                | 'SOLICITUD'
+                                        )
+                                    }
+                                >
+                                    <option value="CONSULTA">
+                                        Consulta
+                                    </option>
 
-                        <label className="form-control">
-                            <span className="label-text mb-1">
-                                Asunto
-                            </span>
+                                    <option value="RECLAMO">
+                                        Reclamo
+                                    </option>
 
-                            <input
-                                type="text"
-                                className="input input-bordered"
-                                value={asunto}
-                                onChange={(e) =>
-                                    setAsunto(e.target.value)
-                                }
-                                maxLength={200}
-                                required
-                            />
-                        </label>
+                                    <option value="SOLICITUD">
+                                        Solicitud
+                                    </option>
+                                </select>
 
-                        <label className="form-control">
-                            <span className="label-text mb-1">
-                                Descripción
-                            </span>
+                                <span className="mt-2 text-xs text-base-content/50">
+                                    Selecciona la categoría que mejor represente
+                                    tu gestión.
+                                </span>
+                            </label>
 
-                            <textarea
-                                className="textarea textarea-bordered min-h-32"
-                                value={descripcion}
-                                onChange={(e) =>
-                                    setDescripcion(e.target.value)
-                                }
-                                required
-                            />
-                        </label>
+                            <label className="form-control">
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Asunto
+                                    </span>
 
-                        <div className="card-actions justify-end">
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
+
+                                <input
+                                    type="text"
+                                    className="input input-bordered w-full"
+                                    value={asunto}
+                                    onChange={(e) =>
+                                        setAsunto(e.target.value)
+                                    }
+                                    maxLength={200}
+                                    placeholder="Ej: Consulta sobre actividad comunitaria"
+                                    required
+                                />
+
+                                <div className="mt-2 flex justify-end">
+                                    <span className="text-xs text-base-content/40">
+                                        {asunto.length}/200
+                                    </span>
+                                </div>
+                            </label>
+
+                            <label className="form-control md:col-span-2">
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Descripción
+                                    </span>
+
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
+
+                                <textarea
+                                    className="textarea textarea-bordered min-h-36 w-full resize-y"
+                                    value={descripcion}
+                                    onChange={(e) =>
+                                        setDescripcion(e.target.value)
+                                    }
+                                    placeholder="Explica tu consulta, reclamo o solicitud con el mayor detalle posible..."
+                                    required
+                                />
+
+                                <div className="mt-2 flex justify-end">
+                                    <span className="text-xs text-base-content/40">
+                                        {descripcion.length} caracteres
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div className="mt-6 flex justify-end border-t border-base-300 pt-6">
                             <button
                                 type="submit"
                                 className="btn btn-primary"
                                 disabled={enviando}
                             >
+                                {enviando && (
+                                    <span className="loading loading-spinner loading-sm" />
+                                )}
+
                                 {enviando
                                     ? 'Enviando...'
-                                    : 'Enviar'}
+                                    : 'Enviar solicitud'}
                             </button>
                         </div>
                     </div>
                 </form>
-                <div className="mt-6">
-                    <h2 className="text-xl font-bold mb-4">
-                        Mis solicitudes
-                    </h2>
 
-                    {cargando && (
-                        <div className="alert">
-                            Cargando solicitudes...
+                {/* Cargando */}
+                {cargando && (
+                    <div className="alert mb-6 border border-base-300 bg-base-100 shadow-sm">
+                        <span className="loading loading-spinner loading-sm" />
+
+                        <span>
+                            Cargando tus solicitudes...
+                        </span>
+                    </div>
+                )}
+
+                {/* Listado */}
+                {!cargando && (
+                    <div>
+                        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                                <h2 className="text-2xl font-bold">
+                                    Mis solicitudes
+                                </h2>
+
+                                <p className="mt-1 text-base-content/60">
+                                    Consulta el estado y las respuestas de la
+                                    directiva.
+                                </p>
+                            </div>
+
+                            {solicitudes.length > 0 && (
+                                <span className="badge badge-outline badge-lg">
+                                    {solicitudes.length}{' '}
+                                    {solicitudes.length === 1
+                                        ? 'registro'
+                                        : 'registros'}
+                                </span>
+                            )}
                         </div>
-                    )}
 
-                    {!cargando && !error && solicitudes.length === 0 && (
-                        <div className="alert">
-                            No tienes solicitudes registradas.
-                        </div>
-                    )}
+                        {solicitudes.length === 0 ? (
+                            <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                                <div className="mx-auto max-w-md">
+                                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+                                        +
+                                    </div>
 
-                    {!cargando && solicitudes.length > 0 && (
-                        <div className="space-y-4">
-                            {solicitudes.map((solicitud) => (
-                                <article
-                                    key={solicitud.id}
-                                    className="card bg-base-100 shadow"
-                                >
-                                    <div className="card-body">
-                                        <div className="flex flex-wrap items-start justify-between gap-3">
-                                            <div>
-                                                <span className="badge badge-outline mb-2">
-                                                    {solicitud.tipo === 'CONSULTA'
-                                                        ? 'Consulta'
-                                                        : solicitud.tipo === 'RECLAMO'
-                                                            ? 'Reclamo'
-                                                            : 'Solicitud'}
-                                                </span>
+                                    <h3 className="text-xl font-bold">
+                                        Aún no tienes solicitudes
+                                    </h3>
 
-                                                <h3 className="card-title">
-                                                    {solicitud.asunto}
-                                                </h3>
+                                    <p className="mt-2 text-base-content/60">
+                                        Cuando envíes una consulta, reclamo o
+                                        solicitud podrás revisar su avance en
+                                        esta sección.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-5">
+                                {solicitudes.map((solicitud) => (
+                                    <article
+                                        key={solicitud.id}
+                                        className={`overflow-hidden rounded-2xl border bg-base-100 shadow-sm transition-all duration-200 hover:shadow-md ${bordeTipo(
+                                            solicitud.tipo
+                                        )}`}
+                                    >
+                                        {/* Cabecera */}
+                                        <div className="border-b border-base-300 p-6">
+                                            <div className="flex flex-wrap items-start justify-between gap-5">
+                                                <div className="min-w-0 flex-1">
 
-                                                <p className="text-sm text-base-content/60">
-                                                    {solicitud.junta_nombre}
-                                                </p>
-                                            </div>
+                                                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                                                        <span className={claseTipo(
+                                                            solicitud.tipo
+                                                        )}>
+                                                            {nombreTipo(
+                                                                solicitud.tipo
+                                                            )}
+                                                        </span>
 
-                                            <span className="badge badge-primary">
-                                                {solicitud.estado === 'PENDIENTE'
-                                                    ? 'Pendiente'
-                                                    : solicitud.estado === 'EN_PROCESO'
-                                                        ? 'En proceso'
-                                                        : solicitud.estado === 'RESPONDIDA'
-                                                            ? 'Respondida'
-                                                            : 'Cerrada'}
-                                            </span>
-                                        </div>
+                                                        <span className={claseEstado(
+                                                            solicitud.estado
+                                                        )}>
+                                                            {nombreEstado(
+                                                                solicitud.estado
+                                                            )}
+                                                        </span>
 
-                                        <p className="whitespace-pre-wrap">
-                                            {solicitud.descripcion}
-                                        </p>
+                                                        <span className="badge badge-ghost">
+                                                            #{solicitud.id}
+                                                        </span>
+                                                    </div>
 
-                                        {solicitud.respuesta && (
-                                            <div className="mt-4 rounded-lg border border-base-300 bg-base-200 p-4">
-                                                <p className="mb-2 font-semibold">
-                                                    Respuesta de la Directiva
-                                                </p>
+                                                    <h3 className="text-xl font-bold">
+                                                        {solicitud.asunto}
+                                                    </h3>
 
-                                                <p className="whitespace-pre-wrap">
-                                                    {solicitud.respuesta}
-                                                </p>
+                                                    <p className="mt-2 text-sm text-base-content/60">
+                                                        {solicitud.junta_nombre}
+                                                    </p>
+                                                </div>
 
-                                                {solicitud.respondido_por_username && (
-                                                    <p className="mt-3 text-sm text-base-content/60">
-                                                        Respondido por{' '}
-                                                        <strong>
-                                                            {solicitud.respondido_por_username}
-                                                        </strong>
+                                                <div className="shrink-0 text-right">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">
+                                                        Enviada
+                                                    </p>
 
-                                                        {solicitud.fecha_respuesta && (
-                                                            <>
-                                                                {' '}el{' '}
-                                                                {new Date(
-                                                                    solicitud.fecha_respuesta
-                                                                ).toLocaleString('es-CL')}
-                                                            </>
+                                                    <p className="mt-1 text-sm text-base-content/60">
+                                                        {formatearFecha(
+                                                            solicitud.fecha_creacion
                                                         )}
                                                     </p>
-                                                )}
+                                                </div>
                                             </div>
-                                        )}
+                                        </div>
 
-                                        <p className="text-sm text-base-content/60">
-                                            Enviada el{' '}
-                                            {new Date(
-                                                solicitud.fecha_creacion
-                                            ).toLocaleString('es-CL')}
-                                        </p>
-                                    </div>
-                                </article>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                        <div className="p-6">
+
+                                            {/* Descripción */}
+                                            <div>
+                                                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-base-content/50">
+                                                    Tu mensaje
+                                                </p>
+
+                                                <div className="rounded-xl bg-base-200/70 p-5">
+                                                    <p className="whitespace-pre-wrap leading-relaxed">
+                                                        {solicitud.descripcion}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Respuesta */}
+                                            {solicitud.respuesta && (
+                                                <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                                                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                                                        <h4 className="font-bold">
+                                                            Respuesta de la Directiva
+                                                        </h4>
+
+                                                        <span className="badge badge-success badge-outline">
+                                                            Respondida
+                                                        </span>
+                                                    </div>
+
+                                                    <p className="whitespace-pre-wrap leading-relaxed">
+                                                        {solicitud.respuesta}
+                                                    </p>
+
+                                                    {solicitud.respondido_por_username && (
+                                                        <div className="mt-4 border-t border-emerald-500/20 pt-4 text-sm text-base-content/60">
+                                                            Respondido por{' '}
+                                                            <strong className="font-semibold text-base-content/80">
+                                                                {
+                                                                    solicitud.respondido_por_username
+                                                                }
+                                                            </strong>
+
+                                                            {solicitud.fecha_respuesta && (
+                                                                <>
+                                                                    {' '}
+                                                                    el{' '}
+                                                                    <span className="font-medium">
+                                                                        {formatearFecha(
+                                                                            solicitud.fecha_respuesta
+                                                                        )}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Sin respuesta */}
+                                            {!solicitud.respuesta &&
+                                                solicitud.estado !== 'CERRADA' && (
+                                                    <div className="mt-6 rounded-xl border border-base-300 bg-base-200/40 p-4">
+                                                        <p className="text-sm text-base-content/60">
+                                                            La directiva aún no ha
+                                                            registrado una respuesta
+                                                            para esta solicitud.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                            {/* Pie */}
+                                            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-base-300 pt-5">
+                                                <span className="text-xs text-base-content/40">
+                                                    Última actualización:{' '}
+                                                    {formatearFecha(
+                                                        solicitud.fecha_actualizacion
+                                                    )}
+                                                </span>
+
+                                                <span className={claseEstado(
+                                                    solicitud.estado
+                                                )}>
+                                                    {nombreEstado(
+                                                        solicitud.estado
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </section>
         </main>
     )

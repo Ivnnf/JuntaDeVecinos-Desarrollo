@@ -28,11 +28,17 @@ import EventosVecinoPage from './pages/vecino/EventosVecinoPage'
 import AsistenciaEventoPage from './pages/directiva/AsistenciaEventoPage'
 import SolicitudesVecinoPage from './pages/vecino/SolicitudesVecinoPage'
 import SolicitudesDirectivaPage from "./pages/directiva/SolicitudesDirectivaPage";
-
+import SolicitudesDocumentoDirectivaPage from './pages/directiva/SolicitudesDocumentoDirectivaPage'
+import SolicitudesDocumentoPage from './pages/vecino/SolicitudesDocumentoPage'
+import SeleccionRolPage from './pages/SeleccionRolPage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/seleccionar-perfil"
+        element={<SeleccionRolPage />}
+      />
       <Route
         path="/directiva/solicitudes"
         element={
@@ -42,10 +48,26 @@ function App() {
         }
       />
       <Route
+        path="/directiva/documentos"
+        element={
+          <RutaProtegida rolPermitido={2}>
+            <SolicitudesDocumentoDirectivaPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
         path="/vecino/solicitudes"
         element={
           <RutaProtegida rolPermitido={3}>
             <SolicitudesVecinoPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/vecino/documentos"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <SolicitudesDocumentoPage />
           </RutaProtegida>
         }
       />
