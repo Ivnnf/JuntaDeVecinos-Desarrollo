@@ -16,6 +16,7 @@ from profiles.models import Rol, Usuario, UsuarioRol
 
 from .models import (
     HistorialSolicitudDocumento,
+    HistorialSolicitudVecino,
     SolicitudDocumento,
     SolicitudDocumentoArchivo,
     SolicitudVecino,
@@ -103,6 +104,31 @@ class SolicitudesVecinoTests(APITestCase):
         self.assertEqual(
             solicitud.tipo,
             "SOLICITUD",
+        )
+        self.assertEqual(
+            solicitud.historial.count(),
+            1,
+        )
+
+        historial = solicitud.historial.get()
+
+        self.assertIsNone(
+            historial.estado_anterior,
+        )
+
+        self.assertEqual(
+            historial.estado_nuevo,
+            "PENDIENTE",
+        )
+
+        self.assertEqual(
+            historial.usuario_responsable,
+            self.vecino,
+        )
+
+        self.assertEqual(
+            historial.comentario_respuesta,
+            "Solicitud creada.",
         )
 
     def test_vecino_solo_ve_sus_propias_solicitudes(self):
@@ -439,6 +465,32 @@ class SolicitudesDirectivaTests(APITestCase):
 
         self.assertIsNotNone(
             solicitud.fecha_respuesta,
+        )
+        self.assertEqual(
+            solicitud.historial.count(),
+            1,
+        )
+
+        historial = solicitud.historial.get()
+
+        self.assertEqual(
+            historial.estado_anterior,
+            "PENDIENTE",
+        )
+
+        self.assertEqual(
+            historial.estado_nuevo,
+            "RESPONDIDA",
+        )
+
+        self.assertEqual(
+            historial.usuario_responsable,
+            self.usuario_directiva,
+        )
+
+        self.assertEqual(
+            historial.comentario_respuesta,
+            "La solicitud fue revisada y será gestionada.",
         )
 
     def test_directiva_no_puede_marcar_respondida_sin_respuesta(self):
@@ -1278,3 +1330,405 @@ class SolicitudesDocumentoTests(APITestCase):
             response.status_code,
             status.HTTP_403_FORBIDDEN,
         )
+
+    def test_seguimiento_consolida_solicitudes_vecinales_y_documentos(self):
+        solicitud_vecinal = SolicitudVecino.objects.create(
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            tipo=SolicitudVecino.Tipo.CONSULTA,
+            asunto="Consulta para seguimiento",
+            descripcion="Consulta incluida en HU-20.",
+            estado=SolicitudVecino.Estado.PENDIENTE,
+        )
+
+        solicitud_documento = SolicitudDocumento.objects.create(
+            numero_seguimiento="DOC-HU20-001",
+            tipo_documento=self.tipo_activo,
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            motivo="Documento incluido en seguimiento.",
+            estado_actual=SolicitudDocumento.Estado.PENDIENTE,
+        )
+
+        self.client.force_authenticate(user=self.vecino)
+
+        response = self.client.get(reverse("seguimiento-solicitudes-vecino"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            2,
+        )
+
+        numeros = {item["numero_seguimiento"] for item in response.data}
+
+        self.assertIn(
+            f"SOL-{solicitud_vecinal.id:06d}",
+            numeros,
+        )
+
+        self.assertIn(
+            solicitud_documento.numero_seguimiento,
+            numeros,
+        )
+
+        origenes = {item["origen"] for item in response.data}
+
+        self.assertEqual(
+            origenes,
+            {"VECINAL", "DOCUMENTO"},
+        )
+
+
+class SeguimientoSolicitudesTests(APITestCase):
+    def setUp(self):
+        self.junta = JuntaVecinos.objects.create(
+            nombre="Junta Seguimiento HU20",
+            comuna="Santiago",
+            activa=True,
+        )
+
+        self.sector = Sector.objects.create(
+            junta_vecinos=self.junta,
+            nombre="Sector Seguimiento HU20",
+            activo=True,
+        )
+
+        self.rol_vecino = Rol.objects.get(
+            nombre="Vecino",
+        )
+
+        self.vecino = Usuario.objects.create_user(
+            username="vecino_seguimiento_hu20",
+            email="vecino.seguimiento.hu20@test.cl",
+            password="ClaveSegura123!",
+            rut="25252525-4",
+            nombres="Vecino",
+            apellido_paterno="Seguimiento",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=self.vecino,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        self.tipo_documento = TipoDocumento.objects.create(
+            nombre="Documento HU20",
+            descripcion="Documento para pruebas de seguimiento.",
+            activo=True,
+        )
+
+    def test_vecino_ve_seguimiento_consolidado_de_sus_solicitudes(self):
+        solicitud_vecinal = SolicitudVecino.objects.create(
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            tipo="CONSULTA",
+            asunto="Consulta HU20",
+            descripcion="Consulta para seguimiento.",
+            estado="PENDIENTE",
+        )
+
+        HistorialSolicitudVecino.objects.create(
+            solicitud=solicitud_vecinal,
+            estado_anterior=None,
+            estado_nuevo="PENDIENTE",
+            usuario_responsable=self.vecino,
+            comentario_respuesta="Solicitud creada.",
+        )
+
+        solicitud_documento = SolicitudDocumento.objects.create(
+            numero_seguimiento="DOC-HU20-001",
+            tipo_documento=self.tipo_documento,
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            motivo="Documento para seguimiento.",
+            estado_actual="PENDIENTE",
+        )
+
+        HistorialSolicitudDocumento.objects.create(
+            solicitud=solicitud_documento,
+            estado_anterior=None,
+            estado_nuevo="PENDIENTE",
+            usuario_responsable=self.vecino,
+            comentario_respuesta="Solicitud de documento creada.",
+        )
+
+        self.client.force_authenticate(
+            user=self.vecino,
+        )
+
+        response = self.client.get(reverse("seguimiento-solicitudes-vecino"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            2,
+        )
+
+        origenes = {item["origen"] for item in response.data}
+
+        self.assertEqual(
+            origenes,
+            {
+                "VECINAL",
+                "DOCUMENTO",
+            },
+        )
+
+        numeros = {item["numero_seguimiento"] for item in response.data}
+
+        self.assertIn(
+            f"SOL-{solicitud_vecinal.id:06d}",
+            numeros,
+        )
+
+        self.assertIn(
+            "DOC-HU20-001",
+            numeros,
+        )
+
+    def test_seguimiento_solo_muestra_solicitudes_del_vecino_autenticado(self):
+        otro_vecino = Usuario.objects.create_user(
+            username="otro_vecino_seguimiento_hu20",
+            email="otro.seguimiento.hu20@test.cl",
+            password="ClaveSegura123!",
+            rut="26262626-5",
+            nombres="Otro",
+            apellido_paterno="Vecino",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=otro_vecino,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        solicitud_propia = SolicitudVecino.objects.create(
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            tipo=SolicitudVecino.Tipo.CONSULTA,
+            asunto="Solicitud propia HU20",
+            descripcion="Debe aparecer.",
+            estado=SolicitudVecino.Estado.PENDIENTE,
+        )
+
+        SolicitudVecino.objects.create(
+            vecino=otro_vecino,
+            junta_vecinos=self.junta,
+            tipo=SolicitudVecino.Tipo.RECLAMO,
+            asunto="Solicitud ajena HU20",
+            descripcion="No debe aparecer.",
+            estado=SolicitudVecino.Estado.PENDIENTE,
+        )
+
+        SolicitudDocumento.objects.create(
+            numero_seguimiento="DOC-HU20-AJENA",
+            tipo_documento=self.tipo_documento,
+            vecino=otro_vecino,
+            junta_vecinos=self.junta,
+            motivo="Documento ajeno.",
+            estado_actual=SolicitudDocumento.Estado.PENDIENTE,
+        )
+
+        self.client.force_authenticate(
+            user=self.vecino,
+        )
+
+        response = self.client.get(reverse("seguimiento-solicitudes-vecino"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertEqual(
+            response.data[0]["numero_seguimiento"],
+            f"SOL-{solicitud_propia.id:06d}",
+        )
+
+        self.assertEqual(
+            response.data[0]["titulo"],
+            "Solicitud propia HU20",
+        )
+
+    def test_seguimiento_marca_novedad_cuando_directiva_realiza_cambio(self):
+        usuario_directiva = Usuario.objects.create_user(
+            username="directiva_novedad_hu20",
+            email="directiva.novedad.hu20@test.cl",
+            password="ClaveSegura123!",
+            rut="27272727-6",
+            nombres="Directiva",
+            apellido_paterno="HU20",
+        )
+
+        solicitud = SolicitudVecino.objects.create(
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            tipo=SolicitudVecino.Tipo.CONSULTA,
+            asunto="Consulta con novedad",
+            descripcion="Debe mostrar una novedad.",
+            estado=SolicitudVecino.Estado.EN_PROCESO,
+        )
+
+        HistorialSolicitudVecino.objects.create(
+            solicitud=solicitud,
+            estado_anterior="PENDIENTE",
+            estado_nuevo="EN_PROCESO",
+            usuario_responsable=usuario_directiva,
+            comentario_respuesta="La solicitud está siendo revisada.",
+        )
+
+        self.client.force_authenticate(
+            user=self.vecino,
+        )
+
+        response = self.client.get(reverse("seguimiento-solicitudes-vecino"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(response.data),
+            1,
+        )
+
+        self.assertTrue(response.data[0]["tiene_novedades"])
+
+    def test_vecino_puede_marcar_solicitud_como_revisada(self):
+        usuario_directiva = Usuario.objects.create_user(
+            username="directiva_revision_hu20",
+            email="directiva.revision.hu20@test.cl",
+            password="ClaveSegura123!",
+            rut="28282828-7",
+            nombres="Directiva",
+            apellido_paterno="Revision",
+        )
+
+        solicitud = SolicitudVecino.objects.create(
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            tipo=SolicitudVecino.Tipo.CONSULTA,
+            asunto="Consulta para revisar",
+            descripcion="Solicitud con novedad pendiente.",
+            estado=SolicitudVecino.Estado.EN_PROCESO,
+        )
+
+        HistorialSolicitudVecino.objects.create(
+            solicitud=solicitud,
+            estado_anterior="PENDIENTE",
+            estado_nuevo="EN_PROCESO",
+            usuario_responsable=usuario_directiva,
+            comentario_respuesta="La solicitud fue revisada.",
+        )
+
+        self.client.force_authenticate(
+            user=self.vecino,
+        )
+
+        response = self.client.post(
+            reverse(
+                "marcar-solicitud-vecino-revisada",
+                kwargs={
+                    "pk": solicitud.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        solicitud.refresh_from_db()
+
+        self.assertIsNotNone(
+            solicitud.fecha_ultima_revision_vecino,
+        )
+
+        response = self.client.get(reverse("seguimiento-solicitudes-vecino"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertFalse(response.data[0]["tiene_novedades"])
+
+    def test_vecino_puede_marcar_documento_como_revisado(self):
+        usuario_directiva = Usuario.objects.create_user(
+            username="directiva_documento_revision_hu20",
+            email="directiva.documento.revision.hu20@test.cl",
+            password="ClaveSegura123!",
+            rut="29292929-8",
+            nombres="Directiva",
+            apellido_paterno="Documento",
+        )
+
+        solicitud = SolicitudDocumento.objects.create(
+            numero_seguimiento="DOC-HU20-REVISION",
+            tipo_documento=self.tipo_documento,
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            motivo="Documento con novedad.",
+            estado_actual=SolicitudDocumento.Estado.EN_REVISION,
+        )
+
+        HistorialSolicitudDocumento.objects.create(
+            solicitud=solicitud,
+            estado_anterior="PENDIENTE",
+            estado_nuevo="EN_REVISION",
+            usuario_responsable=usuario_directiva,
+            comentario_respuesta="El documento está siendo revisado.",
+        )
+
+        self.client.force_authenticate(
+            user=self.vecino,
+        )
+
+        response = self.client.get(reverse("seguimiento-solicitudes-vecino"))
+
+        self.assertTrue(response.data[0]["tiene_novedades"])
+
+        response = self.client.post(
+            reverse(
+                "marcar-solicitud-documento-revisada",
+                kwargs={
+                    "pk": solicitud.id,
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        solicitud.refresh_from_db()
+
+        self.assertIsNotNone(
+            solicitud.fecha_ultima_revision_vecino,
+        )
+
+        response = self.client.get(reverse("seguimiento-solicitudes-vecino"))
+
+        self.assertFalse(response.data[0]["tiene_novedades"])

@@ -31,10 +31,19 @@ import SolicitudesDirectivaPage from "./pages/directiva/SolicitudesDirectivaPage
 import SolicitudesDocumentoDirectivaPage from './pages/directiva/SolicitudesDocumentoDirectivaPage'
 import SolicitudesDocumentoPage from './pages/vecino/SolicitudesDocumentoPage'
 import SeleccionRolPage from './pages/SeleccionRolPage'
+import SeguimientoSolicitudesPage from './pages/vecino/SeguimientoSolicitudesPage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/vecino/seguimiento"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <SeguimientoSolicitudesPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/seleccionar-perfil"
         element={<SeleccionRolPage />}

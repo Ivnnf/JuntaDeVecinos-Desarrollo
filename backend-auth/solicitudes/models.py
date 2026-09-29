@@ -56,6 +56,11 @@ class SolicitudVecino(models.Model):
         auto_now=True,
     )
 
+    fecha_ultima_revision_vecino = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     class Meta:
         ordering = ["-fecha_creacion"]
 
@@ -158,6 +163,10 @@ class SolicitudDocumento(models.Model):
         null=True,
         blank=True,
     )
+    fecha_ultima_revision_vecino = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ["-fecha_solicitud"]
@@ -248,3 +257,42 @@ class SolicitudDocumentoArchivo(models.Model):
 
     def __str__(self):
         return f"{self.solicitud.numero_seguimiento} - " f"{self.nombre_original}"
+
+
+class HistorialSolicitudVecino(models.Model):
+    solicitud = models.ForeignKey(
+        SolicitudVecino,
+        on_delete=models.CASCADE,
+        related_name="historial",
+    )
+
+    estado_anterior = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+    )
+
+    estado_nuevo = models.CharField(
+        max_length=20,
+    )
+
+    usuario_responsable = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="historial_solicitudes_vecino",
+    )
+
+    comentario_respuesta = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    fecha_cambio = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = ["fecha_cambio"]
+
+    def __str__(self):
+        return f"{self.solicitud.id} - " f"{self.estado_nuevo}"

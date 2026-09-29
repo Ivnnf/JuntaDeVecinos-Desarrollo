@@ -3,13 +3,17 @@ from django.shortcuts import render
 from profiles.models import UsuarioRol
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
+
 # Create your views here.
 from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+
 from .models import (
     HistorialSolicitudDocumento,
+    HistorialSolicitudVecino,
     SolicitudDocumento,
     SolicitudDocumentoArchivo,
     SolicitudVecino,
@@ -27,6 +31,7 @@ from .serializers import (
     SolicitudDocumentoVecinoSerializer,
     SolicitudVecinoSerializer,
     TipoDocumentoSerializer,
+    SeguimientoSolicitudSerializer,
 )
 
 
@@ -66,10 +71,18 @@ class SolicitudVecinoListCreateView(generics.ListCreateAPIView):
                 "Debes pertenecer a una Junta de Vecinos confirmada."
             )
 
-        serializer.save(
+        solicitud = serializer.save(
             vecino=usuario,
             junta_vecinos=usuario.sector.junta_vecinos,
             estado=SolicitudVecino.Estado.PENDIENTE,
+        )
+
+        HistorialSolicitudVecino.objects.create(
+            solicitud=solicitud,
+            estado_anterior=None,
+            estado_nuevo=SolicitudVecino.Estado.PENDIENTE,
+            usuario_responsable=usuario,
+            comentario_respuesta="Solicitud creada.",
         )
 
 
@@ -123,18 +136,23 @@ class SolicitudDirectivaDetailView(generics.RetrieveUpdateAPIView):
         )
 
     def perform_update(self, serializer):
-        estado = serializer.validated_data.get(
+        solicitud = serializer.instance
+
+        estado_anterior = solicitud.estado
+        respuesta_anterior = solicitud.respuesta or ""
+
+        estado_nuevo = serializer.validated_data.get(
             "estado",
-            serializer.instance.estado,
+            estado_anterior,
         )
 
-        respuesta = serializer.validated_data.get(
+        respuesta_nueva = serializer.validated_data.get(
             "respuesta",
-            serializer.instance.respuesta,
+            respuesta_anterior,
         )
 
-        if estado == SolicitudVecino.Estado.RESPONDIDA:
-            if not respuesta.strip():
+        if estado_nuevo == SolicitudVecino.Estado.RESPONDIDA:
+            if not respuesta_nueva.strip():
                 raise ValidationError(
                     {
                         "respuesta": (
@@ -144,13 +162,28 @@ class SolicitudDirectivaDetailView(generics.RetrieveUpdateAPIView):
                     }
                 )
 
-            serializer.save(
-                respondido_por=self.request.user,
-                fecha_respuesta=timezone.now(),
-            )
-            return
+        datos_adicionales = {}
 
-        serializer.save()
+        if estado_nuevo == SolicitudVecino.Estado.RESPONDIDA:
+            datos_adicionales["respondido_por"] = self.request.user
+            datos_adicionales["fecha_respuesta"] = timezone.now()
+
+        solicitud_actualizada = serializer.save(**datos_adicionales)
+
+        cambio_estado = estado_anterior != estado_nuevo
+
+        cambio_respuesta = respuesta_anterior.strip() != respuesta_nueva.strip()
+
+        if cambio_estado or cambio_respuesta:
+            HistorialSolicitudVecino.objects.create(
+                solicitud=solicitud_actualizada,
+                estado_anterior=estado_anterior,
+                estado_nuevo=estado_nuevo,
+                usuario_responsable=self.request.user,
+                comentario_respuesta=(
+                    respuesta_nueva.strip() if cambio_respuesta else ""
+                ),
+            )
 
 
 class TipoDocumentoActivoListView(generics.ListAPIView):
@@ -384,9 +417,9 @@ class SolicitudDocumentoArchivoDirectivaCreateView(generics.CreateAPIView):
             tipo_uso=(SolicitudDocumentoArchivo.TipoUso.DOCUMENTO_EMITIDO),
             subido_por=self.request.user,
         )
-class SolicitudDocumentoArchivoDownloadView(
-    generics.GenericAPIView
-):
+
+
+class SolicitudDocumentoArchivoDownloadView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
@@ -399,10 +432,7 @@ class SolicitudDocumentoArchivoDownloadView(
             pk=pk,
         )
 
-        es_propietario = (
-            archivo.solicitud.vecino_id
-            == request.user.id
-        )
+        es_propietario = archivo.solicitud.vecino_id == request.user.id
 
         tiene_rol_directiva = UsuarioRol.objects.filter(
             usuario=request.user,
@@ -410,29 +440,19 @@ class SolicitudDocumentoArchivoDownloadView(
             activo=True,
         ).exists()
 
-        pertenece_directiva_junta = (
-            IntegranteDirectiva.objects.filter(
-                usuario=request.user,
-                activo=True,
-                directiva__estado="VIGENTE",
-                directiva__junta_vecinos=(
-                    archivo.solicitud.junta_vecinos
-                ),
-            ).exists()
-        )
+        pertenece_directiva_junta = IntegranteDirectiva.objects.filter(
+            usuario=request.user,
+            activo=True,
+            directiva__estado="VIGENTE",
+            directiva__junta_vecinos=(archivo.solicitud.junta_vecinos),
+        ).exists()
 
-        puede_descargar = (
-            es_propietario
-            or (
-                tiene_rol_directiva
-                and pertenece_directiva_junta
-            )
+        puede_descargar = es_propietario or (
+            tiene_rol_directiva and pertenece_directiva_junta
         )
 
         if not puede_descargar:
-            raise PermissionDenied(
-                "No tienes permiso para descargar este archivo."
-            )
+            raise PermissionDenied("No tienes permiso para descargar este archivo.")
 
         archivo.archivo.open("rb")
 
@@ -440,4 +460,205 @@ class SolicitudDocumentoArchivoDownloadView(
             archivo.archivo,
             as_attachment=True,
             filename=archivo.nombre_original,
+        )
+
+
+class SeguimientoSolicitudesVecinoView(generics.GenericAPIView):
+    serializer_class = SeguimientoSolicitudSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        usuario = request.user
+
+        solicitudes_vecinales = (
+            SolicitudVecino.objects.select_related(
+                "respondido_por",
+            )
+            .prefetch_related(
+                "historial",
+                "historial__usuario_responsable",
+            )
+            .filter(
+                vecino=usuario,
+            )
+        )
+
+        solicitudes_documentos = (
+            SolicitudDocumento.objects.select_related(
+                "tipo_documento",
+                "responsable",
+            )
+            .prefetch_related(
+                "historial",
+                "historial__usuario_responsable",
+                "archivos",
+                "archivos__subido_por",
+            )
+            .filter(
+                vecino=usuario,
+            )
+        )
+
+        seguimiento = []
+
+        for solicitud in solicitudes_vecinales:
+            historial = [
+                {
+                    "id": registro.id,
+                    "estado_anterior": registro.estado_anterior,
+                    "estado_nuevo": registro.estado_nuevo,
+                    "usuario_responsable": registro.usuario_responsable.username,
+                    "comentario_respuesta": registro.comentario_respuesta,
+                    "fecha_cambio": registro.fecha_cambio,
+                }
+                for registro in solicitud.historial.all()
+            ]
+            tiene_novedades = any(
+                registro.usuario_responsable_id != usuario.id
+                and (
+                    solicitud.fecha_ultima_revision_vecino is None
+                    or registro.fecha_cambio > solicitud.fecha_ultima_revision_vecino
+                )
+                for registro in solicitud.historial.all()
+            )
+            seguimiento.append(
+                {
+                    "id": solicitud.id,
+                    "origen": "VECINAL",
+                    "numero_seguimiento": f"SOL-{solicitud.id:06d}",
+                    "tipo": solicitud.tipo,
+                    "titulo": solicitud.asunto,
+                    "fecha_ingreso": solicitud.fecha_creacion,
+                    "estado_actual": solicitud.estado,
+                    "tiene_novedades": tiene_novedades,
+                    "respuesta_final": solicitud.respuesta,
+                    "fecha_respuesta": solicitud.fecha_respuesta,
+                    "historial": historial,
+                    "archivos": [],
+                }
+            )
+
+        for solicitud in solicitudes_documentos:
+            historial = [
+                {
+                    "id": registro.id,
+                    "estado_anterior": registro.estado_anterior,
+                    "estado_nuevo": registro.estado_nuevo,
+                    "usuario_responsable": registro.usuario_responsable.username,
+                    "comentario_respuesta": registro.comentario_respuesta,
+                    "fecha_cambio": registro.fecha_cambio,
+                }
+                for registro in solicitud.historial.all()
+            ]
+            tiene_novedades = any(
+                registro.usuario_responsable_id != usuario.id
+                and (
+                    solicitud.fecha_ultima_revision_vecino is None
+                    or registro.fecha_cambio > solicitud.fecha_ultima_revision_vecino
+                )
+                for registro in solicitud.historial.all()
+            )
+            respuesta_final = ""
+
+            for registro in reversed(
+                list(solicitud.historial.all())
+            ):
+                if (
+                    registro.usuario_responsable_id != usuario.id
+                    and registro.comentario_respuesta.strip()
+                ):
+                    respuesta_final = (
+                        registro.comentario_respuesta.strip()
+                    )
+                    break
+
+            archivos = [
+                {
+                    "id": archivo.id,
+                    "nombre_original": archivo.nombre_original,
+                    "tipo_uso": archivo.tipo_uso,
+                    "fecha_subida": archivo.fecha_subida,
+                }
+                for archivo in solicitud.archivos.all()
+            ]
+
+            seguimiento.append(
+                {
+                    "id": solicitud.id,
+                    "origen": "DOCUMENTO",
+                    "numero_seguimiento": solicitud.numero_seguimiento,
+                    "tipo": "DOCUMENTO",
+                    "titulo": solicitud.tipo_documento.nombre,
+                    "fecha_ingreso": solicitud.fecha_solicitud,
+                    "estado_actual": solicitud.estado_actual,
+                    "tiene_novedades": tiene_novedades,
+                    "respuesta_final": respuesta_final,
+                    "fecha_respuesta": solicitud.fecha_resolucion,
+                    "historial": historial,
+                    "archivos": archivos,
+                }
+            )
+
+        seguimiento.sort(
+            key=lambda item: item["fecha_ingreso"],
+            reverse=True,
+        )
+
+        serializer = self.get_serializer(
+            seguimiento,
+            many=True,
+        )
+
+        return Response(serializer.data)
+
+
+class MarcarSolicitudVecinoRevisadaView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        solicitud = get_object_or_404(
+            SolicitudVecino,
+            pk=pk,
+            vecino=request.user,
+        )
+
+        solicitud.fecha_ultima_revision_vecino = timezone.now()
+
+        solicitud.save(
+            update_fields=[
+                "fecha_ultima_revision_vecino",
+            ]
+        )
+
+        return Response(
+            {"detalle": ("Solicitud marcada como revisada.")},
+            status=200,
+        )
+class MarcarSolicitudDocumentoRevisadaView(
+    generics.GenericAPIView
+):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        solicitud = get_object_or_404(
+            SolicitudDocumento,
+            pk=pk,
+            vecino=request.user,
+        )
+
+        solicitud.fecha_ultima_revision_vecino = timezone.now()
+
+        solicitud.save(
+            update_fields=[
+                "fecha_ultima_revision_vecino",
+            ]
+        )
+
+        return Response(
+            {
+                "detalle": (
+                    "Solicitud de documento marcada como revisada."
+                )
+            },
+            status=200,
         )

@@ -11,9 +11,27 @@ from .views import (
     TipoDocumentoActivoListView,
     SolicitudDocumentoArchivoDirectivaCreateView,
     SolicitudDocumentoArchivoDownloadView,
+    SeguimientoSolicitudesVecinoView,
+    MarcarSolicitudVecinoRevisadaView,
+    MarcarSolicitudDocumentoRevisadaView,
 )
 
 urlpatterns = [
+    path(
+        "seguimiento/documento/<int:pk>/revisar/",
+        MarcarSolicitudDocumentoRevisadaView.as_view(),
+        name="marcar-solicitud-documento-revisada",
+    ),
+    path(
+        "seguimiento/vecinal/<int:pk>/revisar/",
+        MarcarSolicitudVecinoRevisadaView.as_view(),
+        name="marcar-solicitud-vecino-revisada",
+    ),
+    path(
+        "seguimiento/",
+        SeguimientoSolicitudesVecinoView.as_view(),
+        name="seguimiento-solicitudes-vecino",
+    ),
     path(
         "documentos/archivos/<int:pk>/descargar/",
         SolicitudDocumentoArchivoDownloadView.as_view(),
