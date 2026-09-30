@@ -114,7 +114,7 @@ function DirectivaInicioPage() {
 
           throw new Error(
             data.detail ??
-              'No fue posible obtener la directiva vigente.',
+            'No fue posible obtener la directiva vigente.',
           )
         }
 
@@ -302,7 +302,25 @@ function DirectivaInicioPage() {
                     Gestionar Solicitudes
                   </Link>
                 </div>
+                {/* Mensajería */}
+                <div className="rounded-2xl border border-rose-500/30 bg-base-100 p-5 shadow-sm">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold">
+                      Mensajería
+                    </h3>
 
+                    <p className="mt-1 text-sm text-base-content/60">
+                      Revisa y responde los mensajes enviados por los vecinos.
+                    </p>
+                  </div>
+
+                  <Link
+                    to="/directiva/mensajeria"
+                    className="btn w-full border-rose-600 bg-rose-600 text-white hover:border-rose-700 hover:bg-rose-700"
+                  >
+                    Ver Mensajes
+                  </Link>
+                </div>
                 {/* Documentos */}
                 <div className="rounded-2xl border border-cyan-500/30 bg-base-100 p-5 shadow-sm">
                   <div className="mb-4">

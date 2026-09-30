@@ -274,7 +274,54 @@ function VecinoInicioPage() {
                 Ver Solicitudes
               </Link>
             </div>
+            {/* Seguimiento */}
+            <div className="group flex h-full flex-col rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="mb-5 flex-1">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-lg font-bold text-indigo-700">
+                  SG
+                </div>
 
+                <h3 className="text-lg font-bold">
+                  Seguimiento de Solicitudes
+                </h3>
+
+                <p className="mt-2 text-sm leading-relaxed text-base-content/60">
+                  Revisa en un solo lugar el estado, las respuestas y el historial
+                  de tus solicitudes.
+                </p>
+              </div>
+
+              <Link
+                to="/vecino/seguimiento"
+                className="btn w-full border-indigo-600 bg-indigo-600 text-white hover:border-indigo-700 hover:bg-indigo-700"
+              >
+                Ver Seguimiento
+              </Link>
+
+            </div>
+            {/* Mensajería */}
+            <div className="group flex h-full flex-col rounded-2xl border border-rose-500/30 bg-base-100 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="mb-5 flex-1">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-rose-500/10 text-lg font-bold text-rose-700">
+                  M
+                </div>
+
+                <h3 className="text-lg font-bold">
+                  Mensajería
+                </h3>
+
+                <p className="mt-2 text-sm leading-relaxed text-base-content/60">
+                  Comunícate directamente con la directiva de tu Junta de Vecinos.
+                </p>
+              </div>
+
+              <Link
+                to="/vecino/mensajeria"
+                className="btn w-full border-rose-600 bg-rose-600 text-white hover:border-rose-700 hover:bg-rose-700"
+              >
+                Ver Mensajes
+              </Link>
+            </div>
             {/* Documentos */}
             <div className="group flex h-full flex-col rounded-2xl border border-cyan-500/30 bg-base-100 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <div className="mb-5 flex-1">
@@ -395,21 +442,19 @@ function VecinoInicioPage() {
                   {notificaciones.map((notificacion) => (
                     <div
                       key={notificacion.id}
-                      className={`p-5 transition-colors hover:bg-base-200/40 ${
-                        !notificacion.leida
-                          ? 'bg-primary/[0.03]'
-                          : ''
-                      }`}
+                      className={`p-5 transition-colors hover:bg-base-200/40 ${!notificacion.leida
+                        ? 'bg-primary/[0.03]'
+                        : ''
+                        }`}
                     >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                         <div className="flex min-w-0 flex-1 gap-4">
                           <div
-                            className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                              notificacion.leida
-                                ? 'bg-base-200 text-base-content/50'
-                                : 'bg-primary/10 text-primary'
-                            }`}
+                            className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${notificacion.leida
+                              ? 'bg-base-200 text-base-content/50'
+                              : 'bg-primary/10 text-primary'
+                              }`}
                           >
                             {notificacion.leida ? '✓' : '!'}
                           </div>

@@ -32,10 +32,28 @@ import SolicitudesDocumentoDirectivaPage from './pages/directiva/SolicitudesDocu
 import SolicitudesDocumentoPage from './pages/vecino/SolicitudesDocumentoPage'
 import SeleccionRolPage from './pages/SeleccionRolPage'
 import SeguimientoSolicitudesPage from './pages/vecino/SeguimientoSolicitudesPage'
+import MensajeriaPage from './pages/vecino/MensajeriaPage'
+import MensajeriaDirectivaPage from './pages/directiva/MensajeriaDirectivaPage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/directiva/mensajeria"
+        element={
+          <RutaProtegida rolPermitido={2}>
+            <MensajeriaDirectivaPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/vecino/mensajeria"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <MensajeriaPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/vecino/seguimiento"
         element={
