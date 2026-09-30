@@ -1,6 +1,16 @@
 from rest_framework import generics
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import (
+    PermissionDenied,
+    ValidationError,
+)
+
+from organizacion.models import Directiva
+from django.db import transaction
+from profiles.models import UsuarioRol
+
 from django.shortcuts import get_object_or_404
+from profiles.models import UsuarioRol
+from django.db import transaction
 from organizacion.models import (
     Directiva,
     IntegranteDirectiva,
@@ -13,12 +23,15 @@ from django.contrib.auth import get_user_model
 
 from .models import (
     AdjuntoPublicacion,
+    Conversacion,
+    Mensaje,
     Notificacion,
     Publicacion,
 )
-
 from .serializers import (
     AdjuntoPublicacionSerializer,
+    ConversacionSerializer,
+    MensajeSerializer,
     NotificacionSerializer,
     PublicacionSerializer,
 )
@@ -248,4 +261,354 @@ class PublicacionDetalleVecinoView(generics.RetrieveAPIView):
                 directiva__junta_vecinos_id=junta_id,
                 activa=True,
             )
+        )
+
+
+class ConversacionVecinoListCreateView(generics.ListCreateAPIView):
+    serializer_class = ConversacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return (
+            Conversacion.objects.select_related(
+                "vecino",
+                "directiva",
+                "directiva__junta_vecinos",
+            )
+            .prefetch_related(
+                "mensajes",
+                "mensajes__remitente",
+            )
+            .filter(
+                vecino=self.request.user,
+            )
+            .order_by("-fecha_actualizacion")
+        )
+
+    def perform_create(self, serializer):
+        usuario = self.request.user
+
+        tiene_rol_vecino = UsuarioRol.objects.filter(
+            usuario=usuario,
+            rol__nombre="Vecino",
+            activo=True,
+        ).exists()
+
+        if not tiene_rol_vecino:
+            raise PermissionDenied("Debes tener el rol Vecino activo.")
+
+        if (
+            not getattr(usuario, "sector_id", None)
+            or usuario.estado_asociacion_sector != "CONFIRMADA"
+        ):
+            raise PermissionDenied(
+                "Debes pertenecer a una Junta de Vecinos confirmada."
+            )
+
+        directiva = Directiva.objects.filter(
+            junta_vecinos=usuario.sector.junta_vecinos,
+            estado=Directiva.EstadoDirectiva.VIGENTE,
+        ).first()
+
+        if directiva is None:
+            raise ValidationError(
+                {
+                    "directiva": (
+                        "La Junta de Vecinos no tiene " "una directiva vigente."
+                    )
+                }
+            )
+
+        mensaje_inicial = serializer.validated_data.pop("mensaje_inicial")
+
+        with transaction.atomic():
+            conversacion = serializer.save(
+                vecino=usuario,
+                directiva=directiva,
+            )
+
+            Mensaje.objects.create(
+                conversacion=conversacion,
+                remitente=usuario,
+                contenido=mensaje_inicial,
+            )
+
+
+class ConversacionDirectivaListView(generics.ListAPIView):
+    serializer_class = ConversacionSerializer
+    permission_classes = [EsDirectiva]
+
+    def get_queryset(self):
+        return (
+            Conversacion.objects.select_related(
+                "vecino",
+                "directiva",
+                "directiva__junta_vecinos",
+            )
+            .prefetch_related(
+                "mensajes",
+                "mensajes__remitente",
+            )
+            .filter(
+                directiva__integrantes__usuario=self.request.user,
+                directiva__integrantes__activo=True,
+                directiva__estado=(Directiva.EstadoDirectiva.VIGENTE),
+            )
+            .distinct()
+            .order_by("-fecha_actualizacion")
+        )
+
+
+class MensajeDirectivaCreateView(generics.CreateAPIView):
+    serializer_class = MensajeSerializer
+    permission_classes = [EsDirectiva]
+
+    def perform_create(self, serializer):
+        conversacion = get_object_or_404(
+            Conversacion.objects.select_related(
+                "directiva",
+                "directiva__junta_vecinos",
+            ),
+            pk=self.kwargs["conversacion_id"],
+            activa=True,
+        )
+
+        es_integrante_activo = IntegranteDirectiva.objects.filter(
+            directiva=conversacion.directiva,
+            usuario=self.request.user,
+            activo=True,
+            directiva__estado=(Directiva.EstadoDirectiva.VIGENTE),
+        ).exists()
+
+        if not es_integrante_activo:
+            raise PermissionDenied("No puedes responder esta conversación.")
+
+        serializer.save(
+            conversacion=conversacion,
+            remitente=self.request.user,
+        )
+
+        conversacion.save(
+            update_fields=[
+                "fecha_actualizacion",
+            ]
+        )
+
+
+class MensajeVecinoCreateView(generics.CreateAPIView):
+    serializer_class = MensajeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        conversacion = get_object_or_404(
+            Conversacion,
+            pk=self.kwargs["conversacion_id"],
+            vecino=self.request.user,
+            activa=True,
+        )
+
+        serializer.save(
+            conversacion=conversacion,
+            remitente=self.request.user,
+        )
+
+        conversacion.save(
+            update_fields=[
+                "fecha_actualizacion",
+            ]
+        )
+
+
+class ConversacionVecinoDetailView(generics.RetrieveAPIView):
+    serializer_class = ConversacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return (
+            Conversacion.objects.select_related(
+                "vecino",
+                "directiva",
+                "directiva__junta_vecinos",
+            )
+            .prefetch_related(
+                "mensajes",
+                "mensajes__remitente",
+            )
+            .filter(
+                vecino=self.request.user,
+            )
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        conversacion = self.get_object()
+
+        mensajes_no_leidos = conversacion.mensajes.filter(
+            leido=False,
+        ).exclude(
+            remitente=request.user,
+        )
+
+        mensajes_no_leidos.update(
+            leido=True,
+            fecha_lectura=timezone.now(),
+        )
+
+        return super().retrieve(
+            request,
+            *args,
+            **kwargs,
+        )
+class ConversacionDirectivaDetailView(
+    generics.RetrieveAPIView
+):
+    serializer_class = ConversacionSerializer
+    permission_classes = [EsDirectiva]
+
+    def get_queryset(self):
+        return (
+            Conversacion.objects
+            .select_related(
+                "vecino",
+                "directiva",
+                "directiva__junta_vecinos",
+            )
+            .prefetch_related(
+                "mensajes",
+                "mensajes__remitente",
+            )
+            .filter(
+                directiva__integrantes__usuario=self.request.user,
+                directiva__integrantes__activo=True,
+                directiva__estado=(
+                    Directiva.EstadoDirectiva.VIGENTE
+                ),
+            )
+            .distinct()
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        conversacion = self.get_object()
+
+        mensajes_no_leidos = conversacion.mensajes.filter(
+            leido=False,
+        ).exclude(
+            remitente=request.user,
+        )
+
+        mensajes_no_leidos.update(
+            leido=True,
+            fecha_lectura=timezone.now(),
+        )
+
+        return super().retrieve(
+            request,
+            *args,
+            **kwargs,
+        )
+class ConversacionesVecinoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        conversaciones = (
+            Conversacion.objects
+            .filter(vecino=request.user)
+            .select_related(
+                "vecino",
+                "directiva",
+                "directiva__junta_vecinos",
+            )
+            .prefetch_related(
+                "mensajes",
+                "mensajes__remitente",
+            )
+            .order_by("-fecha_actualizacion")
+        )
+
+        serializer = ConversacionSerializer(conversaciones, many=True)
+        return Response(serializer.data)
+
+
+    def post(self, request):
+        usuario = request.user
+
+        # Debe tener rol Vecino activo
+        tiene_rol_vecino = UsuarioRol.objects.filter(
+            usuario=usuario,
+            rol__nombre__iexact="Vecino",
+            activo=True,
+        ).exists()
+
+        if not tiene_rol_vecino:
+            return Response(
+                {"detail": "Solo un vecino puede iniciar una conversación."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Debe estar asociado a un sector
+        if not usuario.sector_id:
+            return Response(
+                {"detail": "No tienes un sector asociado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # La asociación territorial debe estar confirmada
+        if usuario.estado_asociacion_sector != "CONFIRMADA":
+            return Response(
+                {
+                    "detail": (
+                        "Tu asociación territorial debe estar confirmada "
+                        "para comunicarte con la directiva."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        junta = usuario.sector.junta_vecinos
+
+        # Buscar la directiva vigente de su junta
+        directiva = (
+            Directiva.objects
+            .filter(
+                junta_vecinos=junta,
+                estado="VIGENTE",
+            )
+            .order_by("-fecha_inicio")
+            .first()
+        )
+
+        if not directiva:
+            return Response(
+                {
+                    "detail": (
+                        "Actualmente tu junta de vecinos no tiene "
+                        "una directiva vigente."
+                    )
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = ConversacionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        asunto = serializer.validated_data["asunto"]
+        mensaje_inicial = serializer.validated_data["mensaje_inicial"]
+
+        with transaction.atomic():
+            conversacion = Conversacion.objects.create(
+                vecino=usuario,
+                directiva=directiva,
+                asunto=asunto,
+            )
+
+            Mensaje.objects.create(
+                conversacion=conversacion,
+                remitente=usuario,
+                contenido=mensaje_inicial,
+            )
+
+        respuesta = ConversacionSerializer(conversacion)
+
+        return Response(
+            respuesta.data,
+            status=status.HTTP_201_CREATED,
         )

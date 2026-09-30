@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from pathlib import Path
+
 from .models import (
     AdjuntoPublicacion,
+    Conversacion,
+    Mensaje,
     Notificacion,
     Publicacion,
 )
@@ -127,4 +130,82 @@ class PublicacionSerializer(serializers.ModelSerializer):
             "junta_nombre",
             "fecha_publicacion",
             "adjuntos",
+        ]
+
+
+class MensajeSerializer(serializers.ModelSerializer):
+    remitente_username = serializers.CharField(
+        source="remitente.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = Mensaje
+        fields = [
+            "id",
+            "remitente",
+            "remitente_username",
+            "contenido",
+            "fecha_envio",
+            "leido",
+            "fecha_lectura",
+        ]
+
+        read_only_fields = [
+            "id",
+            "remitente",
+            "remitente_username",
+            "fecha_envio",
+            "leido",
+            "fecha_lectura",
+        ]
+
+
+class ConversacionSerializer(serializers.ModelSerializer):
+    mensaje_inicial = serializers.CharField(
+        write_only=True,
+        required=True,
+        allow_blank=False,
+    )
+    vecino_username = serializers.CharField(
+        source="vecino.username",
+        read_only=True,
+    )
+
+    junta_nombre = serializers.CharField(
+        source="directiva.junta_vecinos.nombre",
+        read_only=True,
+    )
+
+    mensajes = MensajeSerializer(
+        many=True,
+        read_only=True,
+    )
+
+    class Meta:
+        model = Conversacion
+        fields = [
+            "id",
+            "vecino",
+            "vecino_username",
+            "directiva",
+            "junta_nombre",
+            "asunto",
+            "mensaje_inicial",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "activa",
+            "mensajes",
+        ]
+
+        read_only_fields = [
+            "id",
+            "vecino",
+            "vecino_username",
+            "directiva",
+            "junta_nombre",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "activa",
+            "mensajes",
         ]

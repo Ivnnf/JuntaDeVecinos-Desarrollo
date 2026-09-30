@@ -109,3 +109,80 @@ class Notificacion(models.Model):
             f"{self.usuario} - "
             f"{self.publicacion.titulo}"
         )
+class Conversacion(models.Model):
+    vecino = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="conversaciones_vecino",
+    )
+
+    directiva = models.ForeignKey(
+        Directiva,
+        on_delete=models.PROTECT,
+        related_name="conversaciones",
+    )
+
+    asunto = models.CharField(
+        max_length=200,
+    )
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+    )
+
+    activa = models.BooleanField(
+        default=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-fecha_actualizacion",
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.vecino.username} - "
+            f"{self.asunto}"
+        )
+class Mensaje(models.Model):
+    conversacion = models.ForeignKey(
+        Conversacion,
+        on_delete=models.CASCADE,
+        related_name="mensajes",
+    )
+
+    remitente = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="mensajes_enviados",
+    )
+
+    contenido = models.TextField()
+
+    fecha_envio = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    leido = models.BooleanField(
+        default=False,
+    )
+
+    fecha_lectura = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = [
+            "fecha_envio",
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.remitente.username} - "
+            f"{self.fecha_envio}"
+        )
