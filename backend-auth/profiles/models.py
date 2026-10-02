@@ -5,11 +5,13 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 
+
 class EstadoUsuario(models.TextChoices):
     VERIFICACION = "VERIFICACION", "Esperando verificación"
     ACTIVO = "ACTIVO", "Activo"
     SUSPENDIDO = "SUSPENDIDO", "Suspendido"
     BANEADO = "BANEADO", "Baneado"
+
 
 class UsuarioManager(BaseUserManager):
     def create_user(self, username, email, password=None, **extra_fields):
@@ -21,11 +23,7 @@ class UsuarioManager(BaseUserManager):
 
         email = self.normalize_email(email)
 
-        user = self.model(
-            username=username,
-            email=email,
-            **extra_fields
-        )
+        user = self.model(username=username, email=email, **extra_fields)
 
         user.set_password(password)
         user.save(using=self._db)
@@ -36,19 +34,11 @@ class UsuarioManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 
-        return self.create_user(
-            username,
-            email,
-            password,
-            **extra_fields
-        )
+        return self.create_user(username, email, password, **extra_fields)
 
 
 class Usuario(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(
-        max_length=150,
-        unique=True
-    )
+    username = models.CharField(max_length=150, unique=True)
 
     rut = models.CharField(
         max_length=12,
@@ -67,7 +57,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         max_length=80,
         null=True,
         blank=True,
-    )  
+    )
 
     apellido_materno = models.CharField(
         max_length=80,
@@ -81,51 +71,45 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     )
 
     sector = models.ForeignKey(
-    "organizacion.Sector",
-    on_delete=models.PROTECT,
-    related_name="usuarios",
-    null=True,
-    blank=True,
+        "organizacion.Sector",
+        on_delete=models.PROTECT,
+        related_name="usuarios",
+        null=True,
+        blank=True,
     )
 
     estado_asociacion_sector = models.CharField(
-    max_length=20,
-    choices=[
-        ("PENDIENTE", "Pendiente"),
-        ("CONFIRMADA", "Confirmada"),
-        ("RECHAZADA", "Rechazada"),
-    ],
-    default="PENDIENTE",
+        max_length=20,
+        choices=[
+            ("PENDIENTE", "Pendiente"),
+            ("CONFIRMADA", "Confirmada"),
+            ("RECHAZADA", "Rechazada"),
+        ],
+        null=True,
+        blank=True,
+        default=None,
     )
 
     confirmado_por_usuario = models.ForeignKey(
-    "self",
-    on_delete=models.SET_NULL,
-    related_name="asociaciones_sector_confirmadas",
-    null=True,
-    blank=True,
+        "self",
+        on_delete=models.SET_NULL,
+        related_name="asociaciones_sector_confirmadas",
+        null=True,
+        blank=True,
     )
 
     fecha_confirmacion_sector = models.DateTimeField(
-    null=True,
-    blank=True,
+        null=True,
+        blank=True,
     )
 
-    email = models.EmailField(
-        unique=True
-    )
+    email = models.EmailField(unique=True)
 
-    fecha_registro = models.DateTimeField(
-        auto_now_add=True
-    )
+    fecha_registro = models.DateTimeField(auto_now_add=True)
 
-    is_active = models.BooleanField(
-        default=True
-    )
+    is_active = models.BooleanField(default=True)
 
-    is_staff = models.BooleanField(
-        default=False
-    )
+    is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email"]
@@ -135,6 +119,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.username
 
+
 class Rol(models.Model):
     nombre = models.CharField(
         max_length=50,
@@ -143,6 +128,7 @@ class Rol(models.Model):
 
     def __str__(self):
         return self.nombre
+
 
 class UsuarioRol(models.Model):
     usuario = models.ForeignKey(
@@ -175,6 +161,7 @@ class UsuarioRol(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} - {self.rol.nombre}"
+
 
 class Perfil(models.Model):
     SEXO_MASCULINO = "M"
@@ -278,10 +265,8 @@ class Perfil(models.Model):
         ordering = ["nombre_completo"]
 
     def __str__(self):
-        return (
-            f"{self.nombre_completo or 'Sin nombre'} "
-            f"({self.rut or 'Sin RUT'})"
-        )
+        return f"{self.nombre_completo or 'Sin nombre'} " f"({self.rut or 'Sin RUT'})"
+
 
 class HistorialGestionUsuario(models.Model):
     class TipoCambio(models.TextChoices):

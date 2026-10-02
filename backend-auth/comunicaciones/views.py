@@ -40,7 +40,8 @@ from rest_framework.parsers import (
     FormParser,
     MultiPartParser,
 )
-
+from rest_framework.response import Response
+from .models import Conversacion, Mensaje, RolRemitente
 from django.http import FileResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -330,6 +331,7 @@ class ConversacionVecinoListCreateView(generics.ListCreateAPIView):
             Mensaje.objects.create(
                 conversacion=conversacion,
                 remitente=usuario,
+                rol_remitente=RolRemitente.VECINO,
                 contenido=mensaje_inicial,
             )
 
@@ -386,6 +388,7 @@ class MensajeDirectivaCreateView(generics.CreateAPIView):
         serializer.save(
             conversacion=conversacion,
             remitente=self.request.user,
+            rol_remitente=RolRemitente.DIRECTIVA,
         )
 
         conversacion.save(
@@ -410,6 +413,7 @@ class MensajeVecinoCreateView(generics.CreateAPIView):
         serializer.save(
             conversacion=conversacion,
             remitente=self.request.user,
+            rol_remitente=RolRemitente.VECINO,
         )
 
         conversacion.save(
@@ -444,8 +448,7 @@ class ConversacionVecinoDetailView(generics.RetrieveAPIView):
 
         mensajes_no_leidos = conversacion.mensajes.filter(
             leido=False,
-        ).exclude(
-            remitente=request.user,
+            rol_remitente=RolRemitente.DIRECTIVA,
         )
 
         mensajes_no_leidos.update(
@@ -453,21 +456,24 @@ class ConversacionVecinoDetailView(generics.RetrieveAPIView):
             fecha_lectura=timezone.now(),
         )
 
-        return super().retrieve(
-            request,
-            *args,
-            **kwargs,
+        # Volver a obtener la conversación desde la BD
+        # para que los mensajes ya vengan con leido=True.
+        conversacion = self.get_queryset().get(
+            pk=conversacion.pk,
         )
-class ConversacionDirectivaDetailView(
-    generics.RetrieveAPIView
-):
+
+        serializer = self.get_serializer(conversacion)
+
+        return Response(serializer.data)
+
+
+class ConversacionDirectivaDetailView(generics.RetrieveAPIView):
     serializer_class = ConversacionSerializer
     permission_classes = [EsDirectiva]
 
     def get_queryset(self):
         return (
-            Conversacion.objects
-            .select_related(
+            Conversacion.objects.select_related(
                 "vecino",
                 "directiva",
                 "directiva__junta_vecinos",
@@ -479,9 +485,7 @@ class ConversacionDirectivaDetailView(
             .filter(
                 directiva__integrantes__usuario=self.request.user,
                 directiva__integrantes__activo=True,
-                directiva__estado=(
-                    Directiva.EstadoDirectiva.VIGENTE
-                ),
+                directiva__estado=(Directiva.EstadoDirectiva.VIGENTE),
             )
             .distinct()
         )
@@ -491,8 +495,7 @@ class ConversacionDirectivaDetailView(
 
         mensajes_no_leidos = conversacion.mensajes.filter(
             leido=False,
-        ).exclude(
-            remitente=request.user,
+            rol_remitente=RolRemitente.VECINO,
         )
 
         mensajes_no_leidos.update(
@@ -505,13 +508,14 @@ class ConversacionDirectivaDetailView(
             *args,
             **kwargs,
         )
+
+
 class ConversacionesVecinoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         conversaciones = (
-            Conversacion.objects
-            .filter(vecino=request.user)
+            Conversacion.objects.filter(vecino=request.user)
             .select_related(
                 "vecino",
                 "directiva",
@@ -526,7 +530,6 @@ class ConversacionesVecinoView(APIView):
 
         serializer = ConversacionSerializer(conversaciones, many=True)
         return Response(serializer.data)
-
 
     def post(self, request):
         usuario = request.user
@@ -567,8 +570,7 @@ class ConversacionesVecinoView(APIView):
 
         # Buscar la directiva vigente de su junta
         directiva = (
-            Directiva.objects
-            .filter(
+            Directiva.objects.filter(
                 junta_vecinos=junta,
                 estado="VIGENTE",
             )
@@ -612,3 +614,62 @@ class ConversacionesVecinoView(APIView):
             respuesta.data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class ConversacionDirectivaEstadoView(generics.GenericAPIView):
+    serializer_class = ConversacionSerializer
+    permission_classes = [EsDirectiva]
+
+    def patch(self, request, *args, **kwargs):
+        conversacion = get_object_or_404(
+            Conversacion.objects.select_related(
+                "directiva",
+                "directiva__junta_vecinos",
+                "cerrada_por",
+            ).prefetch_related(
+                "mensajes",
+                "mensajes__remitente",
+            ),
+            pk=self.kwargs["pk"],
+        )
+
+        es_integrante_activo = IntegranteDirectiva.objects.filter(
+            directiva=conversacion.directiva,
+            usuario=request.user,
+            activo=True,
+            directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+        ).exists()
+
+        if not es_integrante_activo:
+            raise PermissionDenied("No puedes modificar esta conversación.")
+
+        activa = request.data.get("activa")
+
+        if not isinstance(activa, bool):
+            raise ValidationError(
+                {
+                    "activa": (
+                        "Debes indicar true para reabrir "
+                        "o false para cerrar la conversación."
+                    )
+                }
+            )
+
+        if activa:
+            # Reabrir conversación
+            conversacion.activa = True
+            conversacion.fecha_cierre = None
+            conversacion.cerrada_por = None
+            conversacion.rol_cierre = None
+        else:
+            # Cerrar conversación
+            conversacion.activa = False
+            conversacion.fecha_cierre = timezone.now()
+            conversacion.cerrada_por = request.user
+            conversacion.rol_cierre = "DIRECTIVA"
+
+        conversacion.save()
+
+        serializer = self.get_serializer(conversacion)
+
+        return Response(serializer.data)

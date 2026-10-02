@@ -145,6 +145,7 @@ class MensajeSerializer(serializers.ModelSerializer):
             "id",
             "remitente",
             "remitente_username",
+            "rol_remitente",
             "contenido",
             "fecha_envio",
             "leido",
@@ -155,6 +156,7 @@ class MensajeSerializer(serializers.ModelSerializer):
             "id",
             "remitente",
             "remitente_username",
+            "rol_remitente",
             "fecha_envio",
             "leido",
             "fecha_lectura",
@@ -176,7 +178,11 @@ class ConversacionSerializer(serializers.ModelSerializer):
         source="directiva.junta_vecinos.nombre",
         read_only=True,
     )
-
+    cerrada_por_username = serializers.CharField(
+        source="cerrada_por.username",
+        read_only=True,
+        allow_null=True,
+    )
     mensajes = MensajeSerializer(
         many=True,
         read_only=True,
@@ -196,6 +202,10 @@ class ConversacionSerializer(serializers.ModelSerializer):
             "fecha_actualizacion",
             "activa",
             "mensajes",
+            "fecha_cierre",
+            "cerrada_por",
+            "cerrada_por_username",
+            "rol_cierre",
         ]
 
         read_only_fields = [
@@ -208,4 +218,8 @@ class ConversacionSerializer(serializers.ModelSerializer):
             "fecha_actualizacion",
             "activa",
             "mensajes",
+            "fecha_cierre",
+            "cerrada_por",
+            "cerrada_por_username",
+            "rol_cierre",
         ]

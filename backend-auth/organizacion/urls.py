@@ -2,6 +2,8 @@ from django.urls import path
 
 from .views import (
     AsociacionesSectorPendientesView,
+    AsociacionesSectorPendientesDirectivaView,
+    ResolverAsociacionSectorDirectivaView,
     CargoDetailView,
     CargoListCreateView,
     JuntaVecinosDetailView,
@@ -21,6 +23,16 @@ from .views import (
 )
 
 urlpatterns = [
+    path(
+        "directiva/resolver-asociacion-sector/<int:usuario_id>/",
+        ResolverAsociacionSectorDirectivaView.as_view(),
+        name="directiva-resolver-asociacion-sector",
+    ),
+    path(
+        "directiva/asociaciones-pendientes/",
+        AsociacionesSectorPendientesDirectivaView.as_view(),
+        name="directiva-asociaciones-sector-pendientes",
+    ),
     path(
         "juntas/<int:junta_id>/directiva-vigente/",
         DirectivaVigenteJuntaView.as_view(),

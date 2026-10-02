@@ -6,7 +6,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction
-
+from .models import Directiva, IntegranteDirectiva
 from .models import (
     Cargo,
     Directiva,
@@ -186,6 +186,112 @@ class AsociacionesSectorPendientesView(generics.ListAPIView):
         )
 
 
+class AsociacionesSectorPendientesDirectivaView(generics.ListAPIView):
+    serializer_class = AsociacionSectorPendienteSerializer
+    permission_classes = [EsDirectiva]
+
+    def get_queryset(self):
+        Usuario = get_user_model()
+
+        juntas_directiva = IntegranteDirectiva.objects.filter(
+            usuario=self.request.user,
+            activo=True,
+            directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+        ).values_list(
+            "directiva__junta_vecinos_id",
+            flat=True,
+        )
+
+        return (
+            Usuario.objects.select_related(
+                "sector",
+                "sector__junta_vecinos",
+            )
+            .filter(
+                sector__isnull=False,
+                estado_asociacion_sector="PENDIENTE",
+                sector__junta_vecinos_id__in=juntas_directiva,
+            )
+            .order_by(
+                "nombres",
+                "apellido_paterno",
+            )
+        )
+
+
+class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
+    permission_classes = [EsDirectiva]
+
+    def post(self, request, usuario_id):
+        Usuario = get_user_model()
+
+        juntas_directiva = IntegranteDirectiva.objects.filter(
+            usuario=request.user,
+            activo=True,
+            directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+        ).values_list(
+            "directiva__junta_vecinos_id",
+            flat=True,
+        )
+
+        try:
+            usuario = Usuario.objects.select_related(
+                "sector",
+                "sector__junta_vecinos",
+            ).get(
+                id=usuario_id,
+                sector__isnull=False,
+                estado_asociacion_sector="PENDIENTE",
+                sector__junta_vecinos_id__in=juntas_directiva,
+            )
+        except Usuario.DoesNotExist:
+            return Response(
+                {
+                    "detail": (
+                        "No existe una asociación pendiente "
+                        "que puedas gestionar para este usuario."
+                    )
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        accion = request.data.get("accion", "").upper()
+
+        if accion == "CONFIRMAR":
+            usuario.estado_asociacion_sector = "CONFIRMADA"
+            usuario.confirmado_por_usuario = request.user
+            usuario.fecha_confirmacion_sector = timezone.now()
+
+        elif accion == "RECHAZAR":
+            usuario.estado_asociacion_sector = "RECHAZADA"
+            usuario.confirmado_por_usuario = None
+            usuario.fecha_confirmacion_sector = None
+
+        else:
+            return Response(
+                {"detail": ("La acción debe ser CONFIRMAR o RECHAZAR.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        usuario.save(
+            update_fields=[
+                "estado_asociacion_sector",
+                "confirmado_por_usuario",
+                "fecha_confirmacion_sector",
+            ]
+        )
+
+        return Response(
+            {
+                "message": ("Asociación territorial actualizada correctamente."),
+                "usuario_id": usuario.id,
+                "sector_id": usuario.sector_id,
+                "estado": usuario.estado_asociacion_sector,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class ResolverAsociacionSectorView(generics.GenericAPIView):
     permission_classes = [EsAdministrador]
 
@@ -259,10 +365,7 @@ class CargoListCreateView(generics.ListCreateAPIView):
                 EsAdministrador,
             ]
 
-        return [
-            permission()
-            for permission in permission_classes
-        ]
+        return [permission() for permission in permission_classes]
 
 
 class CargoDetailView(generics.RetrieveUpdateAPIView):
@@ -310,16 +413,12 @@ class DirectivaDetailView(generics.RetrieveUpdateAPIView):
                     fecha_fin=fecha_fin,
                 )
 
-                integrantes_activos = (
-                    IntegranteDirectiva.objects
-                    .select_related(
-                        "usuario",
-                        "cargo",
-                    )
-                    .filter(
-                        directiva=directiva_actualizada,
-                        activo=True,
-                    )
+                integrantes_activos = IntegranteDirectiva.objects.select_related(
+                    "usuario",
+                    "cargo",
+                ).filter(
+                    directiva=directiva_actualizada,
+                    activo=True,
                 )
 
                 for integrante in integrantes_activos:
@@ -332,12 +431,10 @@ class DirectivaDetailView(generics.RetrieveUpdateAPIView):
                         ]
                     )
 
-                    tiene_otra_asignacion_activa = (
-                        IntegranteDirectiva.objects.filter(
-                            usuario=integrante.usuario,
-                            activo=True,
-                        ).exists()
-                    )
+                    tiene_otra_asignacion_activa = IntegranteDirectiva.objects.filter(
+                        usuario=integrante.usuario,
+                        activo=True,
+                    ).exists()
 
                     if not tiene_otra_asignacion_activa:
                         UsuarioRol.objects.filter(
@@ -351,9 +448,7 @@ class DirectivaDetailView(generics.RetrieveUpdateAPIView):
                     HistorialGestionUsuario.objects.create(
                         usuario_objetivo=integrante.usuario,
                         realizado_por=self.request.user,
-                        tipo_cambio=(
-                            HistorialGestionUsuario.TipoCambio.CARGO
-                        ),
+                        tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
                         valor_anterior=integrante.cargo.nombre,
                         valor_nuevo="SIN_CARGO_ACTIVO",
                         detalle=(

@@ -13,10 +13,15 @@ from .views import (
     MensajeVecinoCreateView,
     ConversacionVecinoDetailView,
     ConversacionDirectivaDetailView,
+    ConversacionDirectivaEstadoView,
 )
 
 urlpatterns = [
-    # MENSAJERÍA - VECINO
+    path(
+        "directiva/conversaciones/<int:pk>/estado/",
+        ConversacionDirectivaEstadoView.as_view(),
+        name="conversacion-directiva-estado",
+    ),
     path(
         "conversaciones/",
         ConversacionVecinoListCreateView.as_view(),
@@ -32,7 +37,6 @@ urlpatterns = [
         MensajeVecinoCreateView.as_view(),
         name="mensajes-vecino-create",
     ),
-
     # MENSAJERÍA - DIRECTIVA
     path(
         "directiva/conversaciones/",
@@ -49,7 +53,6 @@ urlpatterns = [
         MensajeDirectivaCreateView.as_view(),
         name="mensajes-directiva-create",
     ),
-
     # PUBLICACIONES
     path(
         "publicaciones/",
@@ -71,7 +74,6 @@ urlpatterns = [
         AdjuntoPublicacionDescargaView.as_view(),
         name="adjuntos-publicacion-descargar",
     ),
-
     # NOTIFICACIONES
     path(
         "notificaciones/",

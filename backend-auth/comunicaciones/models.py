@@ -39,6 +39,7 @@ class Publicacion(models.Model):
     def __str__(self):
         return self.titulo
 
+
 class AdjuntoPublicacion(models.Model):
     publicacion = models.ForeignKey(
         Publicacion,
@@ -60,6 +61,7 @@ class AdjuntoPublicacion(models.Model):
 
     def __str__(self):
         return self.nombre_original
+
 
 class Notificacion(models.Model):
     publicacion = models.ForeignKey(
@@ -98,17 +100,14 @@ class Notificacion(models.Model):
                     "publicacion",
                     "usuario",
                 ],
-                name=(
-                    "uq_notificacion_publicacion_usuario"
-                ),
+                name=("uq_notificacion_publicacion_usuario"),
             ),
         ]
 
     def __str__(self):
-        return (
-            f"{self.usuario} - "
-            f"{self.publicacion.titulo}"
-        )
+        return f"{self.usuario} - " f"{self.publicacion.titulo}"
+
+
 class Conversacion(models.Model):
     vecino = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -137,6 +136,27 @@ class Conversacion(models.Model):
     activa = models.BooleanField(
         default=True,
     )
+    fecha_cierre = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    cerrada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="conversaciones_cerradas",
+        null=True,
+        blank=True,
+    )
+
+    rol_cierre = models.CharField(
+        max_length=20,
+        choices=[
+            ("DIRECTIVA", "Directiva"),
+        ],
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = [
@@ -144,10 +164,14 @@ class Conversacion(models.Model):
         ]
 
     def __str__(self):
-        return (
-            f"{self.vecino.username} - "
-            f"{self.asunto}"
-        )
+        return f"{self.vecino.username} - " f"{self.asunto}"
+
+
+class RolRemitente(models.TextChoices):
+    VECINO = "VECINO", "Vecino"
+    DIRECTIVA = "DIRECTIVA", "Directiva"
+
+
 class Mensaje(models.Model):
     conversacion = models.ForeignKey(
         Conversacion,
@@ -159,6 +183,12 @@ class Mensaje(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="mensajes_enviados",
+    )
+    rol_remitente = models.CharField(
+        max_length=20,
+        choices=RolRemitente.choices,
+        null=True,
+        blank=True,
     )
 
     contenido = models.TextField()
@@ -182,7 +212,4 @@ class Mensaje(models.Model):
         ]
 
     def __str__(self):
-        return (
-            f"{self.remitente.username} - "
-            f"{self.fecha_envio}"
-        )
+        return f"{self.remitente.username} - " f"{self.fecha_envio}"
