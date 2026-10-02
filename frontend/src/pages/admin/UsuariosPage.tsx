@@ -17,6 +17,18 @@ type UsuarioAdministracion = {
     email: string
     is_active: boolean
     roles: RolUsuario[]
+
+    sector_id: number | null
+    sector_nombre: string | null
+
+    junta_id: number | null
+    junta_nombre: string | null
+
+    estado_asociacion_sector:
+    | 'PENDIENTE'
+    | 'CONFIRMADA'
+    | 'RECHAZADA'
+    | null
 }
 
 type RolDisponible = {
@@ -36,6 +48,8 @@ function UsuariosPage() {
 
     const [error, setError] =
         useState('')
+    const [juntaSeleccionada, setJuntaSeleccionada] =
+        useState('TODAS')
 
     const [usuarioActualizando, setUsuarioActualizando] =
         useState<number | null>(null)
@@ -293,18 +307,74 @@ function UsuariosPage() {
         }
     }
 
-    const usuariosActivos =
-        usuarios.filter((usuario) => usuario.is_active).length
+    
+    const juntasDisponibles = usuarios
+        .reduce<{ id: number; nombre: string }[]>(
+            (acumulador, usuario) => {
+                if (
+                    usuario.junta_id === null ||
+                    !usuario.junta_nombre
+                ) {
+                    return acumulador
+                }
 
-    const usuariosInactivos =
-        usuarios.length - usuariosActivos
+                const yaExiste = acumulador.some(
+                    (junta) =>
+                        junta.id === usuario.junta_id,
+                )
 
-    const usuariosConRoles =
-        usuarios.filter(
-            (usuario) =>
-                usuario.roles.some((rol) => rol.activo)
+                if (!yaExiste) {
+                    acumulador.push({
+                        id: usuario.junta_id,
+                        nombre: usuario.junta_nombre,
+                    })
+                }
+
+                return acumulador
+            },
+            [],
+        )
+        .sort((a, b) =>
+            a.nombre.localeCompare(b.nombre, 'es'),
+        )
+    const usuariosFiltrados = usuarios.filter((usuario) => {
+        if (juntaSeleccionada === 'TODAS') {
+            return true
+        }
+
+        if (juntaSeleccionada === 'SIN_ASOCIACION') {
+            const esAdministrador = usuario.roles.some(
+                (rol) =>
+                    rol.nombre === 'Administrador' &&
+                    rol.activo,
+            )
+
+            return (
+                usuario.junta_id === null &&
+                !esAdministrador
+            )
+        }
+
+        return (
+            usuario.junta_id === Number(juntaSeleccionada)
+        )
+    })
+    const usuariosActivosFiltrados =
+        usuariosFiltrados.filter(
+            (usuario) => usuario.is_active,
         ).length
 
+    const usuariosInactivosFiltrados =
+        usuariosFiltrados.length -
+        usuariosActivosFiltrados
+
+    const usuariosConRolesFiltrados =
+        usuariosFiltrados.filter(
+            (usuario) =>
+                usuario.roles.some(
+                    (rol) => rol.activo,
+                ),
+        ).length
     return (
         <main className="min-h-screen bg-base-200 px-4 py-8">
             <section className="mx-auto w-full max-w-7xl">
@@ -348,7 +418,7 @@ function UsuariosPage() {
 
                             <div className="mt-2 flex items-end justify-between gap-3">
                                 <span className="text-3xl font-bold">
-                                    {usuarios.length}
+                                    {usuariosFiltrados.length}
                                 </span>
 
                                 <span className="badge badge-primary badge-outline">
@@ -364,7 +434,7 @@ function UsuariosPage() {
 
                             <div className="mt-2 flex items-end justify-between gap-3">
                                 <span className="text-3xl font-bold">
-                                    {usuariosActivos}
+                                    {usuariosActivosFiltrados}
                                 </span>
 
                                 <span className="badge badge-success badge-outline">
@@ -380,7 +450,7 @@ function UsuariosPage() {
 
                             <div className="mt-2 flex items-end justify-between gap-3">
                                 <span className="text-3xl font-bold">
-                                    {usuariosInactivos}
+                                    {usuariosInactivosFiltrados}
                                 </span>
 
                                 <span className="badge badge-error badge-outline">
@@ -396,7 +466,7 @@ function UsuariosPage() {
 
                             <div className="mt-2 flex items-end justify-between gap-3">
                                 <span className="text-3xl font-bold">
-                                    {usuariosConRoles}
+                                    {usuariosConRolesFiltrados}
                                 </span>
 
                                 <span className="badge badge-info badge-outline">
@@ -439,14 +509,49 @@ function UsuariosPage() {
                                 </p>
                             </div>
 
-                            {usuarios.length > 0 && (
-                                <span className="badge badge-outline badge-lg">
-                                    {usuarios.length}{' '}
-                                    {usuarios.length === 1
-                                        ? 'usuario'
-                                        : 'usuarios'}
-                                </span>
-                            )}
+                            <div className="flex flex-wrap items-end gap-3">
+                                <label className="form-control w-full sm:w-72">
+                                    <div className="label">
+                                        <span className="label-text font-medium">
+                                            Junta Vecinal
+                                        </span>
+                                    </div>
+
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={juntaSeleccionada}
+                                        onChange={(event) =>
+                                            setJuntaSeleccionada(event.target.value)
+                                        }
+                                    >
+                                        <option value="TODAS">
+                                            Todas las juntas
+                                        </option>
+
+                                        <option value="SIN_ASOCIACION">
+                                            Sin asociación
+                                        </option>
+
+                                        {juntasDisponibles.map((junta) => (
+                                            <option
+                                                key={junta.id}
+                                                value={String(junta.id)}
+                                            >
+                                                {junta.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                {usuariosFiltrados.length > 0 && (
+                                    <span className="badge badge-outline badge-lg">
+                                        {usuariosFiltrados.length}{' '}
+                                        {usuariosFiltrados.length === 1
+                                            ? 'usuario'
+                                            : 'usuarios'}
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {usuarios.length === 0 ? (
@@ -474,7 +579,7 @@ function UsuariosPage() {
                                             <tr>
                                                 <th>Usuario</th>
                                                 <th>RUT</th>
-                                                <th>Correo</th>
+                                                <th>Junta / Sector</th>
                                                 <th>Roles activos</th>
                                                 <th>Gestionar roles</th>
                                                 <th>Estado</th>
@@ -485,7 +590,7 @@ function UsuariosPage() {
                                         </thead>
 
                                         <tbody>
-                                            {usuarios.map((usuario) => {
+                                            {usuariosFiltrados.map((usuario) => {
                                                 const rolesActivos =
                                                     usuario.roles.filter(
                                                         (rol) => rol.activo
@@ -525,6 +630,9 @@ function UsuariosPage() {
                                                                     <p className="mt-1 text-xs text-base-content/50">
                                                                         @{usuario.username}
                                                                     </p>
+                                                                    <p className="mt-1 text-xs text-base-content/40">
+                                                                        {usuario.email}
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -533,12 +641,52 @@ function UsuariosPage() {
                                                             {usuario.rut ?? '-'}
                                                         </td>
 
-                                                        <td>
-                                                            <span className="break-all text-sm">
-                                                                {usuario.email}
-                                                            </span>
-                                                        </td>
 
+                                                        <td>
+                                                            <div className="min-w-[180px]">
+                                                                {usuario.junta_nombre ? (
+                                                                    <>
+                                                                        <p className="font-medium leading-tight">
+                                                                            {usuario.junta_nombre}
+                                                                        </p>
+
+                                                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                                            <span className="text-xs text-base-content/50">
+                                                                                {usuario.sector_nombre ?? 'Sin sector'}
+                                                                            </span>
+
+                                                                            {usuario.estado_asociacion_sector === 'PENDIENTE' && (
+                                                                                <span className="badge badge-warning badge-xs">
+                                                                                    Pendiente
+                                                                                </span>
+                                                                            )}
+
+                                                                            {usuario.estado_asociacion_sector === 'RECHAZADA' && (
+                                                                                <span className="badge badge-error badge-outline badge-xs">
+                                                                                    Rechazada
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </>
+                                                                ) : rolesActivos.some(
+                                                                    (rol) => rol.nombre === 'Administrador',
+                                                                ) ? (
+                                                                    <span className="badge badge-ghost">
+                                                                        No aplica
+                                                                    </span>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="badge badge-warning badge-outline">
+                                                                            Sin asociación
+                                                                        </span>
+
+                                                                        <p className="mt-1 text-xs text-base-content/40">
+                                                                            Sin sector
+                                                                        </p>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </td>
                                                         <td>
                                                             {rolesActivos.length > 0 ? (
                                                                 <div className="flex min-w-[150px] flex-wrap gap-1.5">

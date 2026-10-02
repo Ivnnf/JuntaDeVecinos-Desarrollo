@@ -265,6 +265,12 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
 class UsuarioAdministracionSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
 
+    sector_id = serializers.SerializerMethodField()
+    sector_nombre = serializers.SerializerMethodField()
+
+    junta_id = serializers.SerializerMethodField()
+    junta_nombre = serializers.SerializerMethodField()
+
     class Meta:
         model = get_user_model()
 
@@ -278,6 +284,11 @@ class UsuarioAdministracionSerializer(serializers.ModelSerializer):
             "email",
             "is_active",
             "roles",
+            "sector_id",
+            "sector_nombre",
+            "junta_id",
+            "junta_nombre",
+            "estado_asociacion_sector",
         ]
 
         read_only_fields = [
@@ -289,6 +300,11 @@ class UsuarioAdministracionSerializer(serializers.ModelSerializer):
             "apellido_materno",
             "email",
             "roles",
+            "sector_id",
+            "sector_nombre",
+            "junta_id",
+            "junta_nombre",
+            "estado_asociacion_sector",
         ]
 
     def get_roles(self, obj):
@@ -300,6 +316,30 @@ class UsuarioAdministracionSerializer(serializers.ModelSerializer):
             }
             for asignacion in obj.roles_asignados.select_related("rol").all()
         ]
+
+    def get_sector_id(self, obj):
+        if obj.sector is None:
+            return None
+
+        return obj.sector.id
+
+    def get_sector_nombre(self, obj):
+        if obj.sector is None:
+            return None
+
+        return obj.sector.nombre
+
+    def get_junta_id(self, obj):
+        if obj.sector is None:
+            return None
+
+        return obj.sector.junta_vecinos.id
+
+    def get_junta_nombre(self, obj):
+        if obj.sector is None:
+            return None
+
+        return obj.sector.junta_vecinos.nombre
 
 
 class EstadoCuentaUsuarioSerializer(serializers.ModelSerializer):
