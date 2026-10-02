@@ -12,8 +12,24 @@ type Notificacion = {
   fecha_creacion: string
   fecha_lectura: string | null
 }
-
+type PerfilResumen = {
+  sector_nombre: string | null
+  junta_nombre: string | null
+  estado_asociacion_sector:
+  | 'PENDIENTE'
+  | 'CONFIRMADA'
+  | 'RECHAZADA'
+  | null
+}
 function VecinoInicioPage() {
+  const [perfil, setPerfil] =
+    useState<PerfilResumen | null>(null)
+
+  const [cargandoPerfil, setCargandoPerfil] =
+    useState(true)
+
+  const [errorPerfil, setErrorPerfil] =
+    useState('')
   const [notificaciones, setNotificaciones] =
     useState<Notificacion[]>([])
 
@@ -56,7 +72,42 @@ function VecinoInicioPage() {
 
     void cargarNotificaciones()
   }, [])
+  useEffect(() => {
+    const cargarPerfil = async () => {
+      try {
+        setCargandoPerfil(true)
+        setErrorPerfil('')
 
+        const response = await fetch(
+          'http://localhost:8000/api/auth/perfil/',
+          {
+            credentials: 'include',
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            'No fue posible obtener tu información territorial.',
+          )
+        }
+
+        const data =
+          (await response.json()) as PerfilResumen
+
+        setPerfil(data)
+      } catch (error) {
+        setErrorPerfil(
+          error instanceof Error
+            ? error.message
+            : 'Ocurrió un error inesperado.',
+        )
+      } finally {
+        setCargandoPerfil(false)
+      }
+    }
+
+    void cargarPerfil()
+  }, [])
   const notificacionesNoLeidas =
     notificaciones.filter(
       (notificacion) => !notificacion.leida
@@ -151,7 +202,86 @@ function VecinoInicioPage() {
             </div>
           </div>
         </div>
+        {/* Información territorial */}
+        <div className="mb-6 rounded-2xl border border-primary/30 bg-base-100 p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-base-content/50">
+                Tu Junta de Vecinos
+              </p>
 
+              {cargandoPerfil ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="loading loading-spinner loading-sm" />
+                  <span className="text-sm text-base-content/60">
+                    Cargando información...
+                  </span>
+                </div>
+              ) : errorPerfil ? (
+                <p className="mt-2 text-sm text-error">
+                  {errorPerfil}
+                </p>
+              ) : perfil ? (
+                perfil.estado_asociacion_sector === 'PENDIENTE' ? (
+                  <>
+                    <h2 className="mt-1 text-xl font-bold">
+                      Solicitud de asociación pendiente
+                    </h2>
+
+                    <p className="mt-2 max-w-2xl text-sm text-base-content/60">
+                      Tu solicitud de asociación territorial está pendiente
+                      de aprobación por la Directiva.
+                    </p>
+
+                    <div className="mt-3">
+                      <span className="badge badge-warning">
+                        Asociación pendiente
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="mt-1 text-xl font-bold">
+                      {perfil.junta_nombre ?? 'Sin Junta de Vecinos asociada'}
+                    </h2>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <span className="text-sm text-base-content/70">
+                        Sector:{' '}
+                        <strong>
+                          {perfil.sector_nombre ?? 'Sin sector asociado'}
+                        </strong>
+                      </span>
+
+                      <span
+                        className={
+                          perfil.estado_asociacion_sector === 'CONFIRMADA'
+                            ? 'badge badge-success'
+                            : perfil.estado_asociacion_sector === 'RECHAZADA'
+                              ? 'badge badge-error'
+                              : 'badge badge-ghost'
+                        }
+                      >
+                        {perfil.estado_asociacion_sector === 'CONFIRMADA'
+                          ? 'Asociación confirmada'
+                          : perfil.estado_asociacion_sector === 'RECHAZADA'
+                            ? 'Asociación rechazada'
+                            : 'Sin asociación'}
+                      </span>
+                    </div>
+                  </>
+                )
+              ) : null}
+            </div>
+
+            <Link
+              to="/vecino/perfil"
+              className="btn btn-sm btn-outline"
+            >
+              Ver mi perfil
+            </Link>
+          </div>
+        </div>
         {/* Resumen */}
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">

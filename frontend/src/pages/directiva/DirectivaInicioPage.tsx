@@ -320,6 +320,26 @@ function DirectivaInicioPage() {
                   >
                     Ver Mensajes
                   </Link>
+
+                </div>
+                {/* Asociaciones pendientes */}
+                <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold">
+                      Asociaciones pendientes
+                    </h3>
+
+                    <p className="mt-1 text-sm text-base-content/60">
+                      Revisa y resuelve solicitudes de vecinos que desean asociarse a tu Junta de Vecinos.
+                    </p>
+                  </div>
+
+                  <Link
+                    to="/directiva/asociaciones"
+                    className="btn w-full border-indigo-600 bg-indigo-600 text-white hover:border-indigo-700 hover:bg-indigo-700"
+                  >
+                    Ver Solicitudes
+                  </Link>
                 </div>
                 {/* Documentos */}
                 <div className="rounded-2xl border border-cyan-500/30 bg-base-100 p-5 shadow-sm">

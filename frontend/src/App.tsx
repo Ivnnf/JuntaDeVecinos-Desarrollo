@@ -34,10 +34,20 @@ import SeleccionRolPage from './pages/SeleccionRolPage'
 import SeguimientoSolicitudesPage from './pages/vecino/SeguimientoSolicitudesPage'
 import MensajeriaPage from './pages/vecino/MensajeriaPage'
 import MensajeriaDirectivaPage from './pages/directiva/MensajeriaDirectivaPage'
+import AsociacionesDirectivaPage from './pages/directiva/AsociacionesDirectivaPage'
+
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/directiva/asociaciones"
+        element={
+          <RutaProtegida rolPermitido={2}>
+            <AsociacionesDirectivaPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/directiva/mensajeria"
         element={

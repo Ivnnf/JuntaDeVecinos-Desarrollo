@@ -15,10 +15,10 @@ type PerfilVecino = {
     junta_id: number | null
     junta_nombre: string | null
     estado_asociacion_sector:
-        | 'PENDIENTE'
-        | 'CONFIRMADA'
-        | 'RECHAZADA'
-        | null
+    | 'PENDIENTE'
+    | 'CONFIRMADA'
+    | 'RECHAZADA'
+    | null
     fecha_confirmacion_sector: string | null
 }
 
@@ -292,11 +292,15 @@ function MiPerfilPage() {
             return 'Sin información'
         }
 
-        return new Date(`${fecha}T00:00:00`).toLocaleDateString(
+        const fechaNormalizada = fecha.includes('T')
+            ? new Date(fecha)
+            : new Date(`${fecha}T00:00:00`)
+
+        return fechaNormalizada.toLocaleDateString(
             'es-CL',
             {
                 dateStyle: 'medium',
-            }
+            },
         )
     }
 
@@ -760,98 +764,101 @@ function MiPerfilPage() {
                                         </div>
                                     )}
 
-                                    {perfil.estado_asociacion_sector !== 'CONFIRMADA' && (
-                                        <div className="mt-5 border-t border-base-300 pt-5">
-                                            <label className="form-control">
-                                                <div className="label">
-                                                    <span className="label-text font-semibold">
-                                                        Sector
-                                                    </span>
-                                                </div>
+                                    {(
+                                        perfil.estado_asociacion_sector === null ||
+                                        perfil.estado_asociacion_sector === 'RECHAZADA'
+                                    ) && (
+                                            <div className="mt-5 border-t border-base-300 pt-5">
+                                                <label className="form-control">
+                                                    <div className="label">
+                                                        <span className="label-text font-semibold">
+                                                            Sector
+                                                        </span>
+                                                    </div>
 
-                                                <select
-                                                    className="select select-bordered w-full"
-                                                    value={sectorSeleccionado}
-                                                    onChange={(event) =>
-                                                        setSectorSeleccionado(
-                                                            event.target.value
-                                                        )
-                                                    }
+                                                    <select
+                                                        className="select select-bordered w-full"
+                                                        value={sectorSeleccionado}
+                                                        onChange={(event) =>
+                                                            setSectorSeleccionado(
+                                                                event.target.value
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            cargandoSectores ||
+                                                            solicitandoSector
+                                                        }
+                                                    >
+                                                        <option value="">
+                                                            Seleccione un sector
+                                                        </option>
+
+                                                        {sectores.map((sector) => (
+                                                            <option
+                                                                key={sector.id}
+                                                                value={sector.id}
+                                                            >
+                                                                {sector.junta_nombre}
+                                                                {' - '}
+                                                                {sector.nombre}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+
+                                                    {cargandoSectores && (
+                                                        <span className="mt-2 text-xs text-base-content/50">
+                                                            Cargando sectores disponibles...
+                                                        </span>
+                                                    )}
+                                                </label>
+
+                                                {sectorSeleccionado && (
+                                                    <div className="mt-3 rounded-xl bg-base-200/60 p-4">
+                                                        <p className="text-sm font-semibold">
+                                                            {
+                                                                sectores.find(
+                                                                    (sector) =>
+                                                                        String(sector.id) ===
+                                                                        sectorSeleccionado
+                                                                )?.nombre
+                                                            }
+                                                        </p>
+
+                                                        <p className="mt-1 text-sm text-base-content/60">
+                                                            {
+                                                                sectores.find(
+                                                                    (sector) =>
+                                                                        String(sector.id) ===
+                                                                        sectorSeleccionado
+                                                                )?.descripcion ||
+                                                                'Sin descripción adicional.'
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary mt-4 w-full"
                                                     disabled={
                                                         cargandoSectores ||
-                                                        solicitandoSector
+                                                        solicitandoSector ||
+                                                        !sectorSeleccionado
+                                                    }
+                                                    onClick={() =>
+                                                        void solicitarAsociacionSector()
                                                     }
                                                 >
-                                                    <option value="">
-                                                        Seleccione un sector
-                                                    </option>
+                                                    {solicitandoSector && (
+                                                        <span className="loading loading-spinner loading-sm" />
+                                                    )}
 
-                                                    {sectores.map((sector) => (
-                                                        <option
-                                                            key={sector.id}
-                                                            value={sector.id}
-                                                        >
-                                                            {sector.junta_nombre}
-                                                            {' - '}
-                                                            {sector.nombre}
-                                                        </option>
-                                                    ))}
-                                                </select>
-
-                                                {cargandoSectores && (
-                                                    <span className="mt-2 text-xs text-base-content/50">
-                                                        Cargando sectores disponibles...
-                                                    </span>
-                                                )}
-                                            </label>
-
-                                            {sectorSeleccionado && (
-                                                <div className="mt-3 rounded-xl bg-base-200/60 p-4">
-                                                    <p className="text-sm font-semibold">
-                                                        {
-                                                            sectores.find(
-                                                                (sector) =>
-                                                                    String(sector.id) ===
-                                                                    sectorSeleccionado
-                                                            )?.nombre
-                                                        }
-                                                    </p>
-
-                                                    <p className="mt-1 text-sm text-base-content/60">
-                                                        {
-                                                            sectores.find(
-                                                                (sector) =>
-                                                                    String(sector.id) ===
-                                                                    sectorSeleccionado
-                                                            )?.descripcion ||
-                                                            'Sin descripción adicional.'
-                                                        }
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary mt-4 w-full"
-                                                disabled={
-                                                    cargandoSectores ||
-                                                    solicitandoSector ||
-                                                    !sectorSeleccionado
-                                                }
-                                                onClick={() =>
-                                                    void solicitarAsociacionSector()
-                                                }
-                                            >
-                                                {solicitandoSector && (
-                                                    <span className="loading loading-spinner loading-sm" />
-                                                )}
-
-                                                {solicitandoSector
-                                                    ? 'Enviando solicitud...'
-                                                    : 'Solicitar asociación'}
-                                            </button>
-                                        </div>
-                                    )}
+                                                    {solicitandoSector
+                                                        ? 'Enviando solicitud...'
+                                                        : 'Solicitar asociación'}
+                                                </button>
+                                            </div>
+                                        )}
 
                                     {perfil.estado_asociacion_sector === 'CONFIRMADA' && (
                                         <div className="alert alert-success mt-5">

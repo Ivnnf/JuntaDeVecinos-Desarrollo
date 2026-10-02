@@ -541,11 +541,10 @@ function EventosPage() {
                 {/* Formulario */}
                 <form
                     onSubmit={crearEvento}
-                    className={`mb-6 overflow-hidden rounded-2xl border bg-base-100 shadow-sm ${
-                        eventoAEditar
+                    className={`mb-6 overflow-hidden rounded-2xl border bg-base-100 shadow-sm ${eventoAEditar
                             ? 'border-amber-500/40'
                             : 'border-base-300'
-                    }`}
+                        }`}
                 >
                     <div className="border-b border-base-300 p-6">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -589,11 +588,10 @@ function EventosPage() {
 
                         {mensaje && (
                             <div
-                                className={`alert mb-6 ${
-                                    tipoMensaje === 'error'
+                                className={`alert mb-6 ${tipoMensaje === 'error'
                                         ? 'alert-error'
                                         : 'alert-success'
-                                }`}
+                                    }`}
                             >
                                 <span>{mensaje}</span>
                             </div>
@@ -941,7 +939,7 @@ function EventosPage() {
                                         </div>
 
                                         {/* Acciones */}
-                                        {evento.estado === 'PROGRAMADO' && (
+                                        {evento.estado !== 'CANCELADO' && (
                                             <div className="border-t border-base-300 p-4">
                                                 <div className="flex flex-wrap justify-end gap-2">
 
@@ -949,28 +947,34 @@ function EventosPage() {
                                                         to={`/directiva/eventos/${evento.id}/asistencia`}
                                                         className="btn btn-sm btn-primary"
                                                     >
-                                                        Registrar asistencia
+                                                        {evento.estado === 'FINALIZADO'
+                                                            ? 'Ver asistencia'
+                                                            : 'Gestionar asistencia'}
                                                     </Link>
 
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-outline"
-                                                        onClick={() =>
-                                                            prepararEdicion(evento)
-                                                        }
-                                                    >
-                                                        Editar
-                                                    </button>
+                                                    {evento.estado === 'PROGRAMADO' && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-outline"
+                                                                onClick={() =>
+                                                                    prepararEdicion(evento)
+                                                                }
+                                                            >
+                                                                Editar
+                                                            </button>
 
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-error btn-outline"
-                                                        onClick={() =>
-                                                            setEventoACancelar(evento)
-                                                        }
-                                                    >
-                                                        Cancelar
-                                                    </button>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-error btn-outline"
+                                                                onClick={() =>
+                                                                    setEventoACancelar(evento)
+                                                                }
+                                                            >
+                                                                Cancelar
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
