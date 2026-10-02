@@ -35,7 +35,8 @@ function VecinoInicioPage() {
 
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
-
+  const [mostrarNotificaciones, setMostrarNotificaciones] =
+    useState(false)
   useEffect(() => {
     const cargarNotificaciones = async () => {
       try {
@@ -196,12 +197,212 @@ function VecinoInicioPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+
+              {/* Notificaciones */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMostrarNotificaciones(
+                      (mostrar) => !mostrar,
+                    )
+                  }
+                  className="btn btn-outline relative h-12 w-12 p-0"
+                  aria-label="Notificaciones"
+                  title="Notificaciones"
+                >
+                  {/* Campana */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.8}
+                    stroke="currentColor"
+                    className="h-6 w-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M14.857 17.082a23.848 23.848 0 0 1 5.454 1.31A8.967 8.967 0 0 1 18 9.75V9a6 6 0 1 0-12 0v.75a8.967 8.967 0 0 1-2.312 8.642 23.848 23.848 0 0 1 5.454-1.31m5.715 0a24.255 24.255 0 0 0-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+                    />
+                  </svg>
+
+                  {/* Burbuja contador */}
+                  {notificacionesNoLeidas > 0 && (
+                    <span className="badge badge-primary badge-sm absolute -right-2 -top-2 min-w-5">
+                      {notificacionesNoLeidas > 9
+                        ? '9+'
+                        : notificacionesNoLeidas}
+                    </span>
+                  )}
+                </button>
+
+                {/* Panel desplegable */}
+                {mostrarNotificaciones && (
+                  <div className="absolute right-0 z-50 mt-3 w-[390px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-2xl">
+
+                    {/* Cabecera */}
+                    <div className="border-b border-base-300 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-bold">
+                            Notificaciones
+                          </h3>
+
+                          <p className="mt-1 text-xs text-base-content/50">
+                            Comunicados de tu Junta de Vecinos
+                          </p>
+                        </div>
+
+                        <span
+                          className={
+                            notificacionesNoLeidas > 0
+                              ? 'badge badge-primary'
+                              : 'badge badge-ghost'
+                          }
+                        >
+                          {notificacionesNoLeidas}{' '}
+                          {notificacionesNoLeidas === 1
+                            ? 'sin leer'
+                            : 'sin leer'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Contenido */}
+                    <div className="max-h-[430px] overflow-y-auto">
+
+                      {cargando && (
+                        <div className="flex items-center justify-center gap-3 p-8">
+                          <span className="loading loading-spinner loading-sm" />
+
+                          <span className="text-sm text-base-content/60">
+                            Cargando...
+                          </span>
+                        </div>
+                      )}
+
+                      {!cargando && error && (
+                        <div className="p-4">
+                          <div className="alert alert-error text-sm">
+                            {error}
+                          </div>
+                        </div>
+                      )}
+
+                      {!cargando &&
+                        !error &&
+                        notificaciones.length === 0 && (
+                          <div className="p-8 text-center">
+                            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-success/10 text-success">
+                              ✓
+                            </div>
+
+                            <p className="font-semibold">
+                              No tienes notificaciones
+                            </p>
+
+                            <p className="mt-1 text-sm text-base-content/50">
+                              Los nuevos comunicados aparecerán aquí.
+                            </p>
+                          </div>
+                        )}
+
+                      {!cargando &&
+                        !error &&
+                        notificaciones.map((notificacion) => (
+                          <div
+                            key={notificacion.id}
+                            className={`border-b border-base-300 p-4 last:border-b-0 ${!notificacion.leida
+                                ? 'bg-primary/[0.05]'
+                                : ''
+                              }`}
+                          >
+                            <div className="flex gap-3">
+
+                              {/* Burbuja */}
+                              <div
+                                className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${notificacion.leida
+                                    ? 'bg-base-200 text-base-content/40'
+                                    : 'bg-primary/15 text-primary'
+                                  }`}
+                              >
+                                {notificacion.leida ? '✓' : '!'}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-1 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={
+                                      notificacion.leida
+                                        ? 'badge badge-ghost badge-sm'
+                                        : 'badge badge-primary badge-sm'
+                                    }
+                                  >
+                                    {notificacion.leida
+                                      ? 'Leída'
+                                      : 'Nueva'}
+                                  </span>
+
+                                  <span className="text-xs text-base-content/40">
+                                    {formatearFecha(
+                                      notificacion.fecha_creacion,
+                                    )}
+                                  </span>
+                                </div>
+
+                                <p className="font-semibold leading-snug">
+                                  {notificacion.titulo_publicacion}
+                                </p>
+
+                                <p className="mt-1 text-xs text-base-content/50">
+                                  {notificacion.junta_nombre}
+                                </p>
+
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  <Link
+                                    to={`/vecino/publicaciones/${notificacion.publicacion_id}?notificacion=${notificacion.id}`}
+                                    className="btn btn-primary btn-xs"
+                                    onClick={() =>
+                                      setMostrarNotificaciones(false)
+                                    }
+                                  >
+                                    Ver comunicado
+                                  </Link>
+
+                                  {!notificacion.leida && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline btn-xs"
+                                      onClick={() =>
+                                        void marcarComoLeida(
+                                          notificacion,
+                                        )
+                                      }
+                                    >
+                                      Marcar como leída
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <CambiarPerfilButton />
+
               <CerrarSesionButton />
             </div>
+
           </div>
+
         </div>
+
         {/* Información territorial */}
         <div className="mb-6 rounded-2xl border border-primary/30 bg-base-100 p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -282,64 +483,7 @@ function VecinoInicioPage() {
             </Link>
           </div>
         </div>
-        {/* Resumen */}
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
-            <p className="text-sm font-medium text-base-content/60">
-              Notificaciones nuevas
-            </p>
-
-            <div className="mt-2 flex items-end justify-between gap-3">
-              <span className="text-3xl font-bold">
-                {notificacionesNoLeidas}
-              </span>
-
-              <span
-                className={
-                  notificacionesNoLeidas > 0
-                    ? 'badge badge-primary'
-                    : 'badge badge-ghost'
-                }
-              >
-                {notificacionesNoLeidas > 0
-                  ? 'Pendientes'
-                  : 'Al día'}
-              </span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
-            <p className="text-sm font-medium text-base-content/60">
-              Total notificaciones
-            </p>
-
-            <div className="mt-2 flex items-end justify-between gap-3">
-              <span className="text-3xl font-bold">
-                {notificaciones.length}
-              </span>
-
-              <span className="badge badge-info badge-outline">
-                Recibidas
-              </span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm sm:col-span-2 lg:col-span-1">
-            <p className="text-sm font-medium text-base-content/60">
-              Estado
-            </p>
-
-            <div className="mt-2 flex items-end justify-between gap-3">
-              <span className="text-xl font-bold">
-                Sesión activa
-              </span>
-
-              <span className="badge badge-success">
-                Vecino
-              </span>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Accesos rápidos */}
         <div className="mb-6">
@@ -504,162 +648,7 @@ function VecinoInicioPage() {
           </div>
         </div>
 
-        {/* Notificaciones */}
-        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-          <div className="border-b border-base-300 p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold">
-                  Notificaciones
-                </h2>
-
-                <p className="mt-1 text-base-content/60">
-                  Comunicados recientes publicados por tu Junta de Vecinos.
-                </p>
-              </div>
-
-              {!cargando && (
-                <span className="badge badge-outline badge-lg">
-                  {notificacionesNoLeidas}{' '}
-                  {notificacionesNoLeidas === 1
-                    ? 'sin leer'
-                    : 'sin leer'}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Cargando */}
-          {cargando && (
-            <div className="p-6">
-              <div className="alert border border-base-300 bg-base-100">
-                <span className="loading loading-spinner loading-sm" />
-                <span>
-                  Cargando notificaciones...
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div className="p-6">
-              <div className="alert alert-error">
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
-
-          {!cargando && !error && (
-            <>
-              {notificaciones.length === 0 ? (
-                <div className="p-10 text-center">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
-                    ✓
-                  </div>
-
-                  <h3 className="text-xl font-bold">
-                    No tienes notificaciones
-                  </h3>
-
-                  <p className="mx-auto mt-2 max-w-md text-base-content/60">
-                    Cuando la directiva publique nuevos comunicados,
-                    aparecerán en esta sección.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-base-300">
-                  {notificaciones.map((notificacion) => (
-                    <div
-                      key={notificacion.id}
-                      className={`p-5 transition-colors hover:bg-base-200/40 ${!notificacion.leida
-                        ? 'bg-primary/[0.03]'
-                        : ''
-                        }`}
-                    >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-                        <div className="flex min-w-0 flex-1 gap-4">
-                          <div
-                            className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${notificacion.leida
-                              ? 'bg-base-200 text-base-content/50'
-                              : 'bg-primary/10 text-primary'
-                              }`}
-                          >
-                            {notificacion.leida ? '✓' : '!'}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-2 flex flex-wrap items-center gap-2">
-                              <span
-                                className={
-                                  notificacion.leida
-                                    ? 'badge badge-ghost'
-                                    : 'badge badge-primary'
-                                }
-                              >
-                                {notificacion.leida
-                                  ? 'Leída'
-                                  : 'Nueva'}
-                              </span>
-
-                              <span className="text-xs text-base-content/45">
-                                {formatearFecha(
-                                  notificacion.fecha_creacion
-                                )}
-                              </span>
-                            </div>
-
-                            <h3 className="font-bold leading-snug">
-                              {notificacion.titulo_publicacion}
-                            </h3>
-
-                            <p className="mt-1 text-sm text-base-content/60">
-                              {notificacion.junta_nombre}
-                            </p>
-
-                            {notificacion.leida &&
-                              notificacion.fecha_lectura && (
-                                <p className="mt-2 text-xs text-base-content/40">
-                                  Leída el{' '}
-                                  {formatearFecha(
-                                    notificacion.fecha_lectura
-                                  )}
-                                </p>
-                              )}
-                          </div>
-                        </div>
-
-                        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-                          <Link
-                            to={`/vecino/publicaciones/${notificacion.publicacion_id}?notificacion=${notificacion.id}`}
-                            className="btn btn-sm btn-primary"
-                          >
-                            Ver comunicado
-                          </Link>
-
-                          {!notificacion.leida && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline"
-                              onClick={() =>
-                                void marcarComoLeida(
-                                  notificacion
-                                )
-                              }
-                            >
-                              Marcar como leída
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        
       </section>
     </main>
   )

@@ -27,6 +27,8 @@ from solicitudes.models import (
 from comunicaciones.models import (
     Conversacion,
     Mensaje,
+    Notificacion,
+    Publicacion,
     RolRemitente,
 )
 
@@ -756,4 +758,125 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Conversación: {conversacion_iluminacion.asunto} "
             f"({'creada' if conversacion_creada else 'existente'})"
+        )
+                # Comunicados de demostración
+        publicacion_ascensores, ascensores_creada = (
+            Publicacion.objects.get_or_create(
+                directiva=directiva,
+                titulo="Mantención preventiva de ascensores",
+                defaults={
+                    "autor": carolina,
+                    "contenido": (
+                        "Se informa a los vecinos que durante esta semana "
+                        "se realizará una mantención preventiva de los "
+                        "ascensores de Torre Norte y Torre Sur. "
+                        "Los trabajos se efectuarán de forma alternada "
+                        "para mantener al menos un ascensor disponible."
+                    ),
+                    "activa": True,
+                },
+            )
+        )
+
+        publicacion_agua, agua_creada = (
+            Publicacion.objects.get_or_create(
+                directiva=directiva,
+                titulo="Corte programado de agua",
+                defaults={
+                    "autor": diego,
+                    "contenido": (
+                        "El próximo sábado se realizará un corte "
+                        "programado de agua entre las 09:00 y las "
+                        "13:00 horas debido a trabajos de mantención "
+                        "en la red interna del condominio."
+                    ),
+                    "activa": True,
+                },
+            )
+        )
+
+        publicacion_reunion, reunion_publicacion_creada = (
+            Publicacion.objects.get_or_create(
+                directiva=directiva,
+                titulo="Reunión mensual de la Directiva",
+                defaults={
+                    "autor": carolina,
+                    "contenido": (
+                        "Se invita a los vecinos a participar de la "
+                        "próxima reunión informativa de la Directiva, "
+                        "donde se revisarán actividades, seguridad "
+                        "y temas generales de la comunidad."
+                    ),
+                    "activa": True,
+                },
+            )
+        )
+
+        # Notificaciones para Paula
+        notificacion_ascensores, _ = Notificacion.objects.get_or_create(
+            publicacion=publicacion_ascensores,
+            usuario=paula,
+        )
+
+        notificacion_ascensores.leida = False
+        notificacion_ascensores.fecha_lectura = None
+        notificacion_ascensores.save(
+            update_fields=[
+                "leida",
+                "fecha_lectura",
+            ]
+        )
+
+        notificacion_agua, _ = Notificacion.objects.get_or_create(
+            publicacion=publicacion_agua,
+            usuario=paula,
+        )
+
+        notificacion_agua.leida = False
+        notificacion_agua.fecha_lectura = None
+        notificacion_agua.save(
+            update_fields=[
+                "leida",
+                "fecha_lectura",
+            ]
+        )
+
+        notificacion_reunion, _ = Notificacion.objects.get_or_create(
+            publicacion=publicacion_reunion,
+            usuario=paula,
+        )
+
+        notificacion_reunion.leida = True
+        notificacion_reunion.fecha_lectura = timezone.now()
+        notificacion_reunion.save(
+            update_fields=[
+                "leida",
+                "fecha_lectura",
+            ]
+        )
+
+        # Algunas notificaciones para Andrés
+        for publicacion in [
+            publicacion_ascensores,
+            publicacion_agua,
+            publicacion_reunion,
+        ]:
+            Notificacion.objects.get_or_create(
+                publicacion=publicacion,
+                usuario=andres,
+            )
+
+        self.stdout.write(
+            f"Comunicado: {publicacion_ascensores.titulo} "
+            f"({'creado' if ascensores_creada else 'existente'})"
+        )
+
+        self.stdout.write(
+            f"Comunicado: {publicacion_agua.titulo} "
+            f"({'creado' if agua_creada else 'existente'})"
+        )
+
+        self.stdout.write(
+            f"Comunicado: {publicacion_reunion.titulo} "
+            f"({'creado' if reunion_publicacion_creada else 'existente'})"
         )
