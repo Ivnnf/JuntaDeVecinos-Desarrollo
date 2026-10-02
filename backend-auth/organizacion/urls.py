@@ -20,6 +20,8 @@ from .views import (
     UsuariosElegiblesDirectivaView,
     ReasignarCargoDirectivaView,
     DirectivaVigenteJuntaView,
+    JuntasDisponiblesRegistroView,
+    SectoresDisponiblesRegistroView,
 )
 
 urlpatterns = [
@@ -57,6 +59,16 @@ urlpatterns = [
         "sectores-disponibles/",
         SectoresDisponiblesView.as_view(),
         name="sectores-disponibles",
+    ),
+    path(
+        "registro/juntas-disponibles/",
+        JuntasDisponiblesRegistroView.as_view(),
+        name="registro-juntas-disponibles",
+    ),
+    path(
+        "registro/sectores-disponibles/",
+        SectoresDisponiblesRegistroView.as_view(),
+        name="registro-sectores-disponibles",
     ),
     path(
         "juntas/",

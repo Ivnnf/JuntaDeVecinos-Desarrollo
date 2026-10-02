@@ -5,6 +5,7 @@ from django.db import transaction
 
 from profiles.models import Rol, UsuarioRol
 from rest_framework import serializers
+from organizacion.models import Sector, VerificacionResidencia
 
 
 class LoginSerializer(serializers.Serializer):
@@ -73,6 +74,46 @@ class RegistroVecinoSerializer(serializers.Serializer):
         write_only=True,
         min_length=8,
     )
+    sector_id = serializers.IntegerField()
+
+    tipo_documento = serializers.ChoiceField(
+        choices=VerificacionResidencia.TipoDocumento.choices,
+    )
+
+    archivo = serializers.FileField()
+    def validate_archivo(self, archivo):
+        extensiones_permitidas = (
+            ".pdf",
+            ".jpg",
+            ".jpeg",
+            ".png",
+        )
+
+        if not archivo.name.lower().endswith(extensiones_permitidas):
+            raise serializers.ValidationError(
+                "El comprobante debe ser un archivo PDF, JPG o PNG."
+            )
+
+        tamano_maximo = 10 * 1024 * 1024  # 10 MB
+
+        if archivo.size > tamano_maximo:
+            raise serializers.ValidationError(
+                "El comprobante no puede superar los 10 MB."
+            )
+
+        return archivo
+    def validate_sector_id(self, value):
+        sector = Sector.objects.filter(
+            id=value,
+            activo=True,
+        ).first()
+
+        if sector is None:
+            raise serializers.ValidationError(
+                "El sector seleccionado no existe o no se encuentra activo."
+            )
+
+        return value
 
     def validate_username(self, value):
         Usuario = get_user_model()
@@ -174,12 +215,22 @@ class RegistroVecinoSerializer(serializers.Serializer):
         validated_data.pop("confirmar_password")
 
         password = validated_data.pop("password")
+        sector_id = validated_data.pop("sector_id")
+        tipo_documento = validated_data.pop("tipo_documento")
+        archivo = validated_data.pop("archivo")
+
+        sector = Sector.objects.get(
+            id=sector_id,
+            activo=True,
+        )
 
         Usuario = get_user_model()
 
         usuario = Usuario.objects.create_user(
             password=password,
             is_active=True,
+            sector=sector,
+            estado_asociacion_sector="PENDIENTE",
             **validated_data,
         )
 
@@ -189,6 +240,13 @@ class RegistroVecinoSerializer(serializers.Serializer):
             usuario=usuario,
             rol=rol_vecino,
             activo=True,
+        )
+
+        VerificacionResidencia.objects.create(
+            usuario=usuario,
+            sector=sector,
+            tipo_documento=tipo_documento,
+            archivo=archivo,
         )
 
         return usuario

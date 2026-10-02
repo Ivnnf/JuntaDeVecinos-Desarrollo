@@ -3,7 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 from django.utils import timezone
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from .models import Directiva, IntegranteDirectiva
@@ -68,7 +68,35 @@ class SectorListCreateView(generics.ListCreateAPIView):
 
     serializer_class = SectorSerializer
     permission_classes = [EsAdministrador]
+class JuntasDisponiblesRegistroView(generics.ListAPIView):
+    serializer_class = JuntaVecinosSerializer
+    permission_classes = [AllowAny]
 
+    def get_queryset(self):
+        return (
+            JuntaVecinos.objects
+            .filter(activa=True)
+            .order_by("nombre")
+        )
+
+
+class SectoresDisponiblesRegistroView(generics.ListAPIView):
+    serializer_class = SectorSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return (
+            Sector.objects
+            .select_related("junta_vecinos")
+            .filter(
+                activo=True,
+                junta_vecinos__activa=True,
+            )
+            .order_by(
+                "junta_vecinos__nombre",
+                "nombre",
+            )
+        )
 
 class SectorDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Sector.objects.select_related("junta_vecinos").all()

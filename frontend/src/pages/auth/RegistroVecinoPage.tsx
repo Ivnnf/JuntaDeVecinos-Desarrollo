@@ -1,7 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEventHandler } from 'react'
 import { Link } from 'react-router-dom'
+type JuntaVecinos = {
+    id: number
+    nombre: string
+}
 
+type Sector = {
+    id: number
+    nombre: string
+    junta_vecinos: number
+}
 function RegistroVecinoPage() {
     const [username, setUsername] = useState('')
     const [rut, setRut] = useState('')
@@ -11,6 +20,59 @@ function RegistroVecinoPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [confirmarPassword, setConfirmarPassword] = useState('')
+    const [sectorId, setSectorId] = useState('')
+
+    const [tipoDocumento, setTipoDocumento] =
+        useState('ELECTRICIDAD')
+
+    const [archivo, setArchivo] =
+        useState<File | null>(null)
+    const [juntaId, setJuntaId] = useState('')
+
+    const [juntas, setJuntas] =
+        useState<JuntaVecinos[]>([])
+
+    const [sectores, setSectores] =
+        useState<Sector[]>([])
+    useEffect(() => {
+        const cargarDatosTerritoriales = async () => {
+            try {
+                const [responseJuntas, responseSectores] =
+                    await Promise.all([
+                        fetch(
+                            'http://localhost:8000/api/organizacion/registro/juntas-disponibles/',
+                            {
+                                credentials: 'include',
+                            },
+                        ),
+                        fetch(
+                            'http://localhost:8000/api/organizacion/registro/sectores-disponibles/',
+                            {
+                                credentials: 'include',
+                            },
+                        ),
+                    ])
+
+                if (!responseJuntas.ok || !responseSectores.ok) {
+                    throw new Error(
+                        'No fue posible cargar las juntas y sectores.',
+                    )
+                }
+
+                const juntasData = await responseJuntas.json()
+                const sectoresData = await responseSectores.json()
+
+                setJuntas(juntasData)
+                setSectores(sectoresData)
+            } catch {
+                setError(
+                    'No fue posible cargar la información territorial.',
+                )
+            }
+        }
+
+        void cargarDatosTerritoriales()
+    }, [])
     const [cargando, setCargando] = useState(false)
     const [error, setError] = useState('')
     const [mensaje, setMensaje] = useState('')
@@ -25,28 +87,36 @@ function RegistroVecinoPage() {
             setError('Las contraseñas no coinciden.')
             return
         }
-
+        if (!archivo) {
+            setError('Debes adjuntar un comprobante de domicilio.')
+            return
+        }
         setCargando(true)
 
         try {
+            const formData = new FormData()
+
+            formData.append('username', username)
+            formData.append('rut', rut)
+            formData.append('nombres', nombres)
+            formData.append('apellido_paterno', apellidoPaterno)
+            formData.append('apellido_materno', apellidoMaterno)
+            formData.append('email', email)
+            formData.append('password', password)
+            formData.append(
+                'confirmar_password',
+                confirmarPassword,
+            )
+            formData.append('sector_id', sectorId)
+            formData.append('tipo_documento', tipoDocumento)
+            formData.append('archivo', archivo)
+
             const response = await fetch(
                 'http://localhost:8000/api/auth/registro/',
                 {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        username,
-                        rut,
-                        nombres,
-                        apellido_paterno: apellidoPaterno,
-                        apellido_materno: apellidoMaterno,
-                        email,
-                        password,
-                        confirmar_password: confirmarPassword,
-                    }),
+                    body: formData,
                 },
             )
 
@@ -81,7 +151,11 @@ function RegistroVecinoPage() {
     const passwordsCoinciden =
         confirmarPassword.length === 0 ||
         password === confirmarPassword
-
+    const sectoresDisponibles = sectores.filter(
+        (sector) =>
+            juntaId !== '' &&
+            sector.junta_vecinos === Number(juntaId),
+    )
     return (
         <main className="min-h-screen bg-base-200 px-4 py-8">
             <section className="mx-auto w-full max-w-5xl">
@@ -317,7 +391,76 @@ function RegistroVecinoPage() {
                                     required
                                 />
                             </label>
+                            <label className="form-control">
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Junta Vecinal
+                                    </span>
 
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
+
+                                <select
+                                    className="select select-bordered w-full"
+                                    value={juntaId}
+                                    onChange={(event) => {
+                                        setJuntaId(event.target.value)
+                                        setSectorId('')
+                                    }}
+                                    required
+                                >
+                                    <option value="">
+                                        Selecciona una Junta Vecinal
+                                    </option>
+
+                                    {juntas.map((junta) => (
+                                        <option
+                                            key={junta.id}
+                                            value={String(junta.id)}
+                                        >
+                                            {junta.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label className="form-control">
+                                <div className="label">
+                                    <span className="label-text font-semibold">
+                                        Sector
+                                    </span>
+
+                                    <span className="label-text-alt text-error">
+                                        Obligatorio
+                                    </span>
+                                </div>
+
+                                <select
+                                    className="select select-bordered w-full"
+                                    value={sectorId}
+                                    onChange={(event) =>
+                                        setSectorId(event.target.value)
+                                    }
+                                    disabled={juntaId === ''}
+                                    required
+                                >
+                                    <option value="">
+                                        {juntaId === ''
+                                            ? 'Primero selecciona una Junta Vecinal'
+                                            : 'Selecciona un sector'}
+                                    </option>
+
+                                    {sectoresDisponibles.map((sector) => (
+                                        <option
+                                            key={sector.id}
+                                            value={String(sector.id)}
+                                        >
+                                            {sector.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
                             <label className="form-control">
                                 <div className="label pb-1">
                                     <span className="label-text font-semibold">
@@ -377,7 +520,88 @@ function RegistroVecinoPage() {
                                         : 'Las contraseñas no coinciden'}
                                 </span>
                             </label>
+                            <div className="md:col-span-2">
+                                <div className="rounded-xl border border-base-300 bg-base-200/40 p-5">
+                                    <div className="mb-4">
+                                        <h3 className="text-lg font-bold">
+                                            Verificación de domicilio
+                                        </h3>
 
+                                        <p className="mt-1 text-sm text-base-content/60">
+                                            Adjunta una boleta reciente para verificar que
+                                            perteneces al sector seleccionado.
+                                        </p>
+                                        <div className="mt-5">
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text font-semibold">
+                                                        Tipo de comprobante
+                                                    </span>
+
+                                                    <span className="label-text-alt text-error">
+                                                        Obligatorio
+                                                    </span>
+                                                </div>
+
+                                                <select
+                                                    className="select select-bordered w-full"
+                                                    value={tipoDocumento}
+                                                    onChange={(event) =>
+                                                        setTipoDocumento(event.target.value)
+                                                    }
+                                                    required
+                                                >
+                                                    <option value="ELECTRICIDAD">
+                                                        Boleta de electricidad
+                                                    </option>
+
+                                                    <option value="AGUA">
+                                                        Boleta de agua
+                                                    </option>
+
+                                                    <option value="GAS">
+                                                        Boleta de gas
+                                                    </option>
+
+                                                    <option value="INTERNET">
+                                                        Boleta de internet
+                                                    </option>
+                                                </select>
+                                                <div className="mt-4">
+                                                    <label className="form-control">
+                                                        <div className="label">
+                                                            <span className="label-text font-semibold">
+                                                                Comprobante de domicilio
+                                                            </span>
+
+                                                            <span className="label-text-alt text-error">
+                                                                Obligatorio
+                                                            </span>
+                                                        </div>
+
+                                                        <input
+                                                            type="file"
+                                                            className="file-input file-input-bordered w-full"
+                                                            accept=".pdf,.jpg,.jpeg,.png"
+                                                            onChange={(event) =>
+                                                                setArchivo(
+                                                                    event.target.files?.[0] ?? null,
+                                                                )
+                                                            }
+                                                            required
+                                                        />
+
+                                                        <span className="mt-2 text-xs text-base-content/50">
+                                                            Formatos permitidos: PDF, JPG o PNG.
+                                                            Utiliza una boleta reciente, idealmente de los últimos 90 días.
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div className="md:col-span-2">
                                 <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
                                     <p className="text-sm text-base-content/60">
