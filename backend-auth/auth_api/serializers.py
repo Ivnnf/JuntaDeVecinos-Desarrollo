@@ -7,6 +7,17 @@ from profiles.models import Rol, UsuarioRol
 from rest_framework import serializers
 from organizacion.models import Sector, VerificacionResidencia
 
+from organizacion.services.ocr_residencia import (
+    extraer_texto_documento,
+)
+
+from organizacion.services.validacion_residencia import (
+    analizar_documento_residencia,
+    validar_coincidencia_comuna,
+    determinar_estado_verificacion,
+    calcular_hash_archivo,
+)
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -81,6 +92,7 @@ class RegistroVecinoSerializer(serializers.Serializer):
     )
 
     archivo = serializers.FileField()
+
     def validate_archivo(self, archivo):
         extensiones_permitidas = (
             ".pdf",
@@ -102,6 +114,7 @@ class RegistroVecinoSerializer(serializers.Serializer):
             )
 
         return archivo
+
     def validate_sector_id(self, value):
         sector = Sector.objects.filter(
             id=value,
@@ -242,12 +255,102 @@ class RegistroVecinoSerializer(serializers.Serializer):
             activo=True,
         )
 
-        VerificacionResidencia.objects.create(
+        verificacion = VerificacionResidencia.objects.create(
             usuario=usuario,
             sector=sector,
             tipo_documento=tipo_documento,
             archivo=archivo,
         )
+
+        try:
+            verificacion.hash_archivo = calcular_hash_archivo(verificacion.archivo.path)
+            documento_duplicado = (
+                VerificacionResidencia.objects.filter(
+                    hash_archivo=verificacion.hash_archivo
+                )
+                .exclude(pk=verificacion.pk)
+                .exists()
+            )
+
+            verificacion.documento_duplicado = documento_duplicado
+            resultado_ocr = extraer_texto_documento(verificacion.archivo.path)
+
+            analisis = analizar_documento_residencia(resultado_ocr)
+
+            validacion_comuna = validar_coincidencia_comuna(
+                analisis["comuna"],
+                sector.junta_vecinos.comuna,
+            )
+
+            estado_verificacion = determinar_estado_verificacion(
+                documento_vigente=analisis["documento_vigente"],
+                comuna_coincide=validacion_comuna["coincide"],
+            )
+
+            verificacion.nombre_extraido = analisis["nombre"]
+
+            verificacion.direccion_extraida = analisis["direccion"]
+
+            verificacion.comuna_extraida = analisis["comuna"]
+
+            verificacion.fecha_documento_extraida = analisis["fecha_emision"]
+
+            verificacion.confianza_ocr = analisis["confianza_ocr"]
+
+            observaciones = [
+                analisis["motivo_antiguedad"],
+                validacion_comuna["motivo"],
+            ]
+
+            if documento_duplicado:
+                observaciones.append(
+                    "El mismo archivo ya fue utilizado "
+                    "en otra verificación de residencia."
+                )
+
+            verificacion.observacion_automatica = " ".join(
+                observaciones
+            )
+
+            verificacion.estado = estado_verificacion
+
+            verificacion.save(
+                update_fields=[
+                    "hash_archivo",
+                    "documento_duplicado",
+                    "estado",
+                    "nombre_extraido",
+                    "direccion_extraida",
+                    "comuna_extraida",
+                    "fecha_documento_extraida",
+                    "confianza_ocr",
+                    "observacion_automatica",
+                    "fecha_actualizacion",
+                ]
+            )
+
+        except Exception as error:
+
+            observaciones = [
+                analisis["motivo_antiguedad"],
+                validacion_comuna["motivo"],
+            ]
+
+            if documento_duplicado:
+                observaciones.append(
+                    "El mismo archivo ya fue utilizado "
+                    "en otra verificación de residencia."
+                )
+
+            verificacion.observacion_automatica = " ".join(observaciones)
+
+            verificacion.save(
+                update_fields=[
+                    "hash_archivo",
+                    "observacion_automatica",
+                    "fecha_actualizacion",
+                ]
+            )
 
         return usuario
 

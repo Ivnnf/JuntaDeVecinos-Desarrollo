@@ -90,6 +90,17 @@ class VerificacionResidencia(models.Model):
         upload_to="verificaciones_residencia/",
     )
 
+    hash_archivo = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
+    documento_duplicado = models.BooleanField(
+        default=False,
+    )
+    
     estado = models.CharField(
         max_length=20,
         choices=Estado.choices,
@@ -103,6 +114,12 @@ class VerificacionResidencia(models.Model):
     )
 
     direccion_extraida = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    comuna_extraida = models.CharField(
         max_length=255,
         null=True,
         blank=True,
@@ -153,8 +170,11 @@ class VerificacionResidencia(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.usuario.username} - " f"{self.sector.nombre} - " f"{self.estado}"
-
+        return (
+            f"{self.usuario.username} - "
+            f"{self.sector.nombre} - "
+            f"{self.estado}"
+        )
 
 class Directiva(models.Model):
     class EstadoDirectiva(models.TextChoices):
