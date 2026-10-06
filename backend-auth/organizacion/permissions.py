@@ -48,6 +48,21 @@ class EsDirectiva(BasePermission):
             activo=True,
         ).exists()
 
+class EsMunicipal(BasePermission):
+    message = "Se requiere rol Municipal."
+
+    def has_permission(self, request, view):
+        usuario = request.user
+
+        if not usuario or not usuario.is_authenticated:
+            return False
+
+        return UsuarioRol.objects.filter(
+            usuario=usuario,
+            rol__nombre__iexact="Municipal",
+            activo=True,
+        ).exists()
+
 class EsAdministradorODirectiva(BasePermission):
     message = "Se requiere rol de Administrador o Directiva."
 

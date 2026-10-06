@@ -40,6 +40,7 @@ import AsociacionesDirectivaPage from './pages/directiva/AsociacionesDirectivaPa
 
 import CaracterizacionComunitariaPage from './pages/vecino/CaracterizacionComunitariaPage'
 import CaracterizacionDirectivaPage from './pages/directiva/CaracterizacionDirectivaPage'
+import IndicadoresMunicipalesPage from './pages/municipal/IndicadoresMunicipalesPage'
 
 function App() {
   return (
@@ -289,7 +290,14 @@ function App() {
           </RutaProtegida>
         }
       />
-
+      <Route
+        path="/municipal/indicadores"
+        element={
+          <RutaProtegida rolPermitido={4}>
+            <IndicadoresMunicipalesPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/recuperar-password"
         element={<RecuperarPasswordPage />}
