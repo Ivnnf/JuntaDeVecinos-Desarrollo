@@ -72,7 +72,49 @@ class AsociacionSectorPendienteSerializer(serializers.ModelSerializer):
         source="sector.junta_vecinos.nombre",
         read_only=True,
     )
+    verificacion_residencia = serializers.SerializerMethodField()
 
+    def get_verificacion_residencia(self, obj):
+        verificacion = (
+            obj.verificaciones_residencia
+            .all()
+            .first()
+        )
+
+        if verificacion is None:
+            return None
+
+        request = self.context.get("request")
+
+        archivo_url = None
+
+        if verificacion.archivo:
+            archivo_url = verificacion.archivo.url
+
+            if request is not None:
+                archivo_url = request.build_absolute_uri(
+                    archivo_url
+                )
+
+        return {
+            "id": verificacion.id,
+            "tipo_documento": verificacion.tipo_documento,
+            "estado": verificacion.estado,
+            "archivo_url": archivo_url,
+            "nombre_extraido": verificacion.nombre_extraido,
+            "direccion_extraida": verificacion.direccion_extraida,
+            "comuna_extraida": verificacion.comuna_extraida,
+            "fecha_documento_extraida": (
+                verificacion.fecha_documento_extraida
+            ),
+            "confianza_ocr": verificacion.confianza_ocr,
+            "documento_duplicado": (
+                verificacion.documento_duplicado
+            ),
+            "observacion_automatica": (
+                verificacion.observacion_automatica
+            ),
+        }
     class Meta:
         model = get_user_model()
 
@@ -89,6 +131,7 @@ class AsociacionSectorPendienteSerializer(serializers.ModelSerializer):
             "junta_id",
             "junta_nombre",
             "estado_asociacion_sector",
+            "verificacion_residencia",
         ]
 
         read_only_fields = fields

@@ -1,6 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+type VerificacionResidencia = {
+    id: number
+    tipo_documento: string
+    estado: string
+    archivo_url: string | null
+    nombre_extraido: string | null
+    direccion_extraida: string | null
+    comuna_extraida: string | null
+    fecha_documento_extraida: string | null
+    confianza_ocr: string | number | null
+    documento_duplicado: boolean
+    observacion_automatica: string | null
+}
+
 type AsociacionPendiente = {
     id: number
     username: string
@@ -14,6 +28,7 @@ type AsociacionPendiente = {
     junta_id: number
     junta_nombre: string
     estado_asociacion_sector: string
+    verificacion_residencia: VerificacionResidencia | null
 }
 
 function AsociacionesDirectivaPage() {
@@ -23,10 +38,17 @@ function AsociacionesDirectivaPage() {
     const [cargando, setCargando] = useState(true)
     const [procesandoId, setProcesandoId] =
         useState<number | null>(null)
+    const [
+        asociacionSeleccionada,
+        setAsociacionSeleccionada,
+    ] = useState<AsociacionPendiente | null>(null)
 
     const [error, setError] = useState('')
     const [mensaje, setMensaje] = useState('')
-
+    const [
+        procesandoVerificacion,
+        setProcesandoVerificacion,
+    ] = useState(false)
     const cargarAsociaciones = async () => {
         setCargando(true)
         setError('')
@@ -116,6 +138,101 @@ function AsociacionesDirectivaPage() {
             setProcesandoId(null)
         }
     }
+
+    const resolverVerificacion = async (
+        accion: 'REVISION_MANUAL' | 'VALIDAR',
+    ) => {
+        const verificacion =
+            asociacionSeleccionada?.verificacion_residencia
+
+        if (!verificacion) {
+            return
+        }
+
+        setError('')
+        setMensaje('')
+        setProcesandoVerificacion(true)
+
+        try {
+            const response = await fetch(
+                `http://localhost:8000/api/organizacion/directiva/verificaciones-residencia/${verificacion.id}/resolver/`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        accion,
+                    }),
+                },
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                setError(
+                    data.detail ??
+                    'No fue posible actualizar la verificación.',
+                )
+                return
+            }
+
+            setAsociaciones((actuales) =>
+                actuales.map((asociacion) => {
+                    if (
+                        asociacion.id !==
+                        asociacionSeleccionada.id
+                    ) {
+                        return asociacion
+                    }
+
+                    if (!asociacion.verificacion_residencia) {
+                        return asociacion
+                    }
+
+                    return {
+                        ...asociacion,
+                        verificacion_residencia: {
+                            ...asociacion.verificacion_residencia,
+                            estado: data.estado,
+                        },
+                    }
+                }),
+            )
+
+            setAsociacionSeleccionada((actual) => {
+                if (
+                    !actual ||
+                    !actual.verificacion_residencia
+                ) {
+                    return actual
+                }
+
+                return {
+                    ...actual,
+                    verificacion_residencia: {
+                        ...actual.verificacion_residencia,
+                        estado: data.estado,
+                    },
+                }
+            })
+
+            setMensaje(
+                accion === 'VALIDAR'
+                    ? 'Verificación validada correctamente.'
+                    : 'Verificación enviada a revisión manual.',
+            )
+        } catch {
+            setError(
+                'No fue posible comunicarse con el servidor.',
+            )
+        } finally {
+            setProcesandoVerificacion(false)
+        }
+    }
+
+
 
     const obtenerNombreCompleto = (
         asociacion: AsociacionPendiente,
@@ -306,6 +423,7 @@ function AsociacionesDirectivaPage() {
                                                 <th>Correo</th>
                                                 <th>Junta</th>
                                                 <th>Sector</th>
+                                                <th>Verificación</th>
                                                 <th className="text-right">
                                                     Acciones
                                                 </th>
@@ -319,6 +437,10 @@ function AsociacionesDirectivaPage() {
 
                                                 const procesando =
                                                     procesandoId === asociacion.id
+
+                                                const puedeConfirmar =
+                                                    asociacion.verificacion_residencia?.estado ===
+                                                    'VALIDADA'
 
                                                 return (
                                                     <tr
@@ -362,17 +484,55 @@ function AsociacionesDirectivaPage() {
                                                         </td>
 
                                                         <td>
-                                                            <span className="badge badge-info badge-outline">
-                                                                {asociacion.sector_nombre}
-                                                            </span>
+                                                            <div className="flex min-w-[120px] items-center">
+                                                                <span className="badge badge-info badge-outline whitespace-nowrap px-3">
+                                                                    {asociacion.sector_nombre}
+                                                                </span>
+                                                            </div>
                                                         </td>
-
+                                                        <td>
+                                                            {asociacion.verificacion_residencia ? (
+                                                                <span
+                                                                    className={`badge min-w-[130px] whitespace-nowrap px-3 ${asociacion.verificacion_residencia.estado ===
+                                                                        'RECHAZADA'
+                                                                        ? 'badge-error'
+                                                                        : asociacion.verificacion_residencia.estado ===
+                                                                            'VALIDADA'
+                                                                            ? 'badge-success'
+                                                                            : 'badge-warning'
+                                                                        }`}
+                                                                >
+                                                                    {asociacion.verificacion_residencia.estado ===
+                                                                        'REVISION_MANUAL'
+                                                                        ? 'Revisión manual'
+                                                                        : asociacion.verificacion_residencia.estado}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="badge badge-ghost">
+                                                                    Sin verificación
+                                                                </span>
+                                                            )}
+                                                        </td>
                                                         <td>
                                                             <div className="flex min-w-[190px] justify-end gap-2">
                                                                 <button
                                                                     type="button"
+                                                                    className="btn btn-sm btn-outline"
+                                                                    onClick={() =>
+                                                                        setAsociacionSeleccionada(
+                                                                            asociacion
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Ver verificación
+                                                                </button>
+                                                                <button
+                                                                    type="button"
                                                                     className="btn btn-sm btn-success"
-                                                                    disabled={procesando}
+                                                                    disabled={
+                                                                        procesando ||
+                                                                        !puedeConfirmar
+                                                                    }
                                                                     onClick={() =>
                                                                         void resolverAsociacion(
                                                                             asociacion.id,
@@ -411,6 +571,245 @@ function AsociacionesDirectivaPage() {
                             </div>
                         )}
                     </>
+                )}
+                {asociacionSeleccionada && (
+                    <dialog className="modal modal-open">
+                        <div className="modal-box max-w-3xl">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 className="text-xl font-bold">
+                                        Verificación de residencia
+                                    </h3>
+
+                                    <p className="mt-1 text-sm text-base-content/60">
+                                        {obtenerNombreCompleto(
+                                            asociacionSeleccionada
+                                        )}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-circle btn-ghost"
+                                    onClick={() =>
+                                        setAsociacionSeleccionada(null)
+                                    }
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="mt-6">
+                                {asociacionSeleccionada.verificacion_residencia ? (
+                                    (() => {
+                                        const verificacion =
+                                            asociacionSeleccionada.verificacion_residencia
+
+                                        return (
+                                            <div className="space-y-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-base-300 bg-base-200/50 p-4">
+                                                    <div>
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                                                            Estado de verificación
+                                                        </p>
+
+                                                        <p className="mt-1 text-lg font-bold">
+                                                            Verificación de domicilio
+                                                        </p>
+                                                    </div>
+
+                                                    <span
+                                                        className={`badge badge-lg ${verificacion.estado === 'RECHAZADA'
+                                                            ? 'badge-error'
+                                                            : verificacion.estado === 'VALIDADA'
+                                                                ? 'badge-success'
+                                                                : 'badge-warning'
+                                                            }`}
+                                                    >
+                                                        {verificacion.estado === 'REVISION_MANUAL'
+                                                            ? 'REVISIÓN MANUAL'
+                                                            : verificacion.estado}
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    <div className="rounded-xl border border-base-300 p-4">
+                                                        <p className="text-xs font-semibold uppercase text-base-content/50">
+                                                            Tipo de comprobante
+                                                        </p>
+
+                                                        <p className="mt-1 font-medium">
+                                                            {verificacion.tipo_documento}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="rounded-xl border border-base-300 p-4">
+                                                        <p className="text-xs font-semibold uppercase text-base-content/50">
+                                                            Fecha detectada
+                                                        </p>
+
+                                                        <p className="mt-1 font-medium">
+                                                            {verificacion.fecha_documento_extraida
+                                                                ? new Date(
+                                                                    `${verificacion.fecha_documento_extraida}T00:00:00`,
+                                                                ).toLocaleDateString('es-CL')
+                                                                : 'No detectada'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="rounded-xl border border-base-300 p-4">
+                                                        <p className="text-xs font-semibold uppercase text-base-content/50">
+                                                            Nombre detectado
+                                                        </p>
+
+                                                        <p className="mt-1 font-medium">
+                                                            {verificacion.nombre_extraido ?? 'No detectado'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="rounded-xl border border-base-300 p-4">
+                                                        <p className="text-xs font-semibold uppercase text-base-content/50">
+                                                            Confianza OCR
+                                                        </p>
+
+                                                        <p className="mt-1 font-medium">
+                                                            {verificacion.confianza_ocr !== null
+                                                                ? `${(
+                                                                    Number(
+                                                                        verificacion.confianza_ocr,
+                                                                    ) * 100
+                                                                ).toFixed(0)}%`
+                                                                : 'No disponible'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="rounded-xl border border-base-300 p-4">
+                                                    <p className="text-xs font-semibold uppercase text-base-content/50">
+                                                        Dirección detectada
+                                                    </p>
+
+                                                    <p className="mt-1 font-medium">
+                                                        {verificacion.direccion_extraida ?? 'No detectada'}
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm text-base-content/60">
+                                                        {verificacion.comuna_extraida ?? 'Comuna no detectada'}
+                                                    </p>
+                                                </div>
+
+                                                {verificacion.documento_duplicado && (
+                                                    <div className="alert alert-warning">
+                                                        <span>
+                                                            Este mismo archivo ya fue utilizado
+                                                            anteriormente en otra verificación.
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {verificacion.observacion_automatica && (
+                                                    <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
+                                                        <p className="text-xs font-semibold uppercase text-base-content/50">
+                                                            Análisis automático
+                                                        </p>
+
+                                                        <p className="mt-2 text-sm leading-6">
+                                                            {verificacion.observacion_automatica}
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {verificacion.archivo_url && (
+                                                    <a
+                                                        href={verificacion.archivo_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="btn btn-outline btn-sm"
+                                                    >
+                                                        Ver comprobante adjunto
+                                                    </a>
+                                                )}
+                                            </div>
+                                        )
+                                    })()
+                                ) : (
+                                    <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
+                                        <p className="text-base-content/60">
+                                            Este vecino no tiene una verificación
+                                            de residencia registrada.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="modal-action">
+                                {asociacionSeleccionada.verificacion_residencia?.estado ===
+                                    'REVISION_MANUAL' && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-success"
+                                            disabled={procesandoVerificacion}
+                                            onClick={() =>
+                                                void resolverVerificacion(
+                                                    'VALIDAR',
+                                                )
+                                            }
+                                        >
+                                            {procesandoVerificacion && (
+                                                <span className="loading loading-spinner loading-xs" />
+                                            )}
+
+                                            Validar residencia
+                                        </button>
+                                    )}
+                                {asociacionSeleccionada.verificacion_residencia &&
+                                    (
+                                        asociacionSeleccionada.verificacion_residencia.estado ===
+                                        'PENDIENTE' ||
+                                        asociacionSeleccionada.verificacion_residencia.estado ===
+                                        'RECHAZADA'
+                                    ) && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-warning"
+                                            disabled={procesandoVerificacion}
+                                            onClick={() =>
+                                                void resolverVerificacion(
+                                                    'REVISION_MANUAL',
+                                                )
+                                            }
+                                        >
+                                            {procesandoVerificacion && (
+                                                <span className="loading loading-spinner loading-xs" />
+                                            )}
+
+                                            Enviar a revisión manual
+                                        </button>
+                                    )}
+
+                                <button
+                                    type="button"
+                                    className="btn"
+                                    disabled={procesandoVerificacion}
+                                    onClick={() =>
+                                        setAsociacionSeleccionada(null)
+                                    }
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="modal-backdrop"
+                            onClick={() =>
+                                setAsociacionSeleccionada(null)
+                            }
+                        >
+                            cerrar
+                        </button>
+                    </dialog>
                 )}
             </section>
         </main>

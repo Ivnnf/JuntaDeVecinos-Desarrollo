@@ -7,12 +7,14 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from .models import Directiva, IntegranteDirectiva
+
 from .models import (
     Cargo,
     Directiva,
     IntegranteDirectiva,
     JuntaVecinos,
     Sector,
+    VerificacionResidencia,
 )
 
 from .permissions import (
@@ -68,16 +70,14 @@ class SectorListCreateView(generics.ListCreateAPIView):
 
     serializer_class = SectorSerializer
     permission_classes = [EsAdministrador]
+
+
 class JuntasDisponiblesRegistroView(generics.ListAPIView):
     serializer_class = JuntaVecinosSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return (
-            JuntaVecinos.objects
-            .filter(activa=True)
-            .order_by("nombre")
-        )
+        return JuntaVecinos.objects.filter(activa=True).order_by("nombre")
 
 
 class SectoresDisponiblesRegistroView(generics.ListAPIView):
@@ -86,8 +86,7 @@ class SectoresDisponiblesRegistroView(generics.ListAPIView):
 
     def get_queryset(self):
         return (
-            Sector.objects
-            .select_related("junta_vecinos")
+            Sector.objects.select_related("junta_vecinos")
             .filter(
                 activo=True,
                 junta_vecinos__activa=True,
@@ -97,6 +96,7 @@ class SectoresDisponiblesRegistroView(generics.ListAPIView):
                 "nombre",
             )
         )
+
 
 class SectorDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Sector.objects.select_related("junta_vecinos").all()
@@ -286,6 +286,36 @@ class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
         accion = request.data.get("accion", "").upper()
 
         if accion == "CONFIRMAR":
+            verificacion = usuario.verificaciones_residencia.all().first()
+
+            if verificacion is None:
+                return Response(
+                    {
+                        "detail": (
+                            "No es posible confirmar esta asociación "
+                            "porque el usuario no tiene una verificación "
+                            "de residencia registrada."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            estados_permitidos = {
+                VerificacionResidencia.Estado.VALIDADA,
+            }
+
+            if verificacion.estado not in estados_permitidos:
+                return Response(
+                    {
+                        "detail": (
+                            "No es posible confirmar esta asociación "
+                            "porque la verificación de residencia "
+                            f"se encuentra en estado {verificacion.estado}."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             usuario.estado_asociacion_sector = "CONFIRMADA"
             usuario.confirmado_por_usuario = request.user
             usuario.fecha_confirmacion_sector = timezone.now()
@@ -319,7 +349,95 @@ class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
+class ResolverVerificacionResidenciaDirectivaView(
+    generics.GenericAPIView
+):
+    permission_classes = [EsDirectiva]
 
+    def post(self, request, verificacion_id):
+        juntas_directiva = IntegranteDirectiva.objects.filter(
+            usuario=request.user,
+            activo=True,
+            directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+        ).values_list(
+            "directiva__junta_vecinos_id",
+            flat=True,
+        )
+
+        try:
+            verificacion = (
+                VerificacionResidencia.objects
+                .select_related(
+                    "usuario",
+                    "sector",
+                    "sector__junta_vecinos",
+                )
+                .get(
+                    id=verificacion_id,
+                    sector__junta_vecinos_id__in=juntas_directiva,
+                )
+            )
+        except VerificacionResidencia.DoesNotExist:
+            return Response(
+                {
+                    "detail": (
+                        "No existe una verificación de residencia "
+                        "que puedas gestionar."
+                    )
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        accion = request.data.get(
+            "accion",
+            "",
+        ).upper()
+
+        if accion == "REVISION_MANUAL":
+            verificacion.estado = (
+                VerificacionResidencia.Estado.REVISION_MANUAL
+            )
+
+        elif accion == "VALIDAR":
+            verificacion.estado = (
+                VerificacionResidencia.Estado.VALIDADA
+            )
+
+        else:
+            return Response(
+                {
+                    "detail": (
+                        "La acción debe ser "
+                        "REVISION_MANUAL o VALIDAR."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        verificacion.revisado_por = request.user
+        verificacion.fecha_revision = timezone.now()
+
+        verificacion.save(
+            update_fields=[
+                "estado",
+                "revisado_por",
+                "fecha_revision",
+                "fecha_actualizacion",
+            ]
+        )
+
+        return Response(
+            {
+                "message": (
+                    "Verificación de residencia "
+                    "actualizada correctamente."
+                ),
+                "verificacion_id": verificacion.id,
+                "estado": verificacion.estado,
+            },
+            status=status.HTTP_200_OK,
+        )
+    
 class ResolverAsociacionSectorView(generics.GenericAPIView):
     permission_classes = [EsAdministrador]
 
@@ -336,13 +454,17 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
             return Response(
                 {
                     "detail": (
-                        "No existe una asociación pendiente " "para este usuario."
+                        "No existe una asociación pendiente "
+                        "para este usuario."
                     )
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        accion = request.data.get("accion", "").upper()
+        accion = request.data.get(
+            "accion",
+            "",
+        ).upper()
 
         if accion == "CONFIRMAR":
             usuario.estado_asociacion_sector = "CONFIRMADA"
@@ -356,7 +478,11 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
 
         else:
             return Response(
-                {"detail": ("La acción debe ser CONFIRMAR o RECHAZAR.")},
+                {
+                    "detail": (
+                        "La acción debe ser CONFIRMAR o RECHAZAR."
+                    )
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -370,14 +496,15 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
 
         return Response(
             {
-                "message": ("Asociación territorial actualizada correctamente."),
+                "message": (
+                    "Asociación territorial actualizada correctamente."
+                ),
                 "usuario_id": usuario.id,
                 "sector_id": usuario.sector_id,
                 "estado": usuario.estado_asociacion_sector,
             },
             status=status.HTTP_200_OK,
         )
-
 
 class CargoListCreateView(generics.ListCreateAPIView):
     queryset = Cargo.objects.all().order_by("nombre")
