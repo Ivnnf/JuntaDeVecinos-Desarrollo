@@ -428,10 +428,42 @@ function MiPerfilPage() {
                                             Editar perfil
                                         </button>
                                     )}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                        {/* Caracterización comunitaria */}
+                        <div className="mb-6 overflow-hidden rounded-2xl border border-teal-500/30 bg-base-100 shadow-sm">
+                            <div className="p-6">
+                                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <div className="mb-2 flex flex-wrap items-center gap-3">
+                                            <h2 className="text-xl font-bold">
+                                                Caracterización comunitaria
+                                            </h2>
+
+                                            <span className="badge badge-info badge-outline">
+                                                Información del hogar
+                                            </span>
+                                        </div>
+
+                                        <p className="max-w-2xl text-base-content/60">
+                                            Registra información general de tu hogar para apoyar
+                                            la planificación de tu Junta de Vecinos.
+                                        </p>
+                                    </div>
+
+                                    <Link
+                                        to="/vecino/caracterizacion"
+                                        className="btn btn-primary shrink-0"
+                                    >
+                                        Ver / Actualizar
+                                    </Link>
                                 </div>
                             </div>
                         </div>
-
                         <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
 
                             {/* Información personal */}
@@ -871,6 +903,7 @@ function MiPerfilPage() {
                                 </div>
                             </div>
                         </div>
+
                     </>
                 )}
             </section>

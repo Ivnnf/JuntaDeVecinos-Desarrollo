@@ -325,3 +325,88 @@ class HistorialGestionUsuario(models.Model):
             f"{self.usuario_objetivo.username} - "
             f"{self.realizado_por.username}"
         )
+class CaracterizacionComunitaria(models.Model):
+    class NivelEducacional(models.TextChoices):
+        SIN_ESTUDIOS = "SIN_ESTUDIOS", "Sin estudios formales"
+        BASICA = "BASICA", "Educación básica"
+        MEDIA = "MEDIA", "Educación media"
+        TECNICO = "TECNICO", "Técnico profesional"
+        SUPERIOR = "SUPERIOR", "Educación superior"
+        POSTGRADO = "POSTGRADO", "Postgrado"
+        PREFIERE_NO_RESPONDER = (
+            "PREFIERE_NO_RESPONDER",
+            "Prefiero no responder",
+        )
+
+    class SituacionLaboral(models.TextChoices):
+        TRABAJANDO = "TRABAJANDO", "Trabajando"
+        ESTUDIANDO = "ESTUDIANDO", "Estudiando"
+        DESEMPLEADO = "DESEMPLEADO", "Buscando empleo"
+        JUBILADO = "JUBILADO", "Jubilado/a"
+        LABORES_HOGAR = "LABORES_HOGAR", "Labores del hogar"
+        OTRA = "OTRA", "Otra"
+        PREFIERE_NO_RESPONDER = (
+            "PREFIERE_NO_RESPONDER",
+            "Prefiero no responder",
+        )
+
+    class TipoVivienda(models.TextChoices):
+        CASA = "CASA", "Casa"
+        DEPARTAMENTO = "DEPARTAMENTO", "Departamento"
+        PIEZA = "PIEZA", "Pieza"
+        OTRA = "OTRA", "Otra"
+        PREFIERE_NO_RESPONDER = (
+            "PREFIERE_NO_RESPONDER",
+            "Prefiero no responder",
+        )
+
+    usuario = models.OneToOneField(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name="caracterizacion_comunitaria",
+    )
+
+    cantidad_personas_hogar = models.PositiveSmallIntegerField()
+
+    cantidad_menores_18 = models.PositiveSmallIntegerField(
+        default=0,
+    )
+
+    cantidad_adultos_mayores = models.PositiveSmallIntegerField(
+        default=0,
+    )
+
+    nivel_educacional = models.CharField(
+        max_length=30,
+        choices=NivelEducacional.choices,
+    )
+
+    situacion_laboral = models.CharField(
+        max_length=30,
+        choices=SituacionLaboral.choices,
+    )
+
+    tipo_vivienda = models.CharField(
+        max_length=30,
+        choices=TipoVivienda.choices,
+    )
+
+    acceso_internet = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        verbose_name = "Caracterización comunitaria"
+        verbose_name_plural = "Caracterizaciones comunitarias"
+
+    def __str__(self):
+        return f"Caracterización - {self.usuario.username}"

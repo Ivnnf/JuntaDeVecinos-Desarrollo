@@ -341,6 +341,26 @@ function DirectivaInicioPage() {
                     Ver Solicitudes
                   </Link>
                 </div>
+                {/* Caracterización comunitaria */}
+                <div className="rounded-2xl border border-teal-500/30 bg-base-100 p-5 shadow-sm">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold">
+                      Caracterización Comunitaria
+                    </h3>
+
+                    <p className="mt-1 text-sm text-base-content/60">
+                      Consulta estadísticas agregadas sobre los hogares
+                      pertenecientes a tu Junta de Vecinos.
+                    </p>
+                  </div>
+
+                  <Link
+                    to="/directiva/caracterizacion"
+                    className="btn w-full border-teal-600 bg-teal-600 text-white hover:border-teal-700 hover:bg-teal-700"
+                  >
+                    Ver Estadísticas
+                  </Link>
+                </div>
                 {/* Documentos */}
                 <div className="rounded-2xl border border-cyan-500/30 bg-base-100 p-5 shadow-sm">
                   <div className="mb-4">

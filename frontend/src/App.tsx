@@ -1,3 +1,5 @@
+
+
 import {
   Navigate,
   Route,
@@ -36,10 +38,28 @@ import MensajeriaPage from './pages/vecino/MensajeriaPage'
 import MensajeriaDirectivaPage from './pages/directiva/MensajeriaDirectivaPage'
 import AsociacionesDirectivaPage from './pages/directiva/AsociacionesDirectivaPage'
 
+import CaracterizacionComunitariaPage from './pages/vecino/CaracterizacionComunitariaPage'
+import CaracterizacionDirectivaPage from './pages/directiva/CaracterizacionDirectivaPage'
 
 function App() {
   return (
     <Routes>
+      <Route
+        path="/directiva/caracterizacion"
+        element={
+          <RutaProtegida rolPermitido={2}>
+            <CaracterizacionDirectivaPage />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/vecino/caracterizacion"
+        element={
+          <RutaProtegida rolPermitido={3}>
+            <CaracterizacionComunitariaPage />
+          </RutaProtegida>
+        }
+      />
       <Route
         path="/directiva/asociaciones"
         element={
