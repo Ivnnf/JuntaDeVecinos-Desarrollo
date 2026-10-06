@@ -20,6 +20,7 @@ from profiles.models import (
     UsuarioRol,
 )
 from organizacion.models import IntegranteDirectiva
+
 from .serializers import (
     LoginSerializer,
     SolicitudRecuperacionSerializer,
@@ -30,7 +31,9 @@ from .serializers import (
     EstadoCuentaUsuarioSerializer,
     RolAdministracionSerializer,
     RolUsuarioAdministracionSerializer,
+    CrearUsuarioMunicipalSerializer,
 )
+
 from utils.token import generar_tokens, refresh_access_token, verificar_token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
@@ -374,6 +377,21 @@ class UsuarioAdministracionListView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    def post(self, request):
+        serializer = CrearUsuarioMunicipalSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        usuario = serializer.save()
+
+        return Response(
+            {
+                "message": ("Usuario Municipal creado " "correctamente."),
+                "usuario": (UsuarioAdministracionSerializer(usuario).data),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
 
 class RolAdministracionListView(generics.ListAPIView):
     serializer_class = RolAdministracionSerializer
@@ -421,11 +439,7 @@ class EstadoCuentaUsuarioView(APIView):
 
         if usuario.id == request.user.id and not nuevo_estado:
             return Response(
-                {
-                    "detail": (
-                        "No puedes deshabilitar tu propia cuenta."
-                    )
-                },
+                {"detail": ("No puedes deshabilitar tu propia cuenta.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -435,30 +449,18 @@ class EstadoCuentaUsuarioView(APIView):
             HistorialGestionUsuario.objects.create(
                 usuario_objetivo=usuario_actualizado,
                 realizado_por=request.user,
-                tipo_cambio=(
-                    HistorialGestionUsuario.TipoCambio.ESTADO_CUENTA
-                ),
-                valor_anterior=(
-                    "HABILITADA"
-                    if estado_anterior
-                    else "DESHABILITADA"
-                ),
+                tipo_cambio=(HistorialGestionUsuario.TipoCambio.ESTADO_CUENTA),
+                valor_anterior=("HABILITADA" if estado_anterior else "DESHABILITADA"),
                 valor_nuevo=(
-                    "HABILITADA"
-                    if usuario_actualizado.is_active
-                    else "DESHABILITADA"
+                    "HABILITADA" if usuario_actualizado.is_active else "DESHABILITADA"
                 ),
                 detalle="Cambio de estado de cuenta.",
             )
 
         return Response(
             {
-                "message": (
-                    "Estado de cuenta actualizado correctamente."
-                ),
-                "usuario": UsuarioAdministracionSerializer(
-                    usuario_actualizado
-                ).data,
+                "message": ("Estado de cuenta actualizado correctamente."),
+                "usuario": UsuarioAdministracionSerializer(usuario_actualizado).data,
             },
             status=status.HTTP_200_OK,
         )

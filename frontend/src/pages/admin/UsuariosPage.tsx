@@ -37,6 +37,25 @@ type RolDisponible = {
 }
 
 function UsuariosPage() {
+    const [mostrarCrearMunicipal, setMostrarCrearMunicipal] =
+        useState(false)
+
+    const [creandoMunicipal, setCreandoMunicipal] =
+        useState(false)
+
+    const [mensaje, setMensaje] =
+        useState('')
+
+    const [formMunicipal, setFormMunicipal] = useState({
+        username: '',
+        rut: '',
+        nombres: '',
+        apellido_paterno: '',
+        apellido_materno: '',
+        email: '',
+        password: '',
+        confirmar_password: '',
+    })
     const [usuarios, setUsuarios] =
         useState<UsuarioAdministracion[]>([])
 
@@ -48,8 +67,15 @@ function UsuariosPage() {
 
     const [error, setError] =
         useState('')
+
     const [juntaSeleccionada, setJuntaSeleccionada] =
         useState('TODAS')
+
+    const [sectorSeleccionado, setSectorSeleccionado] =
+        useState('TODOS')
+
+    const [rolSeleccionado, setRolSeleccionado] =
+        useState('TODOS')
 
     const [usuarioActualizando, setUsuarioActualizando] =
         useState<number | null>(null)
@@ -244,7 +270,73 @@ function UsuariosPage() {
             setRolActualizando(null)
         }
     }
+    const crearUsuarioMunicipal = async () => {
+        try {
+            setCreandoMunicipal(true)
+            setError('')
+            setMensaje('')
 
+            const response = await fetch(
+                'http://localhost:8000/api/auth/admin/usuarios/',
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formMunicipal),
+                },
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                const primerError = Object.values(data)
+                    .flat()
+                    .find(
+                        (valor) =>
+                            typeof valor === 'string',
+                    )
+
+                throw new Error(
+                    typeof primerError === 'string'
+                        ? primerError
+                        : 'No fue posible crear el usuario Municipal.',
+                )
+            }
+
+            setUsuarios((actuales) => [
+                ...actuales,
+                data.usuario,
+            ])
+
+            setFormMunicipal({
+                username: '',
+                rut: '',
+                nombres: '',
+                apellido_paterno: '',
+                apellido_materno: '',
+                email: '',
+                password: '',
+                confirmar_password: '',
+            })
+
+            setMostrarCrearMunicipal(false)
+
+            setMensaje(
+                data.message ??
+                'Usuario Municipal creado correctamente.',
+            )
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Ocurrió un error inesperado.',
+            )
+        } finally {
+            setCreandoMunicipal(false)
+        }
+    }
     const obtenerNombreCompleto = (
         usuario: UsuarioAdministracion
     ) => {
@@ -307,7 +399,7 @@ function UsuariosPage() {
         }
     }
 
-    
+
     const juntasDisponibles = usuarios
         .reduce<{ id: number; nombre: string }[]>(
             (acumulador, usuario) => {
@@ -337,10 +429,53 @@ function UsuariosPage() {
         .sort((a, b) =>
             a.nombre.localeCompare(b.nombre, 'es'),
         )
+
+    const sectoresDisponibles = usuarios
+        .filter((usuario) => {
+            if (juntaSeleccionada === 'TODAS') {
+                return usuario.sector_id !== null
+            }
+
+            if (juntaSeleccionada === 'SIN_ASOCIACION') {
+                return false
+            }
+
+            return (
+                usuario.junta_id === Number(juntaSeleccionada) &&
+                usuario.sector_id !== null
+            )
+        })
+        .reduce<{ id: number; nombre: string }[]>(
+            (acumulador, usuario) => {
+                if (
+                    usuario.sector_id === null ||
+                    !usuario.sector_nombre
+                ) {
+                    return acumulador
+                }
+
+                const yaExiste = acumulador.some(
+                    (sector) =>
+                        sector.id === usuario.sector_id,
+                )
+
+                if (!yaExiste) {
+                    acumulador.push({
+                        id: usuario.sector_id,
+                        nombre: usuario.sector_nombre,
+                    })
+                }
+
+                return acumulador
+            },
+            [],
+        )
+        .sort((a, b) =>
+            a.nombre.localeCompare(b.nombre, 'es'),
+        )
+
     const usuariosFiltrados = usuarios.filter((usuario) => {
-        if (juntaSeleccionada === 'TODAS') {
-            return true
-        }
+        let coincideJunta = true
 
         if (juntaSeleccionada === 'SIN_ASOCIACION') {
             const esAdministrador = usuario.roles.some(
@@ -349,16 +484,33 @@ function UsuariosPage() {
                     rol.activo,
             )
 
-            return (
+            coincideJunta =
                 usuario.junta_id === null &&
                 !esAdministrador
-            )
+        } else if (juntaSeleccionada !== 'TODAS') {
+            coincideJunta =
+                usuario.junta_id === Number(juntaSeleccionada)
         }
 
+        const coincideSector =
+            sectorSeleccionado === 'TODOS' ||
+            usuario.sector_id === Number(sectorSeleccionado)
+
+        const coincideRol =
+            rolSeleccionado === 'TODOS' ||
+            usuario.roles.some(
+                (rol) =>
+                    rol.nombre === rolSeleccionado &&
+                    rol.activo,
+            )
+
         return (
-            usuario.junta_id === Number(juntaSeleccionada)
+            coincideJunta &&
+            coincideSector &&
+            coincideRol
         )
     })
+
     const usuariosActivosFiltrados =
         usuariosFiltrados.filter(
             (usuario) => usuario.is_active,
@@ -399,12 +551,26 @@ function UsuariosPage() {
                             </p>
                         </div>
 
-                        <Link
-                            to="/admin"
-                            className="btn btn-outline"
-                        >
-                            ← Volver al Panel
-                        </Link>
+                        <div className="flex flex-wrap gap-3">
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    setError('')
+                                    setMensaje('')
+                                    setMostrarCrearMunicipal(true)
+                                }}
+                            >
+                                + Crear usuario Municipal
+                            </button>
+
+                            <Link
+                                to="/admin"
+                                className="btn btn-outline"
+                            >
+                                ← Volver al Panel
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
@@ -483,6 +649,11 @@ function UsuariosPage() {
                         <span>{error}</span>
                     </div>
                 )}
+                {mensaje && (
+                    <div className="alert alert-success mb-6 shadow-sm">
+                        <span>{mensaje}</span>
+                    </div>
+                )}
 
                 {/* Cargando */}
                 {cargando && (
@@ -520,9 +691,10 @@ function UsuariosPage() {
                                     <select
                                         className="select select-bordered w-full"
                                         value={juntaSeleccionada}
-                                        onChange={(event) =>
+                                        onChange={(event) => {
                                             setJuntaSeleccionada(event.target.value)
-                                        }
+                                            setSectorSeleccionado('TODOS')
+                                        }}
                                     >
                                         <option value="TODAS">
                                             Todas las juntas
@@ -542,7 +714,65 @@ function UsuariosPage() {
                                         ))}
                                     </select>
                                 </label>
+                                <label className="form-control w-full sm:w-64">
+                                    <div className="label">
+                                        <span className="label-text font-medium">
+                                            Sector
+                                        </span>
+                                    </div>
 
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={sectorSeleccionado}
+                                        onChange={(event) =>
+                                            setSectorSeleccionado(event.target.value)
+                                        }
+                                        disabled={
+                                            juntaSeleccionada === 'SIN_ASOCIACION'
+                                        }
+                                    >
+                                        <option value="TODOS">
+                                            Todos los sectores
+                                        </option>
+
+                                        {sectoresDisponibles.map((sector) => (
+                                            <option
+                                                key={sector.id}
+                                                value={String(sector.id)}
+                                            >
+                                                {sector.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label className="form-control w-full sm:w-56">
+                                    <div className="label">
+                                        <span className="label-text font-medium">
+                                            Rol
+                                        </span>
+                                    </div>
+
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={rolSeleccionado}
+                                        onChange={(event) =>
+                                            setRolSeleccionado(event.target.value)
+                                        }
+                                    >
+                                        <option value="TODOS">
+                                            Todos los roles
+                                        </option>
+
+                                        {roles.map((rol) => (
+                                            <option
+                                                key={rol.id}
+                                                value={rol.nombre}
+                                            >
+                                                {rol.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
                                 {usuariosFiltrados.length > 0 && (
                                     <span className="badge badge-outline badge-lg">
                                         {usuariosFiltrados.length}{' '}
@@ -824,7 +1054,259 @@ function UsuariosPage() {
                     </>
                 )}
             </section>
+            {/* Modal crear usuario Municipal */}
+            {mostrarCrearMunicipal && (
+                <div className="modal modal-open">
+                    <div className="modal-box max-w-2xl rounded-2xl">
+                        <div className="mb-5">
+                            <h3 className="text-2xl font-bold">
+                                Crear usuario Municipal
+                            </h3>
 
+                            <p className="mt-1 text-sm text-base-content/60">
+                                Crea una cuenta institucional con acceso al
+                                módulo Municipal. Esta cuenta no quedará
+                                asociada a una Junta de Vecinos ni a un sector.
+                            </p>
+                        </div>
+
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault()
+                                void crearUsuarioMunicipal()
+                            }}
+                        >
+                            <div className="grid gap-4 sm:grid-cols-2">
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Nombre de usuario
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formMunicipal.username}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                username: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            RUT
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        placeholder="12.345.678-5"
+                                        value={formMunicipal.rut}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                rut: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Nombres
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formMunicipal.nombres}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                nombres: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Apellido paterno
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formMunicipal.apellido_paterno}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                apellido_paterno:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Apellido materno
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formMunicipal.apellido_materno}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                apellido_materno:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                    />
+                                </label>
+
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Correo electrónico
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="email"
+                                        className="input input-bordered w-full"
+                                        value={formMunicipal.email}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                email: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Contraseña inicial
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="password"
+                                        className="input input-bordered w-full"
+                                        value={formMunicipal.password}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                password: event.target.value,
+                                            }))
+                                        }
+                                        minLength={8}
+                                        required
+                                    />
+                                </label>
+
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Confirmar contraseña
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="password"
+                                        className="input input-bordered w-full"
+                                        value={formMunicipal.confirmar_password}
+                                        onChange={(event) =>
+                                            setFormMunicipal((actual) => ({
+                                                ...actual,
+                                                confirmar_password:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                        minLength={8}
+                                        required
+                                    />
+                                </label>
+                            </div>
+
+
+                            <div className="alert alert-info mt-5">
+                                <span>
+                                    El rol Municipal será asignado
+                                    automáticamente al crear la cuenta.
+                                </span>
+                            </div>
+
+
+                            <div className="modal-action">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    disabled={creandoMunicipal}
+                                    onClick={() =>
+                                        setMostrarCrearMunicipal(false)
+                                    }
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={creandoMunicipal}
+                                >
+                                    {creandoMunicipal && (
+                                        <span className="loading loading-spinner loading-sm" />
+                                    )}
+
+                                    {creandoMunicipal
+                                        ? 'Creando...'
+                                        : 'Crear usuario'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div
+                        className="modal-backdrop"
+                        onClick={() => {
+                            if (!creandoMunicipal) {
+                                setMostrarCrearMunicipal(false)
+                            }
+                        }}
+                    />
+                </div>
+            )}
             {/* Modal cambio de rol */}
             {confirmacionRol && (
                 <div className="modal modal-open">
