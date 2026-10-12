@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+type VerificacionResidencia = {
+  id: number
+  tipo_documento: string
+  estado:
+  | 'PENDIENTE'
+  | 'REVISION_MANUAL'
+  | 'VALIDADA'
+  | 'RECHAZADA'
+  archivo_url: string | null
+  nombre_extraido: string | null
+  direccion_extraida: string | null
+  comuna_extraida: string | null
+  fecha_documento_extraida: string | null
+  confianza_ocr: number | null
+  documento_duplicado: boolean
+  observacion_automatica: string | null
+}
+
 type AsociacionPendiente = {
   id: number
   username: string
@@ -13,10 +31,26 @@ type AsociacionPendiente = {
   sector_nombre: string
   junta_id: number
   junta_nombre: string
-  estado_asociacion_sector: string
+  estado_asociacion_sector:
+  | 'PENDIENTE'
+  | 'CONFIRMADA'
+  | 'RECHAZADA'
+  verificacion_residencia:
+  | VerificacionResidencia
+  | null
 }
 
+type FiltroEstado =
+  | 'GENERAL'
+  | 'PENDIENTE'
+  | 'CONFIRMADA'
+  | 'RECHAZADA'
+  | 'SIN_VERIFICACION'
+  | 'REVISION_MANUAL'
+
 function AsociacionesSectorPage() {
+
+
   const [asociaciones, setAsociaciones] =
     useState<AsociacionPendiente[]>([])
 
@@ -25,7 +59,11 @@ function AsociacionesSectorPage() {
     useState<number | null>(null)
 
   const [error, setError] = useState('')
+
   const [mensaje, setMensaje] = useState('')
+
+  const [filtroEstado, setFiltroEstado] =
+    useState<FiltroEstado>('GENERAL')
 
   const cargarAsociaciones = async () => {
     setCargando(true)
@@ -33,7 +71,7 @@ function AsociacionesSectorPage() {
 
     try {
       const response = await fetch(
-        'http://localhost:8000/api/organizacion/asociaciones-pendientes/',
+        'http://localhost:8000/api/organizacion/asociaciones/',
         {
           credentials: 'include',
         },
@@ -62,7 +100,82 @@ function AsociacionesSectorPage() {
   useEffect(() => {
     void cargarAsociaciones()
   }, [])
+  const asociacionesFiltradas = asociaciones.filter(
+    (asociacion) => {
+      switch (filtroEstado) {
+        case 'PENDIENTE':
+          return (
+            asociacion.estado_asociacion_sector ===
+            'PENDIENTE'
+          )
 
+        case 'CONFIRMADA':
+          return (
+            asociacion.estado_asociacion_sector ===
+            'CONFIRMADA'
+          )
+
+        case 'RECHAZADA':
+          return (
+            asociacion.estado_asociacion_sector ===
+            'RECHAZADA'
+          )
+
+        case 'SIN_VERIFICACION':
+          return (
+            asociacion.verificacion_residencia === null
+          )
+
+        case 'REVISION_MANUAL':
+          return (
+            asociacion.verificacion_residencia?.estado ===
+            'REVISION_MANUAL'
+          )
+
+        case 'GENERAL':
+        default:
+          return true
+      }
+    },
+  )
+  const configuracionFiltro = {
+    GENERAL: {
+      titulo: 'Todas las solicitudes',
+      descripcion:
+        'Consulta todas las solicitudes de asociación territorial.',
+      resumen: 'Total de solicitudes',
+    },
+    PENDIENTE: {
+      titulo: 'Solicitudes pendientes',
+      descripcion:
+        'Verifica los datos del vecino antes de resolver la solicitud.',
+      resumen: 'Solicitudes pendientes',
+    },
+    CONFIRMADA: {
+      titulo: 'Solicitudes aceptadas',
+      descripcion:
+        'Asociaciones territoriales que ya fueron confirmadas.',
+      resumen: 'Solicitudes aceptadas',
+    },
+    RECHAZADA: {
+      titulo: 'Solicitudes rechazadas',
+      descripcion:
+        'Asociaciones territoriales que fueron rechazadas.',
+      resumen: 'Solicitudes rechazadas',
+    },
+    SIN_VERIFICACION: {
+      titulo: 'Sin verificación',
+      descripcion:
+        'Vecinos que no poseen una verificación de residencia registrada.',
+      resumen: 'Sin verificación',
+    },
+    REVISION_MANUAL: {
+      titulo: 'Revisión manual',
+      descripcion:
+        'Verificaciones que requieren revisión manual.',
+      resumen: 'Revisión manual',
+    },
+  }[filtroEstado]
   const resolverAsociacion = async (
     usuarioId: number,
     accion: 'CONFIRMAR' | 'RECHAZAR',
@@ -97,9 +210,16 @@ function AsociacionesSectorPage() {
       }
 
       setAsociaciones((actuales) =>
-        actuales.filter(
-          (asociacion) =>
-            asociacion.id !== usuarioId,
+        actuales.map((asociacion) =>
+          asociacion.id === usuarioId
+            ? {
+              ...asociacion,
+              estado_asociacion_sector:
+                accion === 'CONFIRMAR'
+                  ? 'CONFIRMADA'
+                  : 'RECHAZADA',
+            }
+            : asociacion,
         ),
       )
 
@@ -183,12 +303,12 @@ function AsociacionesSectorPage() {
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-violet-500/30 bg-base-100 p-5 shadow-sm">
               <p className="text-sm font-medium text-base-content/60">
-                Solicitudes pendientes
+                {configuracionFiltro.resumen}
               </p>
 
               <div className="mt-2 flex items-end justify-between gap-3">
                 <span className="text-3xl font-bold">
-                  {asociaciones.length}
+                  {asociacionesFiltradas.length}
                 </span>
 
                 <span className="badge badge-warning badge-outline">
@@ -257,29 +377,101 @@ function AsociacionesSectorPage() {
 
         {!cargando && (
           <>
+            {/* Filtros por estado */}
+            <div className="mb-6 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`btn btn-sm ${filtroEstado === 'GENERAL'
+                  ? 'btn-primary'
+                  : 'btn-outline'
+                  }`}
+                onClick={() => setFiltroEstado('GENERAL')}
+              >
+                General
+              </button>
+
+              <button
+                type="button"
+                className={`btn btn-sm ${filtroEstado === 'PENDIENTE'
+                  ? 'btn-warning'
+                  : 'btn-outline'
+                  }`}
+                onClick={() => setFiltroEstado('PENDIENTE')}
+              >
+                Pendientes
+              </button>
+
+              <button
+                type="button"
+                className={`btn btn-sm ${filtroEstado === 'CONFIRMADA'
+                  ? 'btn-success'
+                  : 'btn-outline'
+                  }`}
+                onClick={() => setFiltroEstado('CONFIRMADA')}
+              >
+                Aceptadas
+              </button>
+
+              <button
+                type="button"
+                className={`btn btn-sm ${filtroEstado === 'RECHAZADA'
+                  ? 'btn-error'
+                  : 'btn-outline'
+                  }`}
+                onClick={() => setFiltroEstado('RECHAZADA')}
+              >
+                Rechazadas
+              </button>
+
+              <button
+                type="button"
+                className={`btn btn-sm ${filtroEstado === 'SIN_VERIFICACION'
+                  ? 'btn-neutral'
+                  : 'btn-outline'
+                  }`}
+                onClick={() =>
+                  setFiltroEstado('SIN_VERIFICACION')
+                }
+              >
+                Sin verificación
+              </button>
+
+              <button
+                type="button"
+                className={`btn btn-sm ${filtroEstado === 'REVISION_MANUAL'
+                  ? 'btn-info'
+                  : 'btn-outline'
+                  }`}
+                onClick={() =>
+                  setFiltroEstado('REVISION_MANUAL')
+                }
+              >
+                Revisión manual
+              </button>
+            </div>
             {/* Título sección */}
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="text-2xl font-bold">
-                  Solicitudes pendientes
+                  {configuracionFiltro.titulo}
                 </h2>
 
                 <p className="mt-1 text-base-content/60">
-                  Verifica los datos del vecino antes de resolver la solicitud.
+                  {configuracionFiltro.descripcion}
                 </p>
               </div>
 
-              {asociaciones.length > 0 && (
+              {asociacionesFiltradas.length > 0 && (
                 <span className="badge badge-outline badge-lg">
-                  {asociaciones.length}{' '}
-                  {asociaciones.length === 1
+                  {asociacionesFiltradas.length}{' '}
+                  {asociacionesFiltradas.length === 1
                     ? 'solicitud'
                     : 'solicitudes'}
                 </span>
               )}
             </div>
 
-            {asociaciones.length === 0 ? (
+            {asociacionesFiltradas.length === 0 ? (
               <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
                 <div className="mx-auto max-w-md">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
@@ -307,6 +499,8 @@ function AsociacionesSectorPage() {
                         <th>Correo</th>
                         <th>Junta</th>
                         <th>Sector</th>
+                        <th>Asociación</th>
+                        <th>Verificación</th>
                         <th className="text-right">
                           Acciones
                         </th>
@@ -314,7 +508,7 @@ function AsociacionesSectorPage() {
                     </thead>
 
                     <tbody>
-                      {asociaciones.map((asociacion) => {
+                      {asociacionesFiltradas.map((asociacion) => {
                         const nombreCompleto =
                           obtenerNombreCompleto(asociacion)
 
@@ -363,44 +557,107 @@ function AsociacionesSectorPage() {
                             </td>
 
                             <td>
-                              <span className="badge badge-info badge-outline">
+                              <span className="badge badge-info badge-outline whitespace-nowrap">
                                 {asociacion.sector_nombre}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                className={
+                                  asociacion.estado_asociacion_sector ===
+                                    'CONFIRMADA'
+                                    ? 'badge badge-success whitespace-nowrap'
+                                    : asociacion.estado_asociacion_sector ===
+                                      'RECHAZADA'
+                                      ? 'badge badge-error badge-outline whitespace-nowrap'
+                                      : 'badge badge-warning badge-outline whitespace-nowrap'
+                                }
+                              >
+                                {asociacion.estado_asociacion_sector ===
+                                  'CONFIRMADA'
+                                  ? 'Aceptada'
+                                  : asociacion.estado_asociacion_sector ===
+                                    'RECHAZADA'
+                                    ? 'Rechazada'
+                                    : 'Pendiente'}
                               </span>
                             </td>
 
                             <td>
+                              {asociacion.verificacion_residencia ? (
+                                <span
+                                  className={
+                                    asociacion.verificacion_residencia.estado ===
+                                      'VALIDADA'
+                                      ? 'badge badge-success whitespace-nowrap'
+                                      : asociacion.verificacion_residencia.estado ===
+                                        'RECHAZADA'
+                                        ? 'badge badge-error badge-outline whitespace-nowrap'
+                                        : asociacion.verificacion_residencia.estado ===
+                                          'REVISION_MANUAL'
+                                          ? 'badge badge-info badge-outline whitespace-nowrap'
+                                          : 'badge badge-warning badge-outline whitespace-nowrap'
+                                  }
+                                >
+                                  {asociacion.verificacion_residencia.estado ===
+                                    'VALIDADA'
+                                    ? 'Validada'
+                                    : asociacion.verificacion_residencia.estado ===
+                                      'RECHAZADA'
+                                      ? 'Rechazada'
+                                      : asociacion.verificacion_residencia.estado ===
+                                        'REVISION_MANUAL'
+                                        ? 'Revisión manual'
+                                        : 'Pendiente'}
+                                </span>
+                              ) : (
+                                <span className="badge border border-base-content/30 bg-base-200 text-base-content whitespace-nowrap">
+                                  Sin verificación
+                                </span>
+                              )}
+                            </td>
+                            <td>
                               <div className="flex min-w-[190px] justify-end gap-2">
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-success"
-                                  disabled={procesando}
-                                  onClick={() =>
-                                    void resolverAsociacion(
-                                      asociacion.id,
-                                      'CONFIRMAR',
-                                    )
-                                  }
-                                >
-                                  {procesando && (
-                                    <span className="loading loading-spinner loading-xs" />
-                                  )}
+                                {asociacion.estado_asociacion_sector ===
+                                  'PENDIENTE' ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-success"
+                                      disabled={procesando}
+                                      onClick={() =>
+                                        void resolverAsociacion(
+                                          asociacion.id,
+                                          'CONFIRMAR',
+                                        )
+                                      }
+                                    >
+                                      {procesando && (
+                                        <span className="loading loading-spinner loading-xs" />
+                                      )}
 
-                                  Confirmar
-                                </button>
+                                      Confirmar
+                                    </button>
 
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-error btn-outline"
-                                  disabled={procesando}
-                                  onClick={() =>
-                                    void resolverAsociacion(
-                                      asociacion.id,
-                                      'RECHAZAR',
-                                    )
-                                  }
-                                >
-                                  Rechazar
-                                </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-error btn-outline"
+                                      disabled={procesando}
+                                      onClick={() =>
+                                        void resolverAsociacion(
+                                          asociacion.id,
+                                          'RECHAZAR',
+                                        )
+                                      }
+                                    >
+                                      Rechazar
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-base-content/50">
+                                    Solicitud resuelta
+                                  </span>
+                                )}
                               </div>
                             </td>
                           </tr>

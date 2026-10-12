@@ -30,7 +30,13 @@ type AsociacionPendiente = {
     estado_asociacion_sector: string
     verificacion_residencia: VerificacionResidencia | null
 }
-
+type FiltroEstado =
+    | 'GENERAL'
+    | 'PENDIENTE'
+    | 'CONFIRMADA'
+    | 'RECHAZADA'
+    | 'SIN_VERIFICACION'
+    | 'REVISION_MANUAL'
 function AsociacionesDirectivaPage() {
     const [asociaciones, setAsociaciones] =
         useState<AsociacionPendiente[]>([])
@@ -49,13 +55,17 @@ function AsociacionesDirectivaPage() {
         procesandoVerificacion,
         setProcesandoVerificacion,
     ] = useState(false)
+
+    const [filtroEstado, setFiltroEstado] =
+        useState<FiltroEstado>('GENERAL')
+
     const cargarAsociaciones = async () => {
         setCargando(true)
         setError('')
 
         try {
             const response = await fetch(
-                'http://localhost:8000/api/organizacion/directiva/asociaciones-pendientes/',
+                'http://localhost:8000/api/organizacion/directiva/asociaciones/',
                 {
                     credentials: 'include',
                 },
@@ -84,7 +94,83 @@ function AsociacionesDirectivaPage() {
     useEffect(() => {
         void cargarAsociaciones()
     }, [])
+    const asociacionesFiltradas = asociaciones.filter(
+        (asociacion) => {
+            switch (filtroEstado) {
+                case 'PENDIENTE':
+                    return (
+                        asociacion.estado_asociacion_sector ===
+                        'PENDIENTE'
+                    )
 
+                case 'CONFIRMADA':
+                    return (
+                        asociacion.estado_asociacion_sector ===
+                        'CONFIRMADA'
+                    )
+
+                case 'RECHAZADA':
+                    return (
+                        asociacion.estado_asociacion_sector ===
+                        'RECHAZADA'
+                    )
+
+                case 'SIN_VERIFICACION':
+                    return (
+                        asociacion.verificacion_residencia === null
+                    )
+
+                case 'REVISION_MANUAL':
+                    return (
+                        asociacion.verificacion_residencia?.estado ===
+                        'REVISION_MANUAL'
+                    )
+
+                case 'GENERAL':
+                default:
+                    return true
+            }
+        },
+    )
+
+    const configuracionFiltro = {
+        GENERAL: {
+            titulo: 'Todas las solicitudes',
+            descripcion:
+                'Consulta todas las solicitudes de asociación territorial de tu Junta de Vecinos.',
+            resumen: 'Total de solicitudes',
+        },
+        PENDIENTE: {
+            titulo: 'Solicitudes pendientes',
+            descripcion:
+                'Verifica los antecedentes antes de resolver la asociación.',
+            resumen: 'Solicitudes pendientes',
+        },
+        CONFIRMADA: {
+            titulo: 'Solicitudes aceptadas',
+            descripcion:
+                'Asociaciones territoriales que ya fueron confirmadas.',
+            resumen: 'Solicitudes aceptadas',
+        },
+        RECHAZADA: {
+            titulo: 'Solicitudes rechazadas',
+            descripcion:
+                'Asociaciones territoriales que fueron rechazadas.',
+            resumen: 'Solicitudes rechazadas',
+        },
+        SIN_VERIFICACION: {
+            titulo: 'Sin verificación',
+            descripcion:
+                'Vecinos que no poseen verificación de residencia registrada.',
+            resumen: 'Sin verificación',
+        },
+        REVISION_MANUAL: {
+            titulo: 'Revisión manual',
+            descripcion:
+                'Comprobantes de residencia que requieren revisión manual.',
+            resumen: 'Revisión manual',
+        },
+    }[filtroEstado]
     const resolverAsociacion = async (
         usuarioId: number,
         accion: 'CONFIRMAR' | 'RECHAZAR',
@@ -119,9 +205,16 @@ function AsociacionesDirectivaPage() {
             }
 
             setAsociaciones((actuales) =>
-                actuales.filter(
-                    (asociacion) =>
-                        asociacion.id !== usuarioId,
+                actuales.map((asociacion) =>
+                    asociacion.id === usuarioId
+                        ? {
+                            ...asociacion,
+                            estado_asociacion_sector:
+                                accion === 'CONFIRMAR'
+                                    ? 'CONFIRMADA'
+                                    : 'RECHAZADA',
+                        }
+                        : asociacion,
                 ),
             )
 
@@ -304,7 +397,7 @@ function AsociacionesDirectivaPage() {
 
                             <div className="mt-2 flex items-end justify-between gap-3">
                                 <span className="text-3xl font-bold">
-                                    {asociaciones.length}
+                                    {asociacionesFiltradas.length}
                                 </span>
 
                                 <span className="badge badge-warning badge-outline">
@@ -373,29 +466,101 @@ function AsociacionesDirectivaPage() {
 
                 {!cargando && (
                     <>
+                        {/* Filtros por estado */}
+                        <div className="mb-6 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${filtroEstado === 'GENERAL'
+                                    ? 'btn-primary'
+                                    : 'btn-outline'
+                                    }`}
+                                onClick={() => setFiltroEstado('GENERAL')}
+                            >
+                                General
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${filtroEstado === 'PENDIENTE'
+                                    ? 'btn-warning'
+                                    : 'btn-outline'
+                                    }`}
+                                onClick={() => setFiltroEstado('PENDIENTE')}
+                            >
+                                Pendientes
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${filtroEstado === 'CONFIRMADA'
+                                    ? 'btn-success'
+                                    : 'btn-outline'
+                                    }`}
+                                onClick={() => setFiltroEstado('CONFIRMADA')}
+                            >
+                                Aceptadas
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${filtroEstado === 'RECHAZADA'
+                                    ? 'btn-error'
+                                    : 'btn-outline'
+                                    }`}
+                                onClick={() => setFiltroEstado('RECHAZADA')}
+                            >
+                                Rechazadas
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${filtroEstado === 'SIN_VERIFICACION'
+                                    ? 'btn-neutral'
+                                    : 'btn-outline'
+                                    }`}
+                                onClick={() =>
+                                    setFiltroEstado('SIN_VERIFICACION')
+                                }
+                            >
+                                Sin verificación
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${filtroEstado === 'REVISION_MANUAL'
+                                    ? 'btn-info'
+                                    : 'btn-outline'
+                                    }`}
+                                onClick={() =>
+                                    setFiltroEstado('REVISION_MANUAL')
+                                }
+                            >
+                                Revisión manual
+                            </button>
+                        </div>
                         {/* Título sección */}
                         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                             <div>
                                 <h2 className="text-2xl font-bold">
-                                    Solicitudes pendientes
+                                    {configuracionFiltro.titulo}
                                 </h2>
 
                                 <p className="mt-1 text-base-content/60">
-                                    Verifica los datos del vecino antes de resolver la solicitud.
+                                    {configuracionFiltro.descripcion}
                                 </p>
                             </div>
 
-                            {asociaciones.length > 0 && (
+                            {asociacionesFiltradas.length > 0 && (
                                 <span className="badge badge-outline badge-lg">
-                                    {asociaciones.length}{' '}
-                                    {asociaciones.length === 1
+                                    {asociacionesFiltradas.length}{' '}
+                                    {asociacionesFiltradas.length === 1
                                         ? 'solicitud'
                                         : 'solicitudes'}
                                 </span>
                             )}
                         </div>
 
-                        {asociaciones.length === 0 ? (
+                        {asociacionesFiltradas.length === 0 ? (
                             <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
                                 <div className="mx-auto max-w-md">
                                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
@@ -423,6 +588,7 @@ function AsociacionesDirectivaPage() {
                                                 <th>Correo</th>
                                                 <th>Junta</th>
                                                 <th>Sector</th>
+                                                <th>Asociación</th>
                                                 <th>Verificación</th>
                                                 <th className="text-right">
                                                     Acciones
@@ -431,7 +597,8 @@ function AsociacionesDirectivaPage() {
                                         </thead>
 
                                         <tbody>
-                                            {asociaciones.map((asociacion) => {
+                                            {asociacionesFiltradas.map((asociacion) => {
+
                                                 const nombreCompleto =
                                                     obtenerNombreCompleto(asociacion)
 
@@ -489,6 +656,27 @@ function AsociacionesDirectivaPage() {
                                                                     {asociacion.sector_nombre}
                                                                 </span>
                                                             </div>
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                className={
+                                                                    asociacion.estado_asociacion_sector ===
+                                                                        'CONFIRMADA'
+                                                                        ? 'badge badge-success whitespace-nowrap'
+                                                                        : asociacion.estado_asociacion_sector ===
+                                                                            'RECHAZADA'
+                                                                            ? 'badge badge-error badge-outline whitespace-nowrap'
+                                                                            : 'badge badge-warning badge-outline whitespace-nowrap'
+                                                                }
+                                                            >
+                                                                {asociacion.estado_asociacion_sector ===
+                                                                    'CONFIRMADA'
+                                                                    ? 'Aceptada'
+                                                                    : asociacion.estado_asociacion_sector ===
+                                                                        'RECHAZADA'
+                                                                        ? 'Rechazada'
+                                                                        : 'Pendiente'}
+                                                            </span>
                                                         </td>
                                                         <td>
                                                             {asociacion.verificacion_residencia ? (

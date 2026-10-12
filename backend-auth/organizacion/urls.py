@@ -2,8 +2,12 @@ from django.urls import path
 
 from .views import (
     AsociacionesSectorPendientesView,
+    AsociacionesSectorTodasView,
     AsociacionesSectorPendientesDirectivaView,
+    AsociacionesSectorTodasDirectivaView,
     ResolverAsociacionSectorDirectivaView,
+    DashboardDirectivaView,
+    ExportarDashboardDirectivaCSVView,
     CargoDetailView,
     CargoListCreateView,
     JuntaVecinosDetailView,
@@ -27,6 +31,16 @@ from .views import (
 
 urlpatterns = [
     path(
+        "directiva/dashboard/",
+        DashboardDirectivaView.as_view(),
+        name="directiva-dashboard",
+    ),
+    path(
+        "directiva/dashboard/exportar-csv/",
+        ExportarDashboardDirectivaCSVView.as_view(),
+        name="directiva-dashboard-exportar-csv",
+    ),
+    path(
         "directiva/verificaciones-residencia/<int:verificacion_id>/resolver/",
         ResolverVerificacionResidenciaDirectivaView.as_view(),
         name="directiva-resolver-verificacion-residencia",
@@ -42,6 +56,11 @@ urlpatterns = [
         name="directiva-asociaciones-sector-pendientes",
     ),
     path(
+        "directiva/asociaciones/",
+        AsociacionesSectorTodasDirectivaView.as_view(),
+        name="directiva-asociaciones-sector-todas",
+    ),
+    path(
         "juntas/<int:junta_id>/directiva-vigente/",
         DirectivaVigenteJuntaView.as_view(),
         name="directiva-vigente-junta",
@@ -55,6 +74,11 @@ urlpatterns = [
         "asociaciones-pendientes/",
         AsociacionesSectorPendientesView.as_view(),
         name="asociaciones-sector-pendientes",
+    ),
+    path(
+        "asociaciones/",
+        AsociacionesSectorTodasView.as_view(),
+        name="asociaciones-sector-todas",
     ),
     path(
         "solicitar-asociacion-sector/",

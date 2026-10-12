@@ -1,11 +1,15 @@
 from django.shortcuts import render
 
 # Create your views here.
+import csv
 from django.utils import timezone
+from django.utils.dateparse import parse_date
+from django.http import HttpResponse
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import Count, Q
 from .models import Directiva, IntegranteDirectiva
 
 from .models import (
@@ -15,6 +19,17 @@ from .models import (
     JuntaVecinos,
     Sector,
     VerificacionResidencia,
+)
+
+from eventos.models import (
+    AsistenciaEvento,
+    Evento,
+    InscripcionEvento,
+)
+
+from solicitudes.models import (
+    SolicitudDocumento,
+    SolicitudVecino,
 )
 
 from .permissions import (
@@ -38,7 +53,9 @@ from .serializers import (
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+
 from profiles.models import (
+    CaracterizacionComunitaria,
     HistorialGestionUsuario,
     Rol,
     UsuarioRol,
@@ -50,6 +67,26 @@ def es_administrador(usuario):
         rol__nombre__iexact="Administrador",
         activo=True,
     ).exists()
+
+
+def obtener_junta_directiva(usuario):
+    integrante = (
+        IntegranteDirectiva.objects.select_related(
+            "directiva",
+            "directiva__junta_vecinos",
+        )
+        .filter(
+            usuario=usuario,
+            activo=True,
+            directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+        )
+        .first()
+    )
+
+    if integrante is None:
+        return None
+
+    return integrante.directiva.junta_vecinos
 
 
 class JuntaVecinosListCreateView(generics.ListCreateAPIView):
@@ -213,7 +250,30 @@ class AsociacionesSectorPendientesView(generics.ListAPIView):
             )
         )
 
+class AsociacionesSectorTodasView(generics.ListAPIView):
+    serializer_class = AsociacionSectorPendienteSerializer
+    permission_classes = [EsAdministrador]
 
+    def get_queryset(self):
+        Usuario = get_user_model()
+
+        return (
+            Usuario.objects.select_related(
+                "sector",
+                "sector__junta_vecinos",
+            )
+            .prefetch_related(
+                "verificaciones_residencia",
+            )
+            .filter(
+                sector__isnull=False,
+            )
+            .order_by(
+                "nombres",
+                "apellido_paterno",
+            )
+        )
+    
 class AsociacionesSectorPendientesDirectivaView(generics.ListAPIView):
     serializer_class = AsociacionSectorPendienteSerializer
     permission_classes = [EsDirectiva]
@@ -245,7 +305,39 @@ class AsociacionesSectorPendientesDirectivaView(generics.ListAPIView):
                 "apellido_paterno",
             )
         )
+class AsociacionesSectorTodasDirectivaView(generics.ListAPIView):
+    serializer_class = AsociacionSectorPendienteSerializer
+    permission_classes = [EsDirectiva]
 
+    def get_queryset(self):
+        Usuario = get_user_model()
+
+        juntas_directiva = IntegranteDirectiva.objects.filter(
+            usuario=self.request.user,
+            activo=True,
+            directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+        ).values_list(
+            "directiva__junta_vecinos_id",
+            flat=True,
+        )
+
+        return (
+            Usuario.objects.select_related(
+                "sector",
+                "sector__junta_vecinos",
+            )
+            .prefetch_related(
+                "verificaciones_residencia",
+            )
+            .filter(
+                sector__isnull=False,
+                sector__junta_vecinos_id__in=juntas_directiva,
+            )
+            .order_by(
+                "nombres",
+                "apellido_paterno",
+            )
+        )
 
 class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
     permission_classes = [EsDirectiva]
@@ -349,9 +441,8 @@ class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
-class ResolverVerificacionResidenciaDirectivaView(
-    generics.GenericAPIView
-):
+
+class ResolverVerificacionResidenciaDirectivaView(generics.GenericAPIView):
     permission_classes = [EsDirectiva]
 
     def post(self, request, verificacion_id):
@@ -365,17 +456,13 @@ class ResolverVerificacionResidenciaDirectivaView(
         )
 
         try:
-            verificacion = (
-                VerificacionResidencia.objects
-                .select_related(
-                    "usuario",
-                    "sector",
-                    "sector__junta_vecinos",
-                )
-                .get(
-                    id=verificacion_id,
-                    sector__junta_vecinos_id__in=juntas_directiva,
-                )
+            verificacion = VerificacionResidencia.objects.select_related(
+                "usuario",
+                "sector",
+                "sector__junta_vecinos",
+            ).get(
+                id=verificacion_id,
+                sector__junta_vecinos_id__in=juntas_directiva,
             )
         except VerificacionResidencia.DoesNotExist:
             return Response(
@@ -394,23 +481,14 @@ class ResolverVerificacionResidenciaDirectivaView(
         ).upper()
 
         if accion == "REVISION_MANUAL":
-            verificacion.estado = (
-                VerificacionResidencia.Estado.REVISION_MANUAL
-            )
+            verificacion.estado = VerificacionResidencia.Estado.REVISION_MANUAL
 
         elif accion == "VALIDAR":
-            verificacion.estado = (
-                VerificacionResidencia.Estado.VALIDADA
-            )
+            verificacion.estado = VerificacionResidencia.Estado.VALIDADA
 
         else:
             return Response(
-                {
-                    "detail": (
-                        "La acción debe ser "
-                        "REVISION_MANUAL o VALIDAR."
-                    )
-                },
+                {"detail": ("La acción debe ser " "REVISION_MANUAL o VALIDAR.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -428,16 +506,14 @@ class ResolverVerificacionResidenciaDirectivaView(
 
         return Response(
             {
-                "message": (
-                    "Verificación de residencia "
-                    "actualizada correctamente."
-                ),
+                "message": ("Verificación de residencia " "actualizada correctamente."),
                 "verificacion_id": verificacion.id,
                 "estado": verificacion.estado,
             },
             status=status.HTTP_200_OK,
         )
-    
+
+
 class ResolverAsociacionSectorView(generics.GenericAPIView):
     permission_classes = [EsAdministrador]
 
@@ -454,8 +530,7 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
             return Response(
                 {
                     "detail": (
-                        "No existe una asociación pendiente "
-                        "para este usuario."
+                        "No existe una asociación pendiente " "para este usuario."
                     )
                 },
                 status=status.HTTP_404_NOT_FOUND,
@@ -478,11 +553,7 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
 
         else:
             return Response(
-                {
-                    "detail": (
-                        "La acción debe ser CONFIRMAR o RECHAZAR."
-                    )
-                },
+                {"detail": ("La acción debe ser CONFIRMAR o RECHAZAR.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -496,15 +567,14 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
 
         return Response(
             {
-                "message": (
-                    "Asociación territorial actualizada correctamente."
-                ),
+                "message": ("Asociación territorial actualizada correctamente."),
                 "usuario_id": usuario.id,
                 "sector_id": usuario.sector_id,
                 "estado": usuario.estado_asociacion_sector,
             },
             status=status.HTTP_200_OK,
         )
+
 
 class CargoListCreateView(generics.ListCreateAPIView):
     queryset = Cargo.objects.all().order_by("nombre")
@@ -964,3 +1034,653 @@ class ReasignarCargoDirectivaView(generics.GenericAPIView):
             IntegranteDirectivaSerializer(nuevo_integrante).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class DashboardDirectivaView(generics.GenericAPIView):
+    permission_classes = [EsDirectiva]
+
+    MINIMO_CARACTERIZACIONES = 3
+
+    def get(self, request):
+        junta = obtener_junta_directiva(request.user)
+
+        if junta is None:
+            raise PermissionDenied(
+                "No existe una directiva vigente asociada al usuario."
+            )
+        fecha_desde_param = request.query_params.get("fecha_desde")
+        fecha_hasta_param = request.query_params.get("fecha_hasta")
+
+        try:
+            fecha_desde = parse_date(fecha_desde_param) if fecha_desde_param else None
+        except ValueError:
+            fecha_desde = None
+
+        try:
+            fecha_hasta = parse_date(fecha_hasta_param) if fecha_hasta_param else None
+        except ValueError:
+            fecha_hasta = None
+
+        if fecha_desde_param and fecha_desde is None:
+            return Response(
+                {
+                    "detail": (
+                        "La fecha_desde debe tener formato YYYY-MM-DD "
+                        "y ser una fecha válida."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if fecha_hasta_param and fecha_hasta is None:
+            return Response(
+                {
+                    "detail": (
+                        "La fecha_hasta debe tener formato YYYY-MM-DD "
+                        "y ser una fecha válida."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        fecha_desde = parse_date(fecha_desde_param) if fecha_desde_param else None
+
+        fecha_hasta = parse_date(fecha_hasta_param) if fecha_hasta_param else None
+
+        if fecha_desde_param and fecha_desde is None:
+            return Response(
+                {"detail": ("La fecha_desde debe tener formato YYYY-MM-DD.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if fecha_hasta_param and fecha_hasta is None:
+            return Response(
+                {"detail": ("La fecha_hasta debe tener formato YYYY-MM-DD.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if (
+            fecha_desde is not None
+            and fecha_hasta is not None
+            and fecha_desde > fecha_hasta
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "La fecha_desde no puede ser posterior " "a la fecha_hasta."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        Usuario = get_user_model()
+
+        vecinos_confirmados = (
+            Usuario.objects.filter(
+                is_active=True,
+                sector__junta_vecinos=junta,
+                estado_asociacion_sector="CONFIRMADA",
+                roles_asignados__rol__nombre__iexact="Vecino",
+                roles_asignados__activo=True,
+            )
+            .distinct()
+            .count()
+        )
+
+        solicitudes = SolicitudVecino.objects.filter(
+            junta_vecinos=junta,
+        )
+        if fecha_desde is not None:
+            solicitudes = solicitudes.filter(
+                fecha_creacion__date__gte=fecha_desde,
+            )
+
+        if fecha_hasta is not None:
+            solicitudes = solicitudes.filter(
+                fecha_creacion__date__lte=fecha_hasta,
+            )
+        resumen_solicitudes = solicitudes.aggregate(
+            total=Count("id"),
+            consultas=Count(
+                "id",
+                filter=Q(
+                    tipo=SolicitudVecino.Tipo.CONSULTA,
+                ),
+            ),
+            reclamos=Count(
+                "id",
+                filter=Q(
+                    tipo=SolicitudVecino.Tipo.RECLAMO,
+                ),
+            ),
+            solicitudes=Count(
+                "id",
+                filter=Q(
+                    tipo=SolicitudVecino.Tipo.SOLICITUD,
+                ),
+            ),
+            pendientes=Count(
+                "id",
+                filter=Q(
+                    estado=SolicitudVecino.Estado.PENDIENTE,
+                ),
+            ),
+            en_proceso=Count(
+                "id",
+                filter=Q(
+                    estado=SolicitudVecino.Estado.EN_PROCESO,
+                ),
+            ),
+            respondidas=Count(
+                "id",
+                filter=Q(
+                    estado=SolicitudVecino.Estado.RESPONDIDA,
+                ),
+            ),
+            cerradas=Count(
+                "id",
+                filter=Q(
+                    estado=SolicitudVecino.Estado.CERRADA,
+                ),
+            ),
+        )
+
+        solicitudes_documentos = SolicitudDocumento.objects.filter(
+            junta_vecinos=junta,
+        )
+
+        if fecha_desde is not None:
+            solicitudes_documentos = solicitudes_documentos.filter(
+                fecha_solicitud__date__gte=fecha_desde,
+            )
+
+        if fecha_hasta is not None:
+            solicitudes_documentos = solicitudes_documentos.filter(
+                fecha_solicitud__date__lte=fecha_hasta,
+            )
+
+        resumen_documentos = solicitudes_documentos.aggregate(
+            total=Count("id"),
+            pendientes=Count(
+                "id",
+                filter=Q(
+                    estado_actual=SolicitudDocumento.Estado.PENDIENTE,
+                ),
+            ),
+            en_revision=Count(
+                "id",
+                filter=Q(
+                    estado_actual=SolicitudDocumento.Estado.EN_REVISION,
+                ),
+            ),
+            aprobadas=Count(
+                "id",
+                filter=Q(
+                    estado_actual=SolicitudDocumento.Estado.APROBADA,
+                ),
+            ),
+            rechazadas=Count(
+                "id",
+                filter=Q(
+                    estado_actual=SolicitudDocumento.Estado.RECHAZADA,
+                ),
+            ),
+        )
+
+        eventos = Evento.objects.filter(
+            directiva__junta_vecinos=junta,
+        )
+
+        if fecha_desde is not None:
+            eventos = eventos.filter(
+                fecha_inicio__date__gte=fecha_desde,
+            )
+
+        if fecha_hasta is not None:
+            eventos = eventos.filter(
+                fecha_inicio__date__lte=fecha_hasta,
+            )
+
+        resumen_eventos = eventos.aggregate(
+            total=Count("id"),
+            programados=Count(
+                "id",
+                filter=Q(
+                    estado=Evento.Estado.PROGRAMADO,
+                ),
+            ),
+            finalizados=Count(
+                "id",
+                filter=Q(
+                    estado=Evento.Estado.FINALIZADO,
+                ),
+            ),
+            cancelados=Count(
+                "id",
+                filter=Q(
+                    estado=Evento.Estado.CANCELADO,
+                ),
+            ),
+        )
+
+        inscripciones_activas = InscripcionEvento.objects.filter(
+            evento__in=eventos,
+            estado=InscripcionEvento.Estado.INSCRITO,
+        ).count()
+
+        inscripciones_eventos_finalizados = InscripcionEvento.objects.filter(
+            evento__in=eventos,
+            evento__estado=Evento.Estado.FINALIZADO,
+            estado=InscripcionEvento.Estado.INSCRITO,
+        ).count()
+
+        asistencias = AsistenciaEvento.objects.filter(
+            inscripcion__evento__in=eventos,
+            inscripcion__evento__estado=Evento.Estado.FINALIZADO,
+            inscripcion__estado=InscripcionEvento.Estado.INSCRITO,
+        )
+
+        presentes = asistencias.filter(
+            estado=AsistenciaEvento.Estado.PRESENTE,
+        ).count()
+
+        ausentes = asistencias.filter(
+            estado=AsistenciaEvento.Estado.AUSENTE,
+        ).count()
+
+        asistencias_registradas = presentes + ausentes
+
+        porcentaje_asistencia = (
+            round(
+                (presentes / asistencias_registradas) * 100,
+                2,
+            )
+            if asistencias_registradas > 0
+            else 0
+        )
+
+        total_caracterizaciones = CaracterizacionComunitaria.objects.filter(
+            usuario__is_active=True,
+            usuario__sector__junta_vecinos=junta,
+            usuario__estado_asociacion_sector="CONFIRMADA",
+        ).count()
+
+        return Response(
+            {
+                "junta": {
+                    "id": junta.id,
+                    "nombre": junta.nombre,
+                },
+                "periodo": {
+                    "fecha_desde": (
+                        fecha_desde.isoformat() if fecha_desde is not None else None
+                    ),
+                    "fecha_hasta": (
+                        fecha_hasta.isoformat() if fecha_hasta is not None else None
+                    ),
+                },
+                "resumen": {
+                    "vecinos_confirmados": vecinos_confirmados,
+                    "solicitudes_vecinales": resumen_solicitudes["total"],
+                    "solicitudes_documentos": resumen_documentos["total"],
+                    "eventos": resumen_eventos["total"],
+                    "caracterizaciones": total_caracterizaciones,
+                },
+                "solicitudes": resumen_solicitudes,
+                "documentos": resumen_documentos,
+                "eventos": resumen_eventos,
+                "participacion": {
+                    "inscripciones_activas": inscripciones_activas,
+                    "inscripciones_eventos_finalizados": (
+                        inscripciones_eventos_finalizados
+                    ),
+                    "presentes": presentes,
+                    "ausentes": ausentes,
+                    "sin_registro_asistencia": max(
+                        inscripciones_eventos_finalizados - asistencias_registradas,
+                        0,
+                    ),
+                    "porcentaje_asistencia": porcentaje_asistencia,
+                },
+                "caracterizacion": {
+                    "total": total_caracterizaciones,
+                    "minimo_requerido": self.MINIMO_CARACTERIZACIONES,
+                    "datos_disponibles": (
+                        total_caracterizaciones >= self.MINIMO_CARACTERIZACIONES
+                    ),
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+class ExportarDashboardDirectivaCSVView(generics.GenericAPIView):
+    permission_classes = [EsDirectiva]
+
+    def get(self, request):
+        dashboard_response = DashboardDirectivaView().get(
+            request,
+        )
+
+        if dashboard_response.status_code != status.HTTP_200_OK:
+            return dashboard_response
+
+        datos = dashboard_response.data
+
+        response = HttpResponse(
+            content_type="text/csv; charset=utf-8",
+        )
+
+        response["Content-Disposition"] = (
+            'attachment; filename="reporte_directiva.csv"'
+        )
+
+        response.write("\ufeff")
+
+        writer = csv.writer(response)
+
+        writer.writerow(
+            [
+                "Reporte agregado de Directiva",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Junta de Vecinos",
+                datos["junta"]["nombre"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Fecha desde",
+                datos["periodo"]["fecha_desde"] or "Sin filtro",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Fecha hasta",
+                datos["periodo"]["fecha_hasta"] or "Sin filtro",
+            ]
+        )
+
+        writer.writerow([])
+
+        writer.writerow(
+            [
+                "RESUMEN GENERAL",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Indicador",
+                "Valor",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Vecinos confirmados",
+                datos["resumen"]["vecinos_confirmados"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Solicitudes vecinales",
+                datos["resumen"]["solicitudes_vecinales"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Solicitudes de documentos",
+                datos["resumen"]["solicitudes_documentos"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Eventos",
+                datos["resumen"]["eventos"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Caracterizaciones",
+                datos["resumen"]["caracterizaciones"],
+            ]
+        )
+
+        writer.writerow([])
+
+        writer.writerow(
+            [
+                "SOLICITUDES VECINALES",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Total",
+                datos["solicitudes"]["total"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Consultas",
+                datos["solicitudes"]["consultas"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Reclamos",
+                datos["solicitudes"]["reclamos"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Solicitudes",
+                datos["solicitudes"]["solicitudes"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Pendientes",
+                datos["solicitudes"]["pendientes"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "En proceso",
+                datos["solicitudes"]["en_proceso"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Respondidas",
+                datos["solicitudes"]["respondidas"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Cerradas",
+                datos["solicitudes"]["cerradas"],
+            ]
+        )
+
+        writer.writerow([])
+
+        writer.writerow(
+            [
+                "SOLICITUDES DE DOCUMENTOS",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Total",
+                datos["documentos"]["total"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Pendientes",
+                datos["documentos"]["pendientes"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "En revisión",
+                datos["documentos"]["en_revision"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Aprobadas",
+                datos["documentos"]["aprobadas"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Rechazadas",
+                datos["documentos"]["rechazadas"],
+            ]
+        )
+
+        writer.writerow([])
+
+        writer.writerow(
+            [
+                "EVENTOS",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Total",
+                datos["eventos"]["total"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Programados",
+                datos["eventos"]["programados"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Finalizados",
+                datos["eventos"]["finalizados"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Cancelados",
+                datos["eventos"]["cancelados"],
+            ]
+        )
+
+        writer.writerow([])
+
+        writer.writerow(
+            [
+                "PARTICIPACIÓN",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Inscripciones activas",
+                datos["participacion"]["inscripciones_activas"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Inscripciones en eventos finalizados",
+                datos["participacion"][
+                    "inscripciones_eventos_finalizados"
+                ],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Presentes",
+                datos["participacion"]["presentes"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Ausentes",
+                datos["participacion"]["ausentes"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Sin registro de asistencia",
+                datos["participacion"][
+                    "sin_registro_asistencia"
+                ],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Porcentaje de asistencia",
+                f'{datos["participacion"]["porcentaje_asistencia"]}%',
+            ]
+        )
+
+        writer.writerow([])
+
+        writer.writerow(
+            [
+                "CARACTERIZACIÓN COMUNITARIA",
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Total de caracterizaciones",
+                datos["caracterizacion"]["total"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Mínimo requerido",
+                datos["caracterizacion"]["minimo_requerido"],
+            ]
+        )
+
+        writer.writerow(
+            [
+                "Datos disponibles",
+                (
+                    "Sí"
+                    if datos["caracterizacion"]["datos_disponibles"]
+                    else "No"
+                ),
+            ]
+        )
+
+        return response
