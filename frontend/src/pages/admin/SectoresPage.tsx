@@ -25,6 +25,11 @@ function SectoresPage() {
 
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState('')
+    const [filtroJunta, setFiltroJunta] =
+        useState('TODAS')
+
+    const [filtroSector, setFiltroSector] =
+        useState('TODOS')
     const [juntaSeleccionada, setJuntaSeleccionada] = useState('')
     const [nombre, setNombre] = useState('')
     const [descripcion, setDescripcion] = useState('')
@@ -249,6 +254,33 @@ function SectoresPage() {
     const juntasActivas =
         juntas.filter((junta) => junta.activa).length
 
+
+    const sectoresFiltroDisponibles = sectores.filter(
+        (sector) =>
+            filtroJunta === 'TODAS' ||
+            sector.junta_vecinos === Number(filtroJunta),
+    )
+
+    const nombresSectoresDisponibles = Array.from(
+        new Set(
+            sectoresFiltroDisponibles.map(
+                (sector) => sector.nombre,
+            ),
+        ),
+    ).sort((a, b) => a.localeCompare(b, 'es'))
+
+    const sectoresFiltrados = sectores.filter((sector) => {
+        const coincideJunta =
+            filtroJunta === 'TODAS' ||
+            sector.junta_vecinos === Number(filtroJunta)
+
+        const coincideSector =
+            filtroSector === 'TODOS' ||
+            sector.nombre === filtroSector
+
+        return coincideJunta && coincideSector
+    })
+
     const formatearFecha = (fecha: string) => {
         return new Date(fecha).toLocaleDateString(
             'es-CL',
@@ -375,11 +407,10 @@ function SectoresPage() {
 
                 {/* Formulario */}
                 <div
-                    className={`mb-6 overflow-hidden rounded-2xl border bg-base-100 shadow-sm ${
-                        sectorEditando
-                            ? 'border-amber-500/40'
-                            : 'border-cyan-500/30'
-                    }`}
+                    className={`mb-6 overflow-hidden rounded-2xl border bg-base-100 shadow-sm ${sectorEditando
+                        ? 'border-amber-500/40'
+                        : 'border-cyan-500/30'
+                        }`}
                 >
                     <div className="border-b border-base-300 p-6">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -595,154 +626,213 @@ function SectoresPage() {
                     <>
                         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                             <div>
-                                <h2 className="text-2xl font-bold">
-                                    Sectores registrados
-                                </h2>
-
-                                <p className="mt-1 text-base-content/60">
-                                    Revisa y edita los sectores asociados a las
-                                    juntas.
+                                <h2>Sectores registrados</h2>
+                                <p>
+                                    Revisa y edita los sectores asociados a las juntas.
                                 </p>
                             </div>
 
-                            {sectores.length > 0 && (
-                                <span className="badge badge-outline badge-lg">
-                                    {sectores.length}{' '}
-                                    {sectores.length === 1
-                                        ? 'sector'
-                                        : 'sectores'}
-                                </span>
-                            )}
-                        </div>
-
-                        {sectores.length === 0 ? (
-                            <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
-                                <div className="mx-auto max-w-md">
-                                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500/10 text-xl font-bold text-cyan-700">
-                                        S
+                            <div className="flex flex-wrap items-end gap-3">
+                                <label className="form-control w-56">
+                                    <div className="label">
+                                        <span className="label-text font-medium">
+                                            Junta de Vecinos
+                                        </span>
                                     </div>
 
-                                    <h3 className="text-xl font-bold">
-                                        No existen sectores registrados
-                                    </h3>
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={filtroJunta}
+                                        onChange={(event) => {
+                                            setFiltroJunta(event.target.value)
+                                            setFiltroSector('TODOS')
+                                        }}
+                                    >
+                                        <option value="TODAS">
+                                            Todas las juntas
+                                        </option>
 
-                                    <p className="mt-2 text-base-content/60">
-                                        Crea el primer sector utilizando el
-                                        formulario superior.
-                                    </p>
-                                </div>
+                                        {juntas.map((junta) => (
+                                            <option
+                                                key={junta.id}
+                                                value={String(junta.id)}
+                                            >
+                                                {junta.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                <label className="form-control w-52">
+                                    <div className="label">
+                                        <span className="label-text font-medium">
+                                            Sector
+                                        </span>
+                                    </div>
+
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={filtroSector}
+                                        onChange={(event) =>
+                                            setFiltroSector(event.target.value)
+                                        }
+                                    >
+                                        <option value="TODOS">
+                                            Todos los sectores
+                                        </option>
+
+                                        {nombresSectoresDisponibles.map(
+                                            (nombreSector) => (
+                                                <option
+                                                    key={nombreSector}
+                                                    value={nombreSector}
+                                                >
+                                                    {nombreSector}
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
+                                </label>
+
+                                {sectores.length > 0 && (
+                                    <span className="badge badge-outline">
+                                        {sectoresFiltrados.length}{' '}
+                                        {sectoresFiltrados.length === 1
+                                            ? 'sector'
+                                            : 'sectores'}
+                                    </span>
+                                )}
                             </div>
-                        ) : (
-                            <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-                                <div className="overflow-x-auto">
-                                    <table className="table">
-                                        <thead className="bg-base-200/70">
-                                            <tr>
-                                                <th>Sector</th>
-                                                <th>Junta de Vecinos</th>
-                                                <th>Descripción</th>
-                                                <th>Estado</th>
-                                                <th>Creación</th>
-                                                <th className="text-right">
-                                                    Acciones
-                                                </th>
-                                            </tr>
-                                        </thead>
+                        </div>
 
-                                        <tbody>
-                                            {sectores.map((sector) => (
-                                                <tr
-                                                    key={sector.id}
+                {sectoresFiltrados.length === 0 ? (
+                    <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                        <div className="mx-auto max-w-md">
+                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500/10 text-xl font-bold text-cyan-700">
+                                S
+                            </div>
+
+                            <h3 className="text-xl font-bold">
+                                No existen sectores registrados
+                            </h3>
+
+                            <p className="mt-2 text-base-content/60">
+                                Crea el primer sector utilizando el
+                                formulario superior.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="table">
+                                <thead className="bg-base-200/70">
+                                    <tr>
+                                        <th>Sector</th>
+                                        <th>Junta de Vecinos</th>
+                                        <th>Descripción</th>
+                                        <th>Estado</th>
+                                        <th>Creación</th>
+                                        <th className="text-right">
+                                            Acciones
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {sectoresFiltrados.map((sector) => (
+                                        <tr
+                                            key={sector.id}
+                                            className={
+                                                sectorEditando?.id === sector.id
+                                                    ? 'bg-warning/5'
+                                                    : 'hover'
+                                            }
+                                        >
+                                            <td>
+                                                <div className="flex min-w-[180px] items-center gap-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-sm font-bold text-cyan-700">
+                                                        {sector.nombre
+                                                            .charAt(0)
+                                                            .toUpperCase()}
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="font-semibold">
+                                                            {sector.nombre}
+                                                        </p>
+
+                                                        <p className="mt-1 text-xs text-base-content/45">
+                                                            Sector #{sector.id}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <span className="font-medium">
+                                                    {sector.junta_nombre}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <span className="block max-w-xs text-sm text-base-content/70">
+                                                    {sector.descripcion ||
+                                                        'Sin descripción'}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <span
                                                     className={
-                                                        sectorEditando?.id === sector.id
-                                                            ? 'bg-warning/5'
-                                                            : 'hover'
+                                                        sector.activo
+                                                            ? 'badge badge-success badge-outline'
+                                                            : 'badge badge-ghost'
                                                     }
                                                 >
-                                                    <td>
-                                                        <div className="flex min-w-[180px] items-center gap-3">
-                                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-sm font-bold text-cyan-700">
-                                                                {sector.nombre
-                                                                    .charAt(0)
-                                                                    .toUpperCase()}
-                                                            </div>
+                                                    {sector.activo
+                                                        ? 'Activo'
+                                                        : 'Inactivo'}
+                                                </span>
+                                            </td>
 
-                                                            <div>
-                                                                <p className="font-semibold">
-                                                                    {sector.nombre}
-                                                                </p>
+                                            <td className="whitespace-nowrap text-sm text-base-content/60">
+                                                {formatearFecha(
+                                                    sector.fecha_creacion
+                                                )}
+                                            </td>
 
-                                                                <p className="mt-1 text-xs text-base-content/45">
-                                                                    Sector #{sector.id}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-
-                                                    <td>
-                                                        <span className="font-medium">
-                                                            {sector.junta_nombre}
-                                                        </span>
-                                                    </td>
-
-                                                    <td>
-                                                        <span className="block max-w-xs text-sm text-base-content/70">
-                                                            {sector.descripcion ||
-                                                                'Sin descripción'}
-                                                        </span>
-                                                    </td>
-
-                                                    <td>
-                                                        <span
-                                                            className={
-                                                                sector.activo
-                                                                    ? 'badge badge-success badge-outline'
-                                                                    : 'badge badge-ghost'
-                                                            }
-                                                        >
-                                                            {sector.activo
-                                                                ? 'Activo'
-                                                                : 'Inactivo'}
-                                                        </span>
-                                                    </td>
-
-                                                    <td className="whitespace-nowrap text-sm text-base-content/60">
-                                                        {formatearFecha(
-                                                            sector.fecha_creacion
-                                                        )}
-                                                    </td>
-
-                                                    <td>
-                                                        <div className="flex justify-end">
-                                                            <button
-                                                                type="button"
-                                                                className={
-                                                                    sectorEditando?.id === sector.id
-                                                                        ? 'btn btn-sm btn-warning'
-                                                                        : 'btn btn-sm btn-outline'
-                                                                }
-                                                                disabled={guardando}
-                                                                onClick={() =>
-                                                                    comenzarEdicion(sector)
-                                                                }
-                                                            >
-                                                                {sectorEditando?.id === sector.id
-                                                                    ? 'Editando'
-                                                                    : 'Editar'}
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </>
+                                            <td>
+                                                <div className="flex justify-end">
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            sectorEditando?.id === sector.id
+                                                                ? 'btn btn-sm btn-warning'
+                                                                : 'btn btn-sm btn-outline'
+                                                        }
+                                                        disabled={guardando}
+                                                        onClick={() =>
+                                                            comenzarEdicion(sector)
+                                                        }
+                                                    >
+                                                        {sectorEditando?.id === sector.id
+                                                            ? 'Editando'
+                                                            : 'Editar'}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 )}
-            </section>
-        </main>
+            </>
+                )}
+        </section>
+        </main >
     )
 }
 

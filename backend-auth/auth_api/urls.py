@@ -11,6 +11,7 @@ from .views import (
     health,
     PerfilVecinoView,
     UsuarioAdministracionListView,
+    CrearUsuarioVecinoAdminView,
     EstadoCuentaUsuarioView,
     RolUsuarioAdministracionView,
     RolAdministracionListView,
@@ -31,6 +32,11 @@ urlpatterns = [
         "admin/usuarios/",
         UsuarioAdministracionListView.as_view(),
         name="admin-usuarios-list",
+    ),
+    path(
+        "admin/usuarios/vecino/",
+        CrearUsuarioVecinoAdminView.as_view(),
+        name="admin-usuario-vecino-create",
     ),
     path(
         "admin/usuarios/<int:usuario_id>/estado/",

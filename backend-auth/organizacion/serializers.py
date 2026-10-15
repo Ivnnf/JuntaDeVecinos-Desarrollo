@@ -272,6 +272,15 @@ class IntegranteDirectivaSerializer(serializers.ModelSerializer):
         source="usuario.username",
         read_only=True,
     )
+    sector_id = serializers.IntegerField(
+    source="usuario.sector.id",
+    read_only=True,
+    )
+
+    sector_nombre = serializers.CharField(
+    source="usuario.sector.nombre",
+    read_only=True,
+    )
 
     usuario_nombres = serializers.CharField(
         source="usuario.nombres",
@@ -307,6 +316,8 @@ class IntegranteDirectivaSerializer(serializers.ModelSerializer):
             "usuario_username",
             "usuario_nombres",
             "usuario_apellido_paterno",
+            "sector_id",
+            "sector_nombre",
             "cargo",
             "cargo_nombre",
             "junta_id",

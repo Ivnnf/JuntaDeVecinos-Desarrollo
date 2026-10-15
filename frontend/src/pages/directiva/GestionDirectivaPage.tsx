@@ -27,6 +27,8 @@ type IntegranteDirectivaActual = {
     usuario_username: string
     usuario_nombres: string
     usuario_apellido_paterno: string
+    sector_id: number | null
+    sector_nombre: string | null
     cargo: number
     cargo_nombre: string
     junta_id: number
@@ -55,6 +57,9 @@ function GestionDirectivaPage() {
 
     const [integrantesActuales, setIntegrantesActuales] =
         useState<IntegranteDirectivaActual[]>([])
+
+    const [filtroSectorIntegrantes, setFiltroSectorIntegrantes] =
+        useState('TODOS')
 
     const [cargos, setCargos] =
         useState<Cargo[]>([])
@@ -369,6 +374,49 @@ function GestionDirectivaPage() {
             setReasignandoCargo(false)
         }
     }
+    const sectoresIntegrantesDisponibles = integrantesActuales
+        .filter(
+            (integrante) =>
+                integrante.sector_id !== null &&
+                integrante.sector_nombre,
+        )
+        .reduce<{ id: number; nombre: string }[]>(
+            (acumulador, integrante) => {
+                const yaExiste = acumulador.some(
+                    (sector) =>
+                        sector.id === integrante.sector_id,
+                )
+
+                if (!yaExiste) {
+                    acumulador.push({
+                        id: integrante.sector_id as number,
+                        nombre: integrante.sector_nombre as string,
+                    })
+                }
+
+                return acumulador
+            },
+            [],
+        )
+        .sort((a, b) =>
+            a.nombre.localeCompare(b.nombre, 'es'),
+        )
+
+    const integrantesFiltrados =
+        integrantesActuales.filter((integrante) => {
+            if (filtroSectorIntegrantes === 'TODOS') {
+                return true
+            }
+
+            if (filtroSectorIntegrantes === 'SIN_SECTOR') {
+                return integrante.sector_id === null
+            }
+
+            return (
+                integrante.sector_id ===
+                Number(filtroSectorIntegrantes)
+            )
+        })
 
     return (
         <main className="min-h-screen bg-base-200 px-4 py-8">
@@ -498,12 +546,56 @@ function GestionDirectivaPage() {
                                         </p>
                                     </div>
 
-                                    <span className="badge badge-outline badge-lg">
-                                        {integrantesActuales.length}{' '}
-                                        {integrantesActuales.length === 1
-                                            ? 'integrante'
-                                            : 'integrantes'}
-                                    </span>
+                                    <div className="flex flex-wrap items-end gap-3">
+                                        <label className="form-control w-52">
+                                            <div className="label">
+                                                <span className="label-text font-medium">
+                                                    Sector
+                                                </span>
+                                            </div>
+
+                                            <select
+                                                className="select select-bordered w-full"
+                                                value={filtroSectorIntegrantes}
+                                                onChange={(event) =>
+                                                    setFiltroSectorIntegrantes(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                            >
+                                                <option value="TODOS">
+                                                    Todos los sectores
+                                                </option>
+
+                                                {sectoresIntegrantesDisponibles.map(
+                                                    (sector) => (
+                                                        <option
+                                                            key={sector.id}
+                                                            value={String(sector.id)}
+                                                        >
+                                                            {sector.nombre}
+                                                        </option>
+                                                    ),
+                                                )}
+
+                                                {integrantesActuales.some(
+                                                    (integrante) =>
+                                                        integrante.sector_id === null,
+                                                ) && (
+                                                        <option value="SIN_SECTOR">
+                                                            Sin sector
+                                                        </option>
+                                                    )}
+                                            </select>
+                                        </label>
+
+                                        <span className="badge badge-outline badge-lg">
+                                            {integrantesFiltrados.length}{' '}
+                                            {integrantesFiltrados.length === 1
+                                                ? 'integrante'
+                                                : 'integrantes'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -513,6 +605,7 @@ function GestionDirectivaPage() {
                                         <tr>
                                             <th className="pl-6">Nombre</th>
                                             <th>Usuario</th>
+                                            <th>Sector</th>
                                             <th>Cargo</th>
                                             <th>Estado</th>
                                             <th className="pr-6 text-right">
@@ -522,7 +615,7 @@ function GestionDirectivaPage() {
                                     </thead>
 
                                     <tbody>
-                                        {integrantesActuales.map((integrante) => (
+                                        {integrantesFiltrados.map((integrante) => (
                                             <tr
                                                 key={integrante.id}
                                                 className="transition-colors hover:bg-base-200/50"
@@ -558,7 +651,17 @@ function GestionDirectivaPage() {
                                                 <td className="font-medium">
                                                     {integrante.usuario_username}
                                                 </td>
-
+                                                <td>
+                                                    {integrante.sector_nombre ? (
+                                                        <span className="badge badge-info badge-outline">
+                                                            {integrante.sector_nombre}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-sm text-base-content/40">
+                                                            Sin sector
+                                                        </span>
+                                                    )}
+                                                </td>
                                                 <td>
                                                     <span className="badge badge-outline">
                                                         {integrante.cargo_nombre}
@@ -594,10 +697,10 @@ function GestionDirectivaPage() {
                                             </tr>
                                         ))}
 
-                                        {integrantesActuales.length === 0 && (
+                                        {integrantesFiltrados.length === 0 && (
                                             <tr>
                                                 <td
-                                                    colSpan={5}
+                                                    colSpan={6}
                                                     className="py-10 text-center text-base-content/60"
                                                 >
                                                     No existen integrantes registrados.
@@ -855,12 +958,12 @@ function GestionDirectivaPage() {
                                                 integranteReasignando.id,
                                         )
                                     }).length === 0 && (
-                                        <div className="alert alert-warning mt-4">
-                                            <span>
-                                                No existen otros cargos disponibles para reasignar.
-                                            </span>
-                                        </div>
-                                    )}
+                                            <div className="alert alert-warning mt-4">
+                                                <span>
+                                                    No existen otros cargos disponibles para reasignar.
+                                                </span>
+                                            </div>
+                                        )}
 
                                     <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-base-300 pt-6">
                                         <button

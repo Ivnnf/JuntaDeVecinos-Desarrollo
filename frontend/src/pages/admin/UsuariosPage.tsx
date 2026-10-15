@@ -36,7 +36,44 @@ type RolDisponible = {
     nombre: string
 }
 
+type JuntaDisponible = {
+    id: number
+    nombre: string
+}
+
+type SectorDisponible = {
+    id: number
+    nombre: string
+    junta_vecinos: number
+}
+
 function UsuariosPage() {
+
+    const [mostrarCrearVecino, setMostrarCrearVecino] =
+        useState(false)
+
+    const [creandoVecino, setCreandoVecino] =
+        useState(false)
+
+    const [juntas, setJuntas] =
+        useState<JuntaDisponible[]>([])
+
+    const [sectores, setSectores] =
+        useState<SectorDisponible[]>([])
+
+    const [formVecino, setFormVecino] = useState({
+        username: '',
+        rut: '',
+        nombres: '',
+        apellido_paterno: '',
+        apellido_materno: '',
+        email: '',
+        password: '',
+        confirmar_password: '',
+        junta_id: '',
+        sector_id: '',
+    })
+
     const [mostrarCrearMunicipal, setMostrarCrearMunicipal] =
         useState(false)
 
@@ -170,6 +207,56 @@ function UsuariosPage() {
         }
 
         cargarDatos()
+    }, [])
+
+    useEffect(() => {
+        const cargarDatosTerritoriales = async () => {
+            try {
+                const [
+                    responseJuntas,
+                    responseSectores,
+                ] = await Promise.all([
+                    fetch(
+                        'http://localhost:8000/api/organizacion/registro/juntas-disponibles/',
+                        {
+                            credentials: 'include',
+                        },
+                    ),
+                    fetch(
+                        'http://localhost:8000/api/organizacion/registro/sectores-disponibles/',
+                        {
+                            credentials: 'include',
+                        },
+                    ),
+                ])
+
+                if (
+                    !responseJuntas.ok ||
+                    !responseSectores.ok
+                ) {
+                    throw new Error(
+                        'No fue posible cargar juntas y sectores.',
+                    )
+                }
+
+                const juntasData =
+                    await responseJuntas.json()
+
+                const sectoresData =
+                    await responseSectores.json()
+
+                setJuntas(juntasData)
+                setSectores(sectoresData)
+            } catch (error) {
+                setError(
+                    error instanceof Error
+                        ? error.message
+                        : 'No fue posible cargar la información territorial.',
+                )
+            }
+        }
+
+        void cargarDatosTerritoriales()
     }, [])
 
     const cambiarEstadoUsuario = async (
@@ -337,6 +424,81 @@ function UsuariosPage() {
             setCreandoMunicipal(false)
         }
     }
+
+    const crearUsuarioVecino = async () => {
+        try {
+            setCreandoVecino(true)
+            setError('')
+            setMensaje('')
+
+            const response = await fetch(
+                'http://localhost:8000/api/auth/admin/usuarios/vecino/',
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...formVecino,
+                        junta_id: Number(formVecino.junta_id),
+                        sector_id: Number(formVecino.sector_id),
+                    }),
+                },
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                const primerError = Object.values(data)
+                    .flat()
+                    .find(
+                        (valor) =>
+                            typeof valor === 'string',
+                    )
+
+                throw new Error(
+                    typeof primerError === 'string'
+                        ? primerError
+                        : 'No fue posible crear el vecino.',
+                )
+            }
+
+            setUsuarios((actuales) => [
+                ...actuales,
+                data.usuario,
+            ])
+
+            setFormVecino({
+                username: '',
+                rut: '',
+                nombres: '',
+                apellido_paterno: '',
+                apellido_materno: '',
+                email: '',
+                password: '',
+                confirmar_password: '',
+                junta_id: '',
+                sector_id: '',
+            })
+
+            setMostrarCrearVecino(false)
+
+            setMensaje(
+                data.message ??
+                'Vecino creado y asociado correctamente.',
+            )
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Ocurrió un error inesperado.',
+            )
+        } finally {
+            setCreandoVecino(false)
+        }
+    }
+
     const obtenerNombreCompleto = (
         usuario: UsuarioAdministracion
     ) => {
@@ -527,6 +689,11 @@ function UsuariosPage() {
                     (rol) => rol.activo,
                 ),
         ).length
+    const sectoresVecinoDisponibles = sectores.filter(
+        (sector) =>
+            formVecino.junta_id !== '' &&
+            sector.junta_vecinos === Number(formVecino.junta_id),
+    )
     return (
         <main className="min-h-screen bg-base-200 px-4 py-8">
             <section className="mx-auto w-full max-w-7xl">
@@ -551,7 +718,20 @@ function UsuariosPage() {
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap gap-3">
+
+
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                className="btn btn-success"
+                                onClick={() => {
+                                    setError('')
+                                    setMensaje('')
+                                    setMostrarCrearVecino(true)
+                                }}
+                            >
+                                + Crear vecino
+                            </button>
                             <button
                                 type="button"
                                 className="btn btn-primary"
@@ -1054,6 +1234,323 @@ function UsuariosPage() {
                     </>
                 )}
             </section>
+
+            {/* Modal crear vecino */}
+            {mostrarCrearVecino && (
+                <div className="modal modal-open">
+                    <div className="modal-box max-w-2xl rounded-2xl">
+                        <div className="mb-5">
+                            <h3 className="text-2xl font-bold">
+                                Crear vecino
+                            </h3>
+
+                            <p className="mt-1 text-sm text-base-content/60">
+                                Registra presencialmente a un vecino y asócialo
+                                directamente a su Junta de Vecinos y sector.
+                            </p>
+                        </div>
+
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault()
+                                void crearUsuarioVecino()
+                            }}
+                        >
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Nombre de usuario
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formVecino.username}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                username: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            RUT
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        placeholder="12.345.678-5"
+                                        value={formVecino.rut}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                rut: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Nombres
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formVecino.nombres}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                nombres: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Apellido paterno
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formVecino.apellido_paterno}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                apellido_paterno:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Apellido materno
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={formVecino.apellido_materno}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                apellido_materno:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Correo electrónico
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="email"
+                                        className="input input-bordered w-full"
+                                        value={formVecino.email}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                email: event.target.value,
+                                            }))
+                                        }
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Junta de Vecinos
+                                        </span>
+                                    </div>
+
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={formVecino.junta_id}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                junta_id: event.target.value,
+                                                sector_id: '',
+                                            }))
+                                        }
+                                        required
+                                    >
+                                        <option value="">
+                                            Seleccionar Junta
+                                        </option>
+
+                                        {juntas.map((junta) => (
+                                            <option
+                                                key={junta.id}
+                                                value={String(junta.id)}
+                                            >
+                                                {junta.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Sector
+                                        </span>
+                                    </div>
+
+                                    <select
+                                        className="select select-bordered w-full"
+                                        value={formVecino.sector_id}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                sector_id: event.target.value,
+                                            }))
+                                        }
+                                        disabled={!formVecino.junta_id}
+                                        required
+                                    >
+                                        <option value="">
+                                            {formVecino.junta_id
+                                                ? 'Seleccionar sector'
+                                                : 'Primero selecciona una Junta'}
+                                        </option>
+
+                                        {sectoresVecinoDisponibles.map(
+                                            (sector) => (
+                                                <option
+                                                    key={sector.id}
+                                                    value={String(sector.id)}
+                                                >
+                                                    {sector.nombre}
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Contraseña inicial
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="password"
+                                        className="input input-bordered w-full"
+                                        value={formVecino.password}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                password: event.target.value,
+                                            }))
+                                        }
+                                        minLength={8}
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-control">
+                                    <div className="label">
+                                        <span className="label-text font-semibold">
+                                            Confirmar contraseña
+                                        </span>
+                                    </div>
+
+                                    <input
+                                        type="password"
+                                        className="input input-bordered w-full"
+                                        value={formVecino.confirmar_password}
+                                        onChange={(event) =>
+                                            setFormVecino((actual) => ({
+                                                ...actual,
+                                                confirmar_password:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                        minLength={8}
+                                        required
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="alert alert-success mt-5">
+                                <span>
+                                    El usuario será creado con rol Vecino y su
+                                    asociación territorial quedará confirmada
+                                    automáticamente por el Administrador.
+                                </span>
+                            </div>
+
+                            <div className="modal-action">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    disabled={creandoVecino}
+                                    onClick={() =>
+                                        setMostrarCrearVecino(false)
+                                    }
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="btn btn-success"
+                                    disabled={creandoVecino}
+                                >
+                                    {creandoVecino && (
+                                        <span className="loading loading-spinner loading-sm" />
+                                    )}
+
+                                    {creandoVecino
+                                        ? 'Creando...'
+                                        : 'Crear vecino'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div
+                        className="modal-backdrop"
+                        onClick={() => {
+                            if (!creandoVecino) {
+                                setMostrarCrearVecino(false)
+                            }
+                        }}
+                    />
+                </div>
+            )}
+
             {/* Modal crear usuario Municipal */}
             {mostrarCrearMunicipal && (
                 <div className="modal modal-open">

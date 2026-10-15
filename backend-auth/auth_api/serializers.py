@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.utils import timezone
 
 from profiles.models import Rol, UsuarioRol
 from rest_framework import serializers
@@ -17,6 +18,7 @@ from organizacion.services.validacion_residencia import (
     determinar_estado_verificacion,
     calcular_hash_archivo,
 )
+
 
 
 class LoginSerializer(serializers.Serializer):
@@ -701,6 +703,215 @@ class CrearUsuarioMunicipalSerializer(serializers.Serializer):
         UsuarioRol.objects.create(
             usuario=usuario,
             rol=rol_municipal,
+            activo=True,
+        )
+
+        return usuario
+class CrearUsuarioVecinoAdminSerializer(
+    CrearUsuarioMunicipalSerializer
+):
+    junta_id = serializers.IntegerField(
+        write_only=True,
+    )
+
+    sector_id = serializers.IntegerField(
+        write_only=True,
+    )
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        junta_id = attrs.get("junta_id")
+        sector_id = attrs.get("sector_id")
+
+        sector = (
+            Sector.objects.select_related(
+                "junta_vecinos",
+            )
+            .filter(
+                id=sector_id,
+                activo=True,
+                junta_vecinos_id=junta_id,
+                junta_vecinos__activa=True,
+            )
+            .first()
+        )
+
+        if sector is None:
+            raise serializers.ValidationError(
+                {
+                    "sector_id": (
+                        "El sector seleccionado no pertenece "
+                        "a la Junta de Vecinos indicada o no "
+                        "se encuentra activo."
+                    )
+                }
+            )
+
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        validated_data.pop(
+            "confirmar_password"
+        )
+
+        password = validated_data.pop(
+            "password"
+        )
+
+        junta_id = validated_data.pop(
+            "junta_id"
+        )
+
+        sector_id = validated_data.pop(
+            "sector_id"
+        )
+
+        sector = Sector.objects.select_related(
+            "junta_vecinos",
+        ).get(
+            id=sector_id,
+            junta_vecinos_id=junta_id,
+            activo=True,
+            junta_vecinos__activa=True,
+        )
+
+        request = self.context.get(
+            "request"
+        )
+
+        administrador = (
+            request.user
+            if request is not None
+            else None
+        )
+
+        Usuario = get_user_model()
+
+        usuario = Usuario.objects.create_user(
+            password=password,
+            is_active=True,
+            sector=sector,
+            estado_asociacion_sector=(
+                "CONFIRMADA"
+            ),
+            confirmado_por_usuario=(
+                administrador
+            ),
+            fecha_confirmacion_sector=(
+                timezone.now()
+            ),
+            **validated_data,
+        )
+
+        rol_vecino = Rol.objects.get(
+            nombre__iexact="Vecino"
+        )
+
+        UsuarioRol.objects.create(
+            usuario=usuario,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        return usuario
+
+class CrearUsuarioVecinoAdminSerializer(
+    CrearUsuarioMunicipalSerializer
+):
+    junta_id = serializers.IntegerField(
+        write_only=True,
+    )
+
+    sector_id = serializers.IntegerField(
+        write_only=True,
+    )
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        junta_id = attrs.get("junta_id")
+        sector_id = attrs.get("sector_id")
+
+        sector = (
+            Sector.objects.select_related(
+                "junta_vecinos"
+            )
+            .filter(
+                id=sector_id,
+                activo=True,
+                junta_vecinos_id=junta_id,
+                junta_vecinos__activa=True,
+            )
+            .first()
+        )
+
+        if sector is None:
+            raise serializers.ValidationError(
+                {
+                    "sector_id": (
+                        "El sector seleccionado no pertenece "
+                        "a la Junta de Vecinos indicada o no "
+                        "se encuentra activo."
+                    )
+                }
+            )
+
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        validated_data.pop(
+            "confirmar_password"
+        )
+
+        password = validated_data.pop(
+            "password"
+        )
+
+        junta_id = validated_data.pop(
+            "junta_id"
+        )
+
+        sector_id = validated_data.pop(
+            "sector_id"
+        )
+
+        sector = Sector.objects.get(
+            id=sector_id,
+            activo=True,
+            junta_vecinos_id=junta_id,
+            junta_vecinos__activa=True,
+        )
+
+        request = self.context.get("request")
+
+        administrador = (
+            request.user
+            if request is not None
+            else None
+        )
+
+        Usuario = get_user_model()
+
+        usuario = Usuario.objects.create_user(
+            password=password,
+            is_active=True,
+            sector=sector,
+            estado_asociacion_sector="CONFIRMADA",
+            confirmado_por_usuario=administrador,
+            fecha_confirmacion_sector=timezone.now(),
+            **validated_data,
+        )
+
+        rol_vecino = Rol.objects.get(
+            nombre__iexact="Vecino"
+        )
+
+        UsuarioRol.objects.create(
+            usuario=usuario,
+            rol=rol_vecino,
             activo=True,
         )
 

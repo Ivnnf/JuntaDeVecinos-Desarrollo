@@ -32,6 +32,7 @@ from .serializers import (
     RolAdministracionSerializer,
     RolUsuarioAdministracionSerializer,
     CrearUsuarioMunicipalSerializer,
+    CrearUsuarioVecinoAdminSerializer,
 )
 
 from utils.token import generar_tokens, refresh_access_token, verificar_token
@@ -407,6 +408,37 @@ class RolAdministracionListView(generics.ListAPIView):
             ]
         ).order_by("nombre")
 
+class CrearUsuarioVecinoAdminView(APIView):
+    permission_classes = [EsAdministrador]
+
+    def post(self, request):
+        serializer = CrearUsuarioVecinoAdminSerializer(
+            data=request.data,
+            context={
+                "request": request,
+            },
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        usuario = serializer.save()
+
+        return Response(
+            {
+                "message": (
+                    "Vecino creado y asociado "
+                    "correctamente."
+                ),
+                "usuario": (
+                    UsuarioAdministracionSerializer(
+                        usuario
+                    ).data
+                ),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class EstadoCuentaUsuarioView(APIView):
     permission_classes = [EsAdministrador]
