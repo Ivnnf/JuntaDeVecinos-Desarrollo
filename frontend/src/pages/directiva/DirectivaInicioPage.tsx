@@ -3,6 +3,13 @@ import CambiarPerfilButton from '../../components/auth/CambiarPerfilButton'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+type PerfilDirectiva = {
+  sector_id: number | null
+  sector_nombre: string | null
+  junta_id: number | null
+  junta_nombre: string | null
+}
+
 type IntegranteDirectiva = {
   id: number
   usuario: number
@@ -37,6 +44,10 @@ type DirectivaVigente = {
 }
 
 function DirectivaInicioPage() {
+
+  const [perfil, setPerfil] =
+    useState<PerfilDirectiva | null>(null)
+
   const [juntaId, setJuntaId] =
     useState<number | null>(null)
 
@@ -91,7 +102,37 @@ function DirectivaInicioPage() {
 
     void cargarJuntaDirectiva()
   }, [])
+  useEffect(() => {
+    const cargarPerfil = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:8000/api/auth/perfil/',
+          {
+            credentials: 'include',
+          },
+        )
 
+        if (!response.ok) {
+          throw new Error(
+            'No fue posible obtener el perfil del usuario.',
+          )
+        }
+
+        const data =
+          (await response.json()) as PerfilDirectiva
+
+        setPerfil(data)
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Ocurrió un error inesperado.',
+        )
+      }
+    }
+
+    void cargarPerfil()
+  }, [])
   useEffect(() => {
     if (juntaId === null) {
       return
@@ -193,7 +234,12 @@ function DirectivaInicioPage() {
                   <h2 className="text-2xl font-bold">
                     {directivaVigente.directiva.junta_nombre}
                   </h2>
-
+                  <p className="mt-2 text-base-content/70">
+                    Sector:{' '}
+                    <strong>
+                      {perfil?.sector_nombre ?? 'Sin sector asociado'}
+                    </strong>
+                  </p>
                   <p className="mt-2 text-base-content/70">
                     Directiva vigente desde{' '}
                     <strong>

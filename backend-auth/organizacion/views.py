@@ -720,6 +720,7 @@ class DirectivaVigenteJuntaView(generics.GenericAPIView):
         integrantes = (
             IntegranteDirectiva.objects.select_related(
                 "usuario",
+                "usuario__sector",
                 "cargo",
                 "directiva",
                 "directiva__junta_vecinos",
@@ -728,11 +729,22 @@ class DirectivaVigenteJuntaView(generics.GenericAPIView):
                 directiva=directiva,
                 activo=True,
             )
-            .order_by(
-                "cargo__nombre",
-                "usuario__apellido_paterno",
-                "usuario__nombres",
+        )
+
+        if not es_administrador(request.user):
+            if request.user.sector_id is None:
+                raise PermissionDenied(
+                    "El usuario no tiene un sector asociado."
+                )
+
+            integrantes = integrantes.filter(
+                usuario__sector_id=request.user.sector_id,
             )
+
+        integrantes = integrantes.order_by(
+            "cargo__nombre",
+            "usuario__apellido_paterno",
+            "usuario__nombres",
         )
 
         return Response(
