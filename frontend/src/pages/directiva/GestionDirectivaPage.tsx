@@ -91,6 +91,12 @@ function GestionDirectivaPage() {
     const [reasignandoCargo, setReasignandoCargo] =
         useState(false)
 
+    const [desactivandoId, setDesactivandoId] =
+        useState<number | null>(null)
+
+    const [integranteADesactivar, setIntegranteADesactivar] =
+        useState<IntegranteDirectivaActual | null>(null)
+
     useEffect(() => {
         const cargarDirectivaActual = async () => {
             try {
@@ -372,6 +378,69 @@ function GestionDirectivaPage() {
             )
         } finally {
             setReasignandoCargo(false)
+        }
+    }
+    const desactivarIntegrante = async (
+        integrante: IntegranteDirectivaActual,
+    ) => {
+        try {
+            setDesactivandoId(integrante.id)
+            setError('')
+
+            const response = await fetch(
+                `http://localhost:8000/api/organizacion/integrantes-directiva/${integrante.id}/`,
+                {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        activo: false,
+                    }),
+                },
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ??
+                    'No fue posible desactivar al integrante.',
+                )
+            }
+
+            setIntegrantesActuales((actuales) =>
+                actuales.filter(
+                    (item) => item.id !== integrante.id,
+                ),
+            )
+
+            if (directivaId !== null) {
+                const responseElegibles = await fetch(
+                    `http://localhost:8000/api/organizacion/directivas/${directivaId}/usuarios-elegibles/`,
+                    {
+                        credentials: 'include',
+                    },
+                )
+
+                if (responseElegibles.ok) {
+                    const usuariosActualizados =
+                        (await responseElegibles.json()) as UsuarioElegible[]
+
+                    setUsuariosElegibles(usuariosActualizados)
+                }
+            }
+
+            setIntegranteADesactivar(null)
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Ocurrió un error inesperado.',
+            )
+        } finally {
+            setDesactivandoId(null)
         }
     }
     const sectoresIntegrantesDisponibles = integrantesActuales
@@ -681,16 +750,35 @@ function GestionDirectivaPage() {
                                                 </td>
 
                                                 <td className="pr-6">
-                                                    <div className="flex justify-end">
+                                                    <div className="flex justify-end gap-2">
                                                         <button
                                                             type="button"
                                                             className="btn btn-sm btn-outline"
+                                                            disabled={desactivandoId === integrante.id}
                                                             onClick={() => {
                                                                 setIntegranteReasignando(integrante)
                                                                 setNuevoCargoSeleccionado('')
                                                             }}
                                                         >
                                                             Reasignar cargo
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-error btn-outline"
+                                                            disabled={desactivandoId === integrante.id}
+                                                            onClick={() => {
+                                                                setIntegranteADesactivar(integrante)
+                                                            }}
+                                                        >
+                                                            {desactivandoId === integrante.id ? (
+                                                                <>
+                                                                    <span className="loading loading-spinner loading-xs" />
+                                                                    Desactivando...
+                                                                </>
+                                                            ) : (
+                                                                'Desactivar'
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -1102,6 +1190,97 @@ function GestionDirectivaPage() {
                             </div>
                         </div>
                     </>
+                )}
+                {integranteADesactivar && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+                        <div className="w-full max-w-md rounded-2xl border border-base-300 bg-base-100 shadow-2xl">
+                            <div className="border-b border-base-300 p-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
+                                        <span className="text-2xl font-bold">!</span>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-xl font-bold">
+                                            Desactivar integrante
+                                        </h3>
+
+                                        <p className="mt-1 text-sm text-base-content/60">
+                                            Esta acción retirará al usuario de la directiva actual.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6">
+                                <div className="rounded-xl bg-base-200/60 p-4">
+                                    <p className="text-sm text-base-content/60">
+                                        Integrante
+                                    </p>
+
+                                    <p className="mt-1 font-semibold">
+                                        {[
+                                            integranteADesactivar.usuario_nombres,
+                                            integranteADesactivar.usuario_apellido_paterno,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' ') ||
+                                            integranteADesactivar.usuario_username}
+                                    </p>
+
+                                    <p className="mt-1 text-sm text-base-content/50">
+                                        {integranteADesactivar.cargo_nombre}
+                                    </p>
+                                </div>
+
+                                <div className="alert alert-warning mt-5">
+                                    <span>
+                                        El integrante dejará de pertenecer a la directiva
+                                        y su rol Directiva será desactivado si no posee
+                                        otra asignación activa.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 border-t border-base-300 p-6">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    disabled={
+                                        desactivandoId === integranteADesactivar.id
+                                    }
+                                    onClick={() =>
+                                        setIntegranteADesactivar(null)
+                                    }
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-error"
+                                    disabled={
+                                        desactivandoId === integranteADesactivar.id
+                                    }
+                                    onClick={() => {
+                                        void desactivarIntegrante(
+                                            integranteADesactivar,
+                                        )
+                                    }}
+                                >
+                                    {desactivandoId ===
+                                        integranteADesactivar.id ? (
+                                        <>
+                                            <span className="loading loading-spinner loading-sm" />
+                                            Desactivando...
+                                        </>
+                                    ) : (
+                                        'Sí, desactivar'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </section>
         </main>

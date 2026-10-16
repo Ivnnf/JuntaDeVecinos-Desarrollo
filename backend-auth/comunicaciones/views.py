@@ -92,8 +92,6 @@ class PublicacionDirectivaListCreateView(generics.ListCreateAPIView):
             sector__junta_vecinos_id=junta_id,
             estado_asociacion_sector="CONFIRMADA",
             is_active=True,
-        ).exclude(
-            id=self.request.user.id,
         )
 
         Notificacion.objects.bulk_create(
@@ -194,6 +192,9 @@ class NotificacionListView(generics.ListAPIView):
                 "publicacion",
                 "publicacion__directiva",
                 "publicacion__directiva__junta_vecinos",
+                "evento",
+                "evento__directiva",
+                "evento__directiva__junta_vecinos",
             )
             .filter(
                 usuario=self.request.user,

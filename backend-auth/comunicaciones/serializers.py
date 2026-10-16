@@ -56,27 +56,20 @@ class AdjuntoPublicacionSerializer(serializers.ModelSerializer):
 
 
 class NotificacionSerializer(serializers.ModelSerializer):
-    titulo_publicacion = serializers.CharField(
-        source="publicacion.titulo",
-        read_only=True,
-    )
-
-    publicacion_id = serializers.IntegerField(
-        source="publicacion.id",
-        read_only=True,
-    )
-
-    junta_nombre = serializers.CharField(
-        source="publicacion.directiva.junta_vecinos.nombre",
-        read_only=True,
-    )
+    tipo = serializers.SerializerMethodField()
+    titulo = serializers.SerializerMethodField()
+    publicacion_id = serializers.SerializerMethodField()
+    evento_id = serializers.SerializerMethodField()
+    junta_nombre = serializers.SerializerMethodField()
 
     class Meta:
         model = Notificacion
         fields = [
             "id",
+            "tipo",
             "publicacion_id",
-            "titulo_publicacion",
+            "evento_id",
+            "titulo",
             "junta_nombre",
             "leida",
             "fecha_creacion",
@@ -85,12 +78,44 @@ class NotificacionSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "id",
+            "tipo",
             "publicacion_id",
-            "titulo_publicacion",
+            "evento_id",
+            "titulo",
             "junta_nombre",
             "fecha_creacion",
             "fecha_lectura",
         ]
+
+    def get_tipo(self, obj):
+        if obj.evento_id:
+            return "EVENTO"
+
+        return "PUBLICACION"
+
+    def get_titulo(self, obj):
+        if obj.evento_id:
+            return obj.evento.titulo
+
+        if obj.publicacion_id:
+            return obj.publicacion.titulo
+
+        return ""
+
+    def get_publicacion_id(self, obj):
+        return obj.publicacion_id
+
+    def get_evento_id(self, obj):
+        return obj.evento_id
+
+    def get_junta_nombre(self, obj):
+        if obj.evento_id:
+            return obj.evento.directiva.junta_vecinos.nombre
+
+        if obj.publicacion_id:
+            return obj.publicacion.directiva.junta_vecinos.nombre
+
+        return ""
 
 
 class PublicacionSerializer(serializers.ModelSerializer):

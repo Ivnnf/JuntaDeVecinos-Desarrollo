@@ -65,6 +65,12 @@ function AsociacionesSectorPage() {
   const [filtroEstado, setFiltroEstado] =
     useState<FiltroEstado>('GENERAL')
 
+  const [filtroJunta, setFiltroJunta] =
+    useState<number | null>(null)
+
+  const [filtroSector, setFiltroSector] =
+    useState<number | null>(null)
+
   const cargarAsociaciones = async () => {
     setCargando(true)
     setError('')
@@ -100,8 +106,51 @@ function AsociacionesSectorPage() {
   useEffect(() => {
     void cargarAsociaciones()
   }, [])
+
+  const juntasDisponibles = Array.from(
+    new Map(
+      asociaciones.map((asociacion) => [
+        asociacion.junta_id,
+        {
+          id: asociacion.junta_id,
+          nombre: asociacion.junta_nombre,
+        },
+      ]),
+    ).values(),
+  ).sort((a, b) => a.nombre.localeCompare(b.nombre))
+
+  const sectoresDisponibles = Array.from(
+    new Map(
+      asociaciones
+        .filter(
+          (asociacion) =>
+            filtroJunta === null ||
+            asociacion.junta_id === filtroJunta,
+        )
+        .map((asociacion) => [
+          asociacion.sector_id,
+          {
+            id: asociacion.sector_id,
+            nombre: asociacion.sector_nombre,
+          },
+        ]),
+    ).values(),
+  ).sort((a, b) => a.nombre.localeCompare(b.nombre))
+
   const asociacionesFiltradas = asociaciones.filter(
     (asociacion) => {
+      const coincideJunta =
+        filtroJunta === null ||
+        asociacion.junta_id === filtroJunta
+
+      const coincideSector =
+        filtroSector === null ||
+        asociacion.sector_id === filtroSector
+
+      if (!coincideJunta || !coincideSector) {
+        return false
+      }
+
       switch (filtroEstado) {
         case 'PENDIENTE':
           return (
@@ -138,6 +187,7 @@ function AsociacionesSectorPage() {
       }
     },
   )
+
   const configuracionFiltro = {
     GENERAL: {
       titulo: 'Todas las solicitudes',
@@ -448,6 +498,68 @@ function AsociacionesSectorPage() {
               >
                 Revisión manual
               </button>
+            </div>
+            {/* Filtros territoriales */}
+            <div className="mb-6 grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Junta vecinal
+                </label>
+
+                <select
+                  className="select select-bordered w-full"
+                  value={filtroJunta ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value
+
+                    setFiltroJunta(
+                      value === '' ? null : Number(value),
+                    )
+
+                    setFiltroSector(null)
+                  }}
+                >
+                  <option value="">Todas las juntas</option>
+
+                  {juntasDisponibles.map((junta) => (
+                    <option
+                      key={junta.id}
+                      value={junta.id}
+                    >
+                      {junta.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Sector
+                </label>
+
+                <select
+                  className="select select-bordered w-full"
+                  value={filtroSector ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value
+
+                    setFiltroSector(
+                      value === '' ? null : Number(value),
+                    )
+                  }}
+                >
+                  <option value="">Todos los sectores</option>
+
+                  {sectoresDisponibles.map((sector) => (
+                    <option
+                      key={sector.id}
+                      value={sector.id}
+                    >
+                      {sector.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             {/* Título sección */}
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">

@@ -5,7 +5,8 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from organizacion.models import IntegranteDirectiva
 from organizacion.permissions import EsDirectiva
-
+from django.contrib.auth import get_user_model
+from comunicaciones.models import Notificacion
 from .models import (
     AsistenciaEvento,
     Evento,
@@ -49,10 +50,33 @@ class EventoDirectivaListCreateView(generics.ListCreateAPIView):
         ).exists()
 
         if not es_integrante_activo:
-            raise PermissionDenied("No puedes crear eventos para esta directiva.")
+            raise PermissionDenied(
+                "No puedes crear eventos para esta directiva."
+            )
 
-        serializer.save(
+        evento = serializer.save(
             creador=self.request.user,
+        )
+
+        Usuario = get_user_model()
+
+        junta_id = evento.directiva.junta_vecinos_id
+
+        usuarios_destinatarios = Usuario.objects.filter(
+            sector__junta_vecinos_id=junta_id,
+            estado_asociacion_sector="CONFIRMADA",
+            is_active=True,
+        )
+
+        Notificacion.objects.bulk_create(
+            [
+                Notificacion(
+                    evento=evento,
+                    usuario=usuario,
+                )
+                for usuario in usuarios_destinatarios
+            ],
+            ignore_conflicts=True,
         )
 
 

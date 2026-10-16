@@ -11,21 +11,15 @@ import CambiarPerfilButton from '../../components/auth/CambiarPerfilButton'
 
 
 type Notificacion = {
-
   id: number
-
-  publicacion_id: number
-
-  titulo_publicacion: string
-
+  tipo: 'PUBLICACION' | 'EVENTO'
+  publicacion_id: number | null
+  evento_id: number | null
+  titulo: string
   junta_nombre: string
-
   leida: boolean
-
   fecha_creacion: string
-
   fecha_lectura: string | null
-
 }
 
 
@@ -38,13 +32,13 @@ type PerfilResumen = {
 
   estado_asociacion_sector:
 
-    | 'PENDIENTE'
+  | 'PENDIENTE'
 
-    | 'CONFIRMADA'
+  | 'CONFIRMADA'
 
-    | 'RECHAZADA'
+  | 'RECHAZADA'
 
-    | null
+  | null
 
 }
 
@@ -464,7 +458,7 @@ function VecinoInicioPage() {
 
           data.detail ||
 
-            'No fue posible marcar la notificación como leída.'
+          'No fue posible marcar la notificación como leída.'
 
         )
 
@@ -923,20 +917,24 @@ function VecinoInicioPage() {
 
 
         .vecino-inicio-bosque
+.vi-header-actions .vi-notification-button {
+  width: 50px;
+  height: 50px;
+  min-height: 50px;
+  padding: 0;
 
-        .vi-header-actions .vi-notification-button {
+  display: grid;
+  place-items: center;
 
-          width: 50px;
+  position: relative;
+  line-height: 0;
+  flex-shrink: 0;
+}
 
-          height: 50px;
-
-          min-height: 50px;
-
-          padding: 0;
-
-          position: relative;
-
-        }
+.vecino-inicio-bosque
+.vi-header-actions .vi-notification-button svg {
+  display: block;
+}
 
 
 
@@ -2054,7 +2052,7 @@ function VecinoInicioPage() {
 
                         <p className="vi-notification-help">
 
-                          Comunicados de tu Junta de Vecinos
+                          Comunicados y eventos de tu Junta de Vecinos
 
                         </p>
 
@@ -2152,7 +2150,7 @@ function VecinoInicioPage() {
 
                             <p style={{ marginTop: 8 }}>
 
-                              Los nuevos comunicados aparecerán aquí.
+                              Los nuevos comunicados y eventos aparecerán aquí.
 
                             </p>
 
@@ -2264,7 +2262,7 @@ function VecinoInicioPage() {
 
                                 <p className="vi-notification-title">
 
-                                  {notificacion.titulo_publicacion}
+                                  {notificacion.titulo}
 
                                 </p>
 
@@ -2283,21 +2281,19 @@ function VecinoInicioPage() {
 
 
                                   <Link
-
-                                    to={`/vecino/publicaciones/${notificacion.publicacion_id}?notificacion=${notificacion.id}`}
-
-                                    className="vi-button vi-button-small"
-
-                                    onClick={() =>
-
-                                      setMostrarNotificaciones(false)
-
+                                    to={
+                                      notificacion.tipo === 'EVENTO'
+                                        ? '/vecino/eventos'
+                                        : `/vecino/publicaciones/${notificacion.publicacion_id}?notificacion=${notificacion.id}`
                                     }
-
+                                    className="vi-button vi-button-small"
+                                    onClick={() =>
+                                      setMostrarNotificaciones(false)
+                                    }
                                   >
-
-                                    Ver comunicado
-
+                                    {notificacion.tipo === 'EVENTO'
+                                      ? 'Ver evento'
+                                      : 'Ver comunicado'}
                                   </Link>
 
 

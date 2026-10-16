@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from organizacion.models import Directiva
-
+from eventos.models import Evento
 
 class Publicacion(models.Model):
     directiva = models.ForeignKey(
@@ -68,6 +68,16 @@ class Notificacion(models.Model):
         Publicacion,
         on_delete=models.CASCADE,
         related_name="notificaciones",
+        null=True,
+        blank=True,
+    )
+
+    evento = models.ForeignKey(
+        Evento,
+        on_delete=models.CASCADE,
+        related_name="notificaciones",
+        null=True,
+        blank=True,
     )
 
     usuario = models.ForeignKey(
@@ -95,17 +105,57 @@ class Notificacion(models.Model):
         ]
 
         constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        publicacion__isnull=False,
+                        evento__isnull=True,
+                    )
+                    | models.Q(
+                        publicacion__isnull=True,
+                        evento__isnull=False,
+                    )
+                ),
+                name="ck_notificacion_un_origen",
+            ),
+
             models.UniqueConstraint(
                 fields=[
                     "publicacion",
                     "usuario",
                 ],
-                name=("uq_notificacion_publicacion_usuario"),
+                condition=models.Q(
+                    publicacion__isnull=False,
+                ),
+                name="uq_notificacion_publicacion_usuario",
+            ),
+
+            models.UniqueConstraint(
+                fields=[
+                    "evento",
+                    "usuario",
+                ],
+                condition=models.Q(
+                    evento__isnull=False,
+                ),
+                name="uq_notificacion_evento_usuario",
             ),
         ]
 
     def __str__(self):
-        return f"{self.usuario} - " f"{self.publicacion.titulo}"
+        if self.publicacion:
+            return (
+                f"{self.usuario} - "
+                f"{self.publicacion.titulo}"
+            )
+
+        if self.evento:
+            return (
+                f"{self.usuario} - "
+                f"{self.evento.titulo}"
+            )
+
+        return str(self.usuario)
 
 
 class Conversacion(models.Model):

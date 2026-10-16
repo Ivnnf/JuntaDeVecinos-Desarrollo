@@ -9,7 +9,8 @@ from django.utils.http import (
     urlsafe_base64_decode,
     urlsafe_base64_encode,
 )
-
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -528,24 +529,7 @@ class RolUsuarioAdministracionView(APIView):
                 {"detail": ("No puedes desactivar tu propio rol " "de Administrador.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if (
-            not activo
-            and rol.nombre.lower() == "directiva"
-            and IntegranteDirectiva.objects.filter(
-                usuario=usuario,
-                activo=True,
-                directiva__estado="VIGENTE",
-            ).exists()
-        ):
-            return Response(
-                {
-                    "detail": (
-                        "No se puede desactivar el rol Directiva "
-                        "mientras el usuario tenga un cargo activo."
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        
 
         asignacion_previa = UsuarioRol.objects.filter(
             usuario=usuario,
@@ -554,13 +538,27 @@ class RolUsuarioAdministracionView(APIView):
 
         estado_anterior = asignacion_previa.activo if asignacion_previa else None
 
-        asignacion, _ = UsuarioRol.objects.update_or_create(
-            usuario=usuario,
-            rol=rol,
-            defaults={
-                "activo": activo,
-            },
-        )
+        with transaction.atomic():
+            asignacion, _ = UsuarioRol.objects.update_or_create(
+                usuario=usuario,
+                rol=rol,
+                defaults={
+                    "activo": activo,
+                },
+            )
+
+            if (
+                rol.nombre.lower() == "directiva"
+                and not activo
+            ):
+                IntegranteDirectiva.objects.filter(
+                    usuario=usuario,
+                    activo=True,
+                    directiva__estado="VIGENTE",
+                ).update(
+                    activo=False,
+                    fecha_fin=timezone.localdate(),
+                )
 
         if estado_anterior is None or estado_anterior != asignacion.activo:
             HistorialGestionUsuario.objects.create(
