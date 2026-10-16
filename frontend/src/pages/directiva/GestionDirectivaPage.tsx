@@ -97,6 +97,34 @@ function GestionDirectivaPage() {
     const [integranteADesactivar, setIntegranteADesactivar] =
         useState<IntegranteDirectivaActual | null>(null)
 
+    const [usuarioSesionId, setUsuarioSesionId] =
+        useState<number | null>(null)
+
+    useEffect(() => {
+        const cargarSesionActual = async () => {
+            try {
+                const response = await fetch(
+                    'http://localhost:8000/api/auth/sesion/',
+                    {
+                        credentials: 'include',
+                    },
+                )
+
+                if (!response.ok) {
+                    return
+                }
+
+                const data = await response.json()
+
+                setUsuarioSesionId(data.id)
+            } catch {
+                // La protección principal está en el backend.
+            }
+        }
+
+        void cargarSesionActual()
+    }, [])
+
     useEffect(() => {
         const cargarDirectivaActual = async () => {
             try {
@@ -486,7 +514,14 @@ function GestionDirectivaPage() {
                 Number(filtroSectorIntegrantes)
             )
         })
-
+    const esPresidenteSesion = integrantesActuales.some(
+        (integrante) =>
+            integrante.usuario === usuarioSesionId &&
+            integrante.activo &&
+            ['presidente', 'presidenta'].includes(
+                integrante.cargo_nombre.trim().toLowerCase(),
+            ),
+    )
     return (
         <main className="min-h-screen bg-base-200 px-4 py-8">
             <section className="mx-auto w-full max-w-6xl">
@@ -751,35 +786,47 @@ function GestionDirectivaPage() {
 
                                                 <td className="pr-6">
                                                     <div className="flex justify-end gap-2">
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-sm btn-outline"
-                                                            disabled={desactivandoId === integrante.id}
-                                                            onClick={() => {
-                                                                setIntegranteReasignando(integrante)
-                                                                setNuevoCargoSeleccionado('')
-                                                            }}
-                                                        >
-                                                            Reasignar cargo
-                                                        </button>
+                                                        {usuarioSesionId === integrante.usuario ? (
+                                                            <span className="badge badge-ghost">
+                                                                Tu cuenta
+                                                            </span>
+                                                        ) : directivaIdDesdeUrl || esPresidenteSesion ? (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-sm btn-outline"
+                                                                    disabled={
+                                                                        desactivandoId === integrante.id
+                                                                    }
+                                                                    onClick={() => {
+                                                                        setIntegranteReasignando(integrante)
+                                                                        setNuevoCargoSeleccionado('')
+                                                                    }}
+                                                                >
+                                                                    Reasignar cargo
+                                                                </button>
 
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-sm btn-error btn-outline"
-                                                            disabled={desactivandoId === integrante.id}
-                                                            onClick={() => {
-                                                                setIntegranteADesactivar(integrante)
-                                                            }}
-                                                        >
-                                                            {desactivandoId === integrante.id ? (
-                                                                <>
-                                                                    <span className="loading loading-spinner loading-xs" />
-                                                                    Desactivando...
-                                                                </>
-                                                            ) : (
-                                                                'Desactivar'
-                                                            )}
-                                                        </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-sm btn-error btn-outline"
+                                                                    disabled={
+                                                                        desactivandoId === integrante.id
+                                                                    }
+                                                                    onClick={() => {
+                                                                        setIntegranteADesactivar(integrante)
+                                                                    }}
+                                                                >
+                                                                    {desactivandoId === integrante.id ? (
+                                                                        <>
+                                                                            <span className="loading loading-spinner loading-xs" />
+                                                                            Desactivando...
+                                                                        </>
+                                                                    ) : (
+                                                                        'Desactivar'
+                                                                    )}
+                                                                </button>
+                                                            </>
+                                                        ) : null}
                                                     </div>
                                                 </td>
                                             </tr>

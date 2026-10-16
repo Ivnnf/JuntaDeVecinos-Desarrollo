@@ -250,6 +250,7 @@ class AsociacionesSectorPendientesView(generics.ListAPIView):
             )
         )
 
+
 class AsociacionesSectorTodasView(generics.ListAPIView):
     serializer_class = AsociacionSectorPendienteSerializer
     permission_classes = [EsAdministrador]
@@ -273,7 +274,8 @@ class AsociacionesSectorTodasView(generics.ListAPIView):
                 "apellido_paterno",
             )
         )
-    
+
+
 class AsociacionesSectorPendientesDirectivaView(generics.ListAPIView):
     serializer_class = AsociacionSectorPendienteSerializer
     permission_classes = [EsDirectiva]
@@ -305,6 +307,8 @@ class AsociacionesSectorPendientesDirectivaView(generics.ListAPIView):
                 "apellido_paterno",
             )
         )
+
+
 class AsociacionesSectorTodasDirectivaView(generics.ListAPIView):
     serializer_class = AsociacionSectorPendienteSerializer
     permission_classes = [EsDirectiva]
@@ -338,6 +342,7 @@ class AsociacionesSectorTodasDirectivaView(generics.ListAPIView):
                 "apellido_paterno",
             )
         )
+
 
 class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
     permission_classes = [EsDirectiva]
@@ -717,25 +722,20 @@ class DirectivaVigenteJuntaView(generics.GenericAPIView):
             if not autorizado:
                 raise PermissionDenied("No puede consultar la directiva de otra junta.")
 
-        integrantes = (
-            IntegranteDirectiva.objects.select_related(
-                "usuario",
-                "usuario__sector",
-                "cargo",
-                "directiva",
-                "directiva__junta_vecinos",
-            )
-            .filter(
-                directiva=directiva,
-                activo=True,
-            )
+        integrantes = IntegranteDirectiva.objects.select_related(
+            "usuario",
+            "usuario__sector",
+            "cargo",
+            "directiva",
+            "directiva__junta_vecinos",
+        ).filter(
+            directiva=directiva,
+            activo=True,
         )
 
         if not es_administrador(request.user):
             if request.user.sector_id is None:
-                raise PermissionDenied(
-                    "El usuario no tiene un sector asociado."
-                )
+                raise PermissionDenied("El usuario no tiene un sector asociado.")
 
             integrantes = integrantes.filter(
                 usuario__sector_id=request.user.sector_id,
@@ -892,9 +892,12 @@ class IntegranteDirectivaDetailView(generics.RetrieveUpdateAPIView):
             "cargo",
         ).all()
 
+        # El Administrador puede consultar cualquier integrante.
         if es_administrador(self.request.user):
             return queryset
 
+        # Un integrante de Directiva solo puede acceder
+        # a integrantes de su propia directiva vigente.
         return queryset.filter(
             directiva__integrantes__usuario=self.request.user,
             directiva__integrantes__activo=True,
@@ -909,16 +912,56 @@ class IntegranteDirectivaDetailView(generics.RetrieveUpdateAPIView):
             integrante.activo,
         )
 
+        # ---------------------------------------------------------
+        # DESACTIVACIÓN DE UN INTEGRANTE
+        # ---------------------------------------------------------
         if integrante.activo and not nuevo_activo:
+
+            # Nadie puede desactivar su propia participación.
+            if integrante.usuario_id == self.request.user.id:
+                raise PermissionDenied(
+                    "No puedes desactivar tu propia participación " "en la directiva."
+                )
+
+            # Si no es Administrador, debe ser Presidente activo
+            # de la misma Directiva.
+            if not es_administrador(self.request.user):
+                cargo_usuario = (
+                    IntegranteDirectiva.objects.filter(
+                        directiva=integrante.directiva,
+                        usuario=self.request.user,
+                        activo=True,
+                        directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+                    )
+                    .values_list("cargo__nombre", flat=True)
+                    .first()
+                )
+
+                es_presidente = (
+                    cargo_usuario is not None
+                    and cargo_usuario.strip().lower() in ("presidente", "presidenta")
+                )
+
+                if not es_presidente:
+                    raise PermissionDenied(
+                        "Solo el Presidente puede desactivar "
+                        "integrantes de la directiva."
+                    )
+
+            # Desactiva la participación y cierra su historial.
             integrante_actualizado = serializer.save(
                 fecha_fin=timezone.localdate(),
             )
 
+            # Revisa si el usuario todavía pertenece activamente
+            # a alguna otra Directiva.
             tiene_otra_asignacion_activa = IntegranteDirectiva.objects.filter(
                 usuario=integrante_actualizado.usuario,
                 activo=True,
             ).exists()
 
+            # Si ya no tiene ninguna participación activa,
+            # también se desactiva su rol Directiva.
             if not tiene_otra_asignacion_activa:
                 UsuarioRol.objects.filter(
                     usuario=integrante_actualizado.usuario,
@@ -927,19 +970,23 @@ class IntegranteDirectivaDetailView(generics.RetrieveUpdateAPIView):
                 ).update(
                     activo=False,
                 )
+
+            # Registra la operación en el historial.
             HistorialGestionUsuario.objects.create(
                 usuario_objetivo=integrante_actualizado.usuario,
                 realizado_por=self.request.user,
                 tipo_cambio=(HistorialGestionUsuario.TipoCambio.CARGO),
-                valor_anterior=integrante_actualizado.cargo.nombre,
+                valor_anterior=(integrante_actualizado.cargo.nombre),
                 valor_nuevo="SIN_CARGO_ACTIVO",
                 detalle=(
                     f"Revocación de cargo en directiva "
                     f"{integrante_actualizado.directiva_id}."
                 ),
             )
+
             return
 
+        # Para cualquier otra actualización permitida.
         serializer.save()
 
 
@@ -966,7 +1013,40 @@ class ReasignarCargoDirectivaView(generics.GenericAPIView):
 
     def post(self, request, pk):
         integrante = self.get_object()
+        # Un integrante de Directiva no puede reasignar su propio cargo.
+        if (
+            not es_administrador(request.user)
+            and integrante.usuario_id == request.user.id
+        ):
+            raise PermissionDenied(
+                "No puedes reasignar tu propio cargo en la directiva."
+            )
 
+        # Si no es Administrador, debe ser Presidente o Presidenta
+        # de la misma Directiva.
+        if not es_administrador(request.user):
+            cargo_usuario = (
+                IntegranteDirectiva.objects.filter(
+                    directiva=integrante.directiva,
+                    usuario=request.user,
+                    activo=True,
+                    directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+                )       
+                .values_list("cargo__nombre", flat=True)
+                .first()
+            )
+
+            es_presidente = (
+                cargo_usuario is not None
+                and cargo_usuario.strip().lower()
+                in ("presidente", "presidenta")
+            )
+
+            if not es_presidente:
+                raise PermissionDenied(
+                    "Solo el Presidente puede reasignar cargos "
+                    "de los integrantes de la directiva."
+                )
         if not integrante.activo:
             return Response(
                 {
@@ -1363,6 +1443,8 @@ class DashboardDirectivaView(generics.GenericAPIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
 class ExportarDashboardDirectivaCSVView(generics.GenericAPIView):
     permission_classes = [EsDirectiva]
 
@@ -1380,9 +1462,7 @@ class ExportarDashboardDirectivaCSVView(generics.GenericAPIView):
             content_type="text/csv; charset=utf-8",
         )
 
-        response["Content-Disposition"] = (
-            'attachment; filename="reporte_directiva.csv"'
-        )
+        response["Content-Disposition"] = 'attachment; filename="reporte_directiva.csv"'
 
         response.write("\ufeff")
 
@@ -1626,9 +1706,7 @@ class ExportarDashboardDirectivaCSVView(generics.GenericAPIView):
         writer.writerow(
             [
                 "Inscripciones en eventos finalizados",
-                datos["participacion"][
-                    "inscripciones_eventos_finalizados"
-                ],
+                datos["participacion"]["inscripciones_eventos_finalizados"],
             ]
         )
 
@@ -1649,9 +1727,7 @@ class ExportarDashboardDirectivaCSVView(generics.GenericAPIView):
         writer.writerow(
             [
                 "Sin registro de asistencia",
-                datos["participacion"][
-                    "sin_registro_asistencia"
-                ],
+                datos["participacion"]["sin_registro_asistencia"],
             ]
         )
 
@@ -1687,11 +1763,7 @@ class ExportarDashboardDirectivaCSVView(generics.GenericAPIView):
         writer.writerow(
             [
                 "Datos disponibles",
-                (
-                    "Sí"
-                    if datos["caracterizacion"]["datos_disponibles"]
-                    else "No"
-                ),
+                ("Sí" if datos["caracterizacion"]["datos_disponibles"] else "No"),
             ]
         )
 
