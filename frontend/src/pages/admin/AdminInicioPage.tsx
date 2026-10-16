@@ -1,7 +1,49 @@
-import CerrarSesionButton from '../../components/auth/CerrarSesionButton'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import CerrarSesionButton from '../../components/auth/CerrarSesionButton'
+import CambiarPerfilButton from '../../components/auth/CambiarPerfilButton'
+
+
+
+type SesionUsuario = {
+  id: number
+  username: string
+  email: string
+  roles: unknown[]
+  es_superusuario: boolean
+}
+
 function AdminInicioPage() {
+  const [sesion, setSesion] =
+    useState<SesionUsuario | null>(null)
+
+  useEffect(() => {
+    const cargarSesion = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:8000/api/auth/sesion/',
+          {
+            credentials: 'include',
+          },
+        )
+
+        if (!response.ok) {
+          return
+        }
+
+        const data =
+          (await response.json()) as SesionUsuario
+
+        setSesion(data)
+      } catch {
+        // Si no se puede obtener la sesión,
+        // simplemente no mostramos Cambiar perfil.
+      }
+    }
+
+    void cargarSesion()
+  }, [])
   return (
     <main className="min-h-screen bg-base-200 px-4 py-8">
       <section className="mx-auto w-full max-w-6xl">
@@ -26,7 +68,15 @@ function AdminInicioPage() {
               </p>
             </div>
 
-            <CerrarSesionButton />
+            <div className="flex flex-wrap items-center gap-3">
+              {sesion &&
+                !sesion.es_superusuario &&
+                sesion.roles.length > 1 && (
+                  <CambiarPerfilButton />
+                )}
+
+              <CerrarSesionButton />
+            </div>
           </div>
         </div>
 

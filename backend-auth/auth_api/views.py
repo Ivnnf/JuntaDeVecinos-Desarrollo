@@ -297,6 +297,7 @@ class SesionUsuarioView(APIView):
                 "rol_id": auth_usuario.getRol(),
                 "estado": auth_usuario.getEstado(),
                 "cargo_id": auth_usuario.getCargo(),
+                "es_superusuario": usuario.is_superuser,
             }
         )
 
@@ -409,6 +410,7 @@ class RolAdministracionListView(generics.ListAPIView):
             ]
         ).order_by("nombre")
 
+
 class CrearUsuarioVecinoAdminView(APIView):
     permission_classes = [EsAdministrador]
 
@@ -420,26 +422,18 @@ class CrearUsuarioVecinoAdminView(APIView):
             },
         )
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
         usuario = serializer.save()
 
         return Response(
             {
-                "message": (
-                    "Vecino creado y asociado "
-                    "correctamente."
-                ),
-                "usuario": (
-                    UsuarioAdministracionSerializer(
-                        usuario
-                    ).data
-                ),
+                "message": ("Vecino creado y asociado " "correctamente."),
+                "usuario": (UsuarioAdministracionSerializer(usuario).data),
             },
             status=status.HTTP_201_CREATED,
         )
+
 
 class EstadoCuentaUsuarioView(APIView):
     permission_classes = [EsAdministrador]
@@ -529,7 +523,6 @@ class RolUsuarioAdministracionView(APIView):
                 {"detail": ("No puedes desactivar tu propio rol " "de Administrador.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
 
         asignacion_previa = UsuarioRol.objects.filter(
             usuario=usuario,
@@ -547,10 +540,7 @@ class RolUsuarioAdministracionView(APIView):
                 },
             )
 
-            if (
-                rol.nombre.lower() == "directiva"
-                and not activo
-            ):
+            if rol.nombre.lower() == "directiva" and not activo:
                 IntegranteDirectiva.objects.filter(
                     usuario=usuario,
                     activo=True,
