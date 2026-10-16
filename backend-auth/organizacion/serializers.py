@@ -200,6 +200,10 @@ class DirectivaSerializer(serializers.ModelSerializer):
         source="junta_vecinos.nombre",
         read_only=True,
     )
+    junta_comuna = serializers.CharField(
+        source="junta_vecinos.comuna",
+        read_only=True,
+    )
 
     def validate(self, attrs):
         junta_vecinos = attrs.get(
@@ -248,6 +252,7 @@ class DirectivaSerializer(serializers.ModelSerializer):
             "id",
             "junta_vecinos",
             "junta_nombre",
+            "junta_comuna",
             "fecha_inicio",
             "fecha_fin",
             "estado",

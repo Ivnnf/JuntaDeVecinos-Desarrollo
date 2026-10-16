@@ -10,6 +10,11 @@ type PerfilDirectiva = {
   junta_nombre: string | null
 }
 
+type PerfilTerritorial = {
+  sector_nombre: string | null
+  junta_comuna: string | null
+}
+
 type IntegranteDirectiva = {
   id: number
   usuario: number
@@ -22,6 +27,7 @@ type DirectivaVigente = {
     id: number
     junta_vecinos: number
     junta_nombre: string
+    junta_comuna: string
     fecha_inicio: string
     fecha_fin: string | null
     estado: string
@@ -45,6 +51,9 @@ type DirectivaVigente = {
 
 function DirectivaInicioPage() {
 
+  const [perfilTerritorial, setPerfilTerritorial] =
+    useState<PerfilTerritorial | null>(null)
+
   const [perfil, setPerfil] =
     useState<PerfilDirectiva | null>(null)
 
@@ -59,7 +68,32 @@ function DirectivaInicioPage() {
 
   const [directivaVigente, setDirectivaVigente] =
     useState<DirectivaVigente | null>(null)
+  useEffect(() => {
+    const cargarPerfilTerritorial = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:8000/api/auth/perfil/',
+          {
+            credentials: 'include',
+          },
+        )
 
+        if (!response.ok) {
+          return
+        }
+
+        const data =
+          (await response.json()) as PerfilTerritorial
+
+        setPerfilTerritorial(data)
+      } catch {
+        // La información principal de la directiva
+        // puede seguir mostrándose.
+      }
+    }
+
+    void cargarPerfilTerritorial()
+  }, [])
   useEffect(() => {
     const cargarJuntaDirectiva = async () => {
       try {
@@ -234,12 +268,26 @@ function DirectivaInicioPage() {
                   <h2 className="text-2xl font-bold">
                     {directivaVigente.directiva.junta_nombre}
                   </h2>
-                  <p className="mt-2 text-base-content/70">
-                    Sector:{' '}
-                    <strong>
-                      {perfil?.sector_nombre ?? 'Sin sector asociado'}
-                    </strong>
-                  </p>
+
+                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-base-content/70">
+                    <span>
+                      Sector:{' '}
+                      <strong>
+                        {perfilTerritorial?.sector_nombre ??
+                          'Sin sector asociado'}
+                      </strong>
+                    </span>
+
+                    <span>
+                      Comuna:{' '}
+                      <strong>
+                        {directivaVigente.directiva.junta_comuna ??
+                          perfilTerritorial?.junta_comuna ??
+                          'Sin comuna asociada'}
+                      </strong>
+                    </span>
+                  </div>
+
                   <p className="mt-2 text-base-content/70">
                     Directiva vigente desde{' '}
                     <strong>

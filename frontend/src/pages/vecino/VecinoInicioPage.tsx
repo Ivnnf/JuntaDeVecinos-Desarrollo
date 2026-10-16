@@ -25,21 +25,15 @@ type Notificacion = {
 
 
 type PerfilResumen = {
-
   sector_nombre: string | null
-
   junta_nombre: string | null
+  junta_comuna: string | null
 
   estado_asociacion_sector:
-
   | 'PENDIENTE'
-
   | 'CONFIRMADA'
-
   | 'RECHAZADA'
-
   | null
-
 }
 
 
@@ -2479,57 +2473,37 @@ function VecinoInicioPage() {
 
 
                     <div className="vi-sector-row">
-
-
+                      <span>
+                        Sector:{' '}
+                        <strong>
+                          {perfil.sector_nombre ??
+                            'Sin sector asociado'}
+                        </strong>
+                      </span>
 
                       <span>
-
-                        Sector:{' '}
-
+                        Comuna:{' '}
                         <strong>
-
-                          {perfil.sector_nombre ??
-
-                            'Sin sector asociado'}
-
+                          {perfil.junta_comuna ??
+                            'Sin comuna asociada'}
                         </strong>
-
                       </span>
-
-
 
                       <span
-
                         className={
-
                           perfil.estado_asociacion_sector === 'CONFIRMADA'
-
                             ? 'vi-badge vi-badge-green'
-
                             : perfil.estado_asociacion_sector === 'RECHAZADA'
-
                               ? 'vi-badge vi-badge-error'
-
                               : 'vi-badge vi-badge-muted'
-
                         }
-
                       >
-
                         {perfil.estado_asociacion_sector === 'CONFIRMADA'
-
                           ? 'Asociación confirmada'
-
                           : perfil.estado_asociacion_sector === 'RECHAZADA'
-
                             ? 'Asociación rechazada'
-
                             : 'Sin asociación'}
-
                       </span>
-
-
-
                     </div>
 
                   </>

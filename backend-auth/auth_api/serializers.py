@@ -370,6 +370,7 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
     sector_nombre = serializers.SerializerMethodField()
     junta_id = serializers.SerializerMethodField()
     junta_nombre = serializers.SerializerMethodField()
+    junta_comuna = serializers.SerializerMethodField()
 
     class Meta:
         model = get_user_model()
@@ -383,6 +384,7 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
             "fecha_nacimiento",
             "sector_id",
             "sector_nombre",
+            "junta_comuna",
             "junta_id",
             "junta_nombre",
             "estado_asociacion_sector",
@@ -404,6 +406,11 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
     def get_junta_nombre(self, obj):
         if obj.sector:
             return obj.sector.junta_vecinos.nombre
+
+        return None
+    def get_junta_comuna(self, obj):
+        if obj.sector:
+            return obj.sector.junta_vecinos.comuna
 
         return None
 
