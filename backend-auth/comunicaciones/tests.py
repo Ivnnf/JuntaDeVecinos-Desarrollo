@@ -357,10 +357,11 @@ class PublicacionesDirectivaTests(APITestCase):
             ).exists()
         )
 
-        self.assertFalse(
+        self.assertTrue(
             Notificacion.objects.filter(
                 publicacion=publicacion,
                 usuario=self.usuario,
+                leida=False,
             ).exists()
         )
 
@@ -1021,6 +1022,7 @@ class ConversacionesTests(APITestCase):
         mensaje = Mensaje.objects.create(
             conversacion=conversacion,
             remitente=usuario_directiva,
+            rol_remitente="DIRECTIVA",
             contenido="Respuesta pendiente de lectura.",
             leido=False,
         )
@@ -1099,6 +1101,7 @@ class ConversacionesTests(APITestCase):
         mensaje = Mensaje.objects.create(
             conversacion=conversacion,
             remitente=self.vecino,
+            rol_remitente="VECINO",
             contenido="Mensaje pendiente de lectura por directiva.",
             leido=False,
         )

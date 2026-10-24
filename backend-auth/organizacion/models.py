@@ -227,6 +227,13 @@ class Cargo(models.Model):
         unique=True,
     )
 
+    codigo = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+    )
+
     descripcion = models.CharField(
         max_length=255,
         null=True,
@@ -234,6 +241,10 @@ class Cargo(models.Model):
     )
 
     permite_multiples = models.BooleanField(
+        default=False,
+    )
+
+    es_sistema = models.BooleanField(
         default=False,
     )
 

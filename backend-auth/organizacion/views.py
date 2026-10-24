@@ -926,21 +926,13 @@ class IntegranteDirectivaDetailView(generics.RetrieveUpdateAPIView):
             # Si no es Administrador, debe ser Presidente activo
             # de la misma Directiva.
             if not es_administrador(self.request.user):
-                cargo_usuario = (
-                    IntegranteDirectiva.objects.filter(
-                        directiva=integrante.directiva,
-                        usuario=self.request.user,
-                        activo=True,
-                        directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
-                    )
-                    .values_list("cargo__nombre", flat=True)
-                    .first()
-                )
-
-                es_presidente = (
-                    cargo_usuario is not None
-                    and cargo_usuario.strip().lower() in ("presidente", "presidenta")
-                )
+                es_presidente = IntegranteDirectiva.objects.filter(
+                    directiva=integrante.directiva,
+                    usuario=self.request.user,
+                    activo=True,
+                    directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+                    cargo__codigo="PRESIDENCIA",
+                ).exists()
 
                 if not es_presidente:
                     raise PermissionDenied(
@@ -1025,22 +1017,13 @@ class ReasignarCargoDirectivaView(generics.GenericAPIView):
         # Si no es Administrador, debe ser Presidente o Presidenta
         # de la misma Directiva.
         if not es_administrador(request.user):
-            cargo_usuario = (
-                IntegranteDirectiva.objects.filter(
-                    directiva=integrante.directiva,
-                    usuario=request.user,
-                    activo=True,
-                    directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
-                )       
-                .values_list("cargo__nombre", flat=True)
-                .first()
-            )
-
-            es_presidente = (
-                cargo_usuario is not None
-                and cargo_usuario.strip().lower()
-                in ("presidente", "presidenta")
-            )
+            es_presidente = IntegranteDirectiva.objects.filter(
+                directiva=integrante.directiva,
+                usuario=request.user,
+                activo=True,
+                directiva__estado=Directiva.EstadoDirectiva.VIGENTE,
+                cargo__codigo="PRESIDENCIA",
+            ).exists()
 
             if not es_presidente:
                 raise PermissionDenied(

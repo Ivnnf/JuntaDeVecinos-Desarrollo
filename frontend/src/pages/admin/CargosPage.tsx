@@ -4,8 +4,10 @@ import { Link } from 'react-router-dom'
 type Cargo = {
     id: number
     nombre: string
+    codigo: string | null
     descripcion: string | null
     permite_multiples: boolean
+    es_sistema: boolean
     activo: boolean
 }
 
@@ -270,7 +272,7 @@ function CargosPage() {
                                 </div>
 
                                 <p className="text-base-content/60">
-                                    Define un nuevo cargo para las directivas.
+                                    Crea cargos adicionales para complementar los cargos predefinidos de la directiva.
                                 </p>
                             </div>
                         </div>
@@ -302,7 +304,7 @@ function CargosPage() {
                                     onChange={(event) =>
                                         setNombre(event.target.value)
                                     }
-                                    placeholder="Ej: Presidente"
+                                    placeholder="Ej: Encargado de Deportes"
                                     required
                                 />
                             </label>
@@ -502,28 +504,34 @@ function CargosPage() {
 
                                                         <td>
                                                             <div className="flex justify-end">
-                                                                <button
-                                                                    type="button"
-                                                                    className={
-                                                                        cargo.activo
-                                                                            ? 'btn btn-sm btn-error btn-outline'
-                                                                            : 'btn btn-sm btn-success btn-outline'
-                                                                    }
-                                                                    disabled={procesando}
-                                                                    onClick={() =>
-                                                                        void cambiarEstadoCargo(cargo)
-                                                                    }
-                                                                >
-                                                                    {procesando && (
-                                                                        <span className="loading loading-spinner loading-xs" />
-                                                                    )}
+                                                                {cargo.es_sistema ? (
+                                                                    <span className="badge badge-primary badge-outline">
+                                                                        Predefinido
+                                                                    </span>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        className={
+                                                                            cargo.activo
+                                                                                ? 'btn btn-sm btn-error btn-outline'
+                                                                                : 'btn btn-sm btn-success btn-outline'
+                                                                        }
+                                                                        disabled={procesando}
+                                                                        onClick={() =>
+                                                                            void cambiarEstadoCargo(cargo)
+                                                                        }
+                                                                    >
+                                                                        {procesando && (
+                                                                            <span className="loading loading-spinner loading-xs" />
+                                                                        )}
 
-                                                                    {procesando
-                                                                        ? 'Procesando...'
-                                                                        : cargo.activo
-                                                                            ? 'Desactivar'
-                                                                            : 'Activar'}
-                                                                </button>
+                                                                        {procesando
+                                                                            ? 'Procesando...'
+                                                                            : cargo.activo
+                                                                                ? 'Desactivar'
+                                                                                : 'Activar'}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>

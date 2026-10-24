@@ -75,11 +75,7 @@ class AsociacionSectorPendienteSerializer(serializers.ModelSerializer):
     verificacion_residencia = serializers.SerializerMethodField()
 
     def get_verificacion_residencia(self, obj):
-        verificacion = (
-            obj.verificaciones_residencia
-            .all()
-            .first()
-        )
+        verificacion = obj.verificaciones_residencia.all().first()
 
         if verificacion is None:
             return None
@@ -92,9 +88,7 @@ class AsociacionSectorPendienteSerializer(serializers.ModelSerializer):
             archivo_url = verificacion.archivo.url
 
             if request is not None:
-                archivo_url = request.build_absolute_uri(
-                    archivo_url
-                )
+                archivo_url = request.build_absolute_uri(archivo_url)
 
         return {
             "id": verificacion.id,
@@ -104,17 +98,12 @@ class AsociacionSectorPendienteSerializer(serializers.ModelSerializer):
             "nombre_extraido": verificacion.nombre_extraido,
             "direccion_extraida": verificacion.direccion_extraida,
             "comuna_extraida": verificacion.comuna_extraida,
-            "fecha_documento_extraida": (
-                verificacion.fecha_documento_extraida
-            ),
+            "fecha_documento_extraida": (verificacion.fecha_documento_extraida),
             "confianza_ocr": verificacion.confianza_ocr,
-            "documento_duplicado": (
-                verificacion.documento_duplicado
-            ),
-            "observacion_automatica": (
-                verificacion.observacion_automatica
-            ),
+            "documento_duplicado": (verificacion.documento_duplicado),
+            "observacion_automatica": (verificacion.observacion_automatica),
         }
+
     class Meta:
         model = get_user_model()
 
@@ -180,18 +169,58 @@ class UsuarioElegibleDirectivaSerializer(serializers.ModelSerializer):
 
 
 class CargoSerializer(serializers.ModelSerializer):
+
+    def validate(self, attrs):
+        if self.instance and self.instance.es_sistema:
+            raise serializers.ValidationError(
+                {
+                    "detail": (
+                        "Los cargos predefinidos del sistema "
+                        "no pueden modificarse ni desactivarse."
+                    )
+                }
+            )
+
+        return attrs
+    def validate_nombre(self, value):
+        nombre_normalizado = value.strip().lower()
+
+        nombres_reservados = {
+            "presidente",
+            "presidenta",
+            "presidencia",
+            "secretario",
+            "secretaria",
+            "secretaría",
+            "tesorero",
+            "tesorera",
+            "tesoreria",
+            "tesorería",
+            "vocal",
+        }
+
+        if nombre_normalizado in nombres_reservados:
+            raise serializers.ValidationError(
+                "Este nombre corresponde a un cargo predefinido del sistema."
+        )
+
+        return value
     class Meta:
         model = Cargo
         fields = [
             "id",
             "nombre",
+            "codigo",
             "descripcion",
             "permite_multiples",
+            "es_sistema",
             "activo",
         ]
 
         read_only_fields = [
             "id",
+            "codigo",
+            "es_sistema",
         ]
 
 
@@ -220,19 +249,14 @@ class DirectivaSerializer(serializers.ModelSerializer):
             ),
         )
 
-        if (
-            junta_vecinos
-            and estado == Directiva.EstadoDirectiva.VIGENTE
-        ):
+        if junta_vecinos and estado == Directiva.EstadoDirectiva.VIGENTE:
             directivas_vigentes = Directiva.objects.filter(
                 junta_vecinos=junta_vecinos,
                 estado=Directiva.EstadoDirectiva.VIGENTE,
             )
 
             if self.instance:
-                directivas_vigentes = directivas_vigentes.exclude(
-                    pk=self.instance.pk
-                )
+                directivas_vigentes = directivas_vigentes.exclude(pk=self.instance.pk)
 
             if directivas_vigentes.exists():
                 raise serializers.ValidationError(
@@ -278,13 +302,13 @@ class IntegranteDirectivaSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     sector_id = serializers.IntegerField(
-    source="usuario.sector.id",
-    read_only=True,
+        source="usuario.sector.id",
+        read_only=True,
     )
 
     sector_nombre = serializers.CharField(
-    source="usuario.sector.nombre",
-    read_only=True,
+        source="usuario.sector.nombre",
+        read_only=True,
     )
 
     usuario_nombres = serializers.CharField(
@@ -301,7 +325,10 @@ class IntegranteDirectivaSerializer(serializers.ModelSerializer):
         source="cargo.nombre",
         read_only=True,
     )
-
+    cargo_codigo = serializers.CharField(
+        source="cargo.codigo",
+        read_only=True,
+    )
     junta_id = serializers.IntegerField(
         source="directiva.junta_vecinos.id",
         read_only=True,
@@ -330,6 +357,7 @@ class IntegranteDirectivaSerializer(serializers.ModelSerializer):
             "fecha_inicio",
             "fecha_fin",
             "activo",
+            "cargo_codigo",
         ]
 
         read_only_fields = [

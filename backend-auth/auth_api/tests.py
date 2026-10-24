@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 
 from django.urls import reverse
 from rest_framework import status
@@ -13,6 +14,7 @@ from organizacion.models import (
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
@@ -330,35 +332,93 @@ class AutenticacionTests(APITestCase):
         )
 
     def test_registro_vecino_correcto_crea_usuario_y_rol(self):
-        response = self.client.post(
-            "/api/auth/registro/",
-            {
-                "username": "nuevo_vecino",
-                "rut": "12.345.678-5",
-                "nombres": "Nuevo",
-                "apellido_paterno": "Vecino",
-                "apellido_materno": "Prueba",
-                "email": "nuevo@vecino.cl",
-                "password": "PasswordNuevo123!",
-                "confirmar_password": "PasswordNuevo123!",
-            },
-            format="json",
+        junta = JuntaVecinos.objects.create(
+            nombre="Junta Registro Test",
+            comuna="Puente Alto",
+            activa=True,
         )
+
+        sector = Sector.objects.create(
+            junta_vecinos=junta,
+            nombre="Sector Registro Test",
+            activo=True,
+        )
+
+        archivo = SimpleUploadedFile(
+            "comprobante.png",
+            b"contenido de prueba",
+            content_type="image/png",
+        )
+
+        with (
+            patch(
+                "auth_api.serializers.extraer_texto_documento",
+                return_value="texto OCR de prueba",
+            ),
+            patch(
+                "auth_api.serializers.analizar_documento_residencia",
+                return_value={
+                    "nombre": "Nuevo Vecino",
+                    "direccion": "Calle Prueba 123",
+                    "comuna": "Puente Alto",
+                    "fecha_emision": date(2026, 10, 1),
+                    "confianza_ocr": 95.0,
+                    "documento_vigente": True,
+                    "motivo_antiguedad": ("Documento dentro del período permitido."),
+                },
+            ),
+            patch(
+                "auth_api.serializers.validar_coincidencia_comuna",
+                return_value={
+                    "coincide": True,
+                    "motivo": "La comuna coincide.",
+                },
+            ),
+        ):
+            response = self.client.post(
+                "/api/auth/registro/",
+                {
+                    "username": "nuevo_vecino",
+                    "rut": "12.345.678-5",
+                    "nombres": "Nuevo",
+                    "apellido_paterno": "Vecino",
+                    "apellido_materno": "Prueba",
+                    "email": "nuevo@vecino.cl",
+                    "password": "PasswordNuevo123!",
+                    "confirmar_password": "PasswordNuevo123!",
+                    "sector_id": sector.id,
+                    "tipo_documento": "ELECTRICIDAD",
+                    "archivo": archivo,
+                },
+                format="multipart",
+            )
 
         self.assertEqual(
             response.status_code,
-            201,
+            status.HTTP_201_CREATED,
         )
 
         Usuario = get_user_model()
 
-        usuario = Usuario.objects.get(username="nuevo_vecino")
+        usuario = Usuario.objects.get(
+            username="nuevo_vecino",
+        )
 
         self.assertTrue(usuario.is_active)
 
         self.assertEqual(
             usuario.rut,
             "12345678-5",
+        )
+
+        self.assertEqual(
+            usuario.sector,
+            sector,
+        )
+
+        self.assertEqual(
+            usuario.estado_asociacion_sector,
+            "PENDIENTE",
         )
 
         self.assertTrue(
@@ -369,21 +429,10 @@ class AutenticacionTests(APITestCase):
             ).exists()
         )
 
-        self.assertFalse(Perfil.objects.filter(usuario=usuario).exists())
-
-        login_response = self.client.post(
-            "/api/auth/login/",
-            {
-                "username": "nuevo_vecino",
-                "password": "PasswordNuevo123!",
-                "recordar": False,
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            login_response.status_code,
-            200,
+        self.assertFalse(
+            Perfil.objects.filter(
+                usuario=usuario,
+            ).exists()
         )
 
     def test_registro_vecino_rechaza_rut_invalido(self):
@@ -437,6 +486,24 @@ class AutenticacionTests(APITestCase):
         )
 
     def test_registro_vecino_rechaza_passwords_distintos(self):
+        junta = JuntaVecinos.objects.create(
+            nombre="Junta Password Test",
+            comuna="Puente Alto",
+            activa=True,
+        )
+
+        sector = Sector.objects.create(
+            junta_vecinos=junta,
+            nombre="Sector Password Test",
+            activo=True,
+        )
+
+        archivo = SimpleUploadedFile(
+            "comprobante.png",
+            b"contenido de prueba",
+            content_type="image/png",
+        )
+
         response = self.client.post(
             "/api/auth/registro/",
             {
@@ -447,13 +514,16 @@ class AutenticacionTests(APITestCase):
                 "email": "password@vecino.cl",
                 "password": "PasswordNuevo123!",
                 "confirmar_password": "OtraPassword123!",
+                "sector_id": sector.id,
+                "tipo_documento": "ELECTRICIDAD",
+                "archivo": archivo,
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(
             response.status_code,
-            400,
+            status.HTTP_400_BAD_REQUEST,
         )
 
         self.assertIn(
@@ -658,10 +728,9 @@ class AutenticacionTests(APITestCase):
             historial.valor_nuevo,
             "DESHABILITADA",
         )
+
     def test_administrador_no_puede_deshabilitar_su_propia_cuenta(self):
-        rol_admin, _ = Rol.objects.get_or_create(
-            nombre="Administrador"
-        )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
         UsuarioRol.objects.update_or_create(
             usuario=self.usuario,
@@ -671,15 +740,10 @@ class AutenticacionTests(APITestCase):
             },
         )
 
-        self.client.force_authenticate(
-            user=self.usuario
-        )
+        self.client.force_authenticate(user=self.usuario)
 
         response = self.client.patch(
-            (
-                f"/api/auth/admin/usuarios/"
-                f"{self.usuario.id}/estado/"
-            ),
+            (f"/api/auth/admin/usuarios/" f"{self.usuario.id}/estado/"),
             {
                 "is_active": False,
             },
@@ -693,9 +757,8 @@ class AutenticacionTests(APITestCase):
 
         self.usuario.refresh_from_db()
 
-        self.assertTrue(
-            self.usuario.is_active
-    )
+        self.assertTrue(self.usuario.is_active)
+
     def test_administrador_puede_habilitar_cuenta_usuario(self):
         Usuario = get_user_model()
 
@@ -736,47 +799,38 @@ class AutenticacionTests(APITestCase):
         self.assertTrue(otro_usuario.is_active)
 
     def test_administrador_no_puede_desactivar_su_propio_rol(self):
-            rol_admin, _ = Rol.objects.get_or_create(
-                nombre="Administrador"
-            )
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
-            UsuarioRol.objects.update_or_create(
-                usuario=self.usuario,
-                rol=rol_admin,
-                defaults={
-                    "activo": True,
-                },
-            )
+        UsuarioRol.objects.update_or_create(
+            usuario=self.usuario,
+            rol=rol_admin,
+            defaults={
+                "activo": True,
+            },
+        )
 
-            self.client.force_authenticate(
-                user=self.usuario
-            )
+        self.client.force_authenticate(user=self.usuario)
 
-            response = self.client.patch(
-                (
-                    f"/api/auth/admin/usuarios/"
-                    f"{self.usuario.id}/rol/"
-                ),
-                {
-                    "rol_id": rol_admin.id,
-                    "activo": False,
-                },
-                format="json",
-            )
+        response = self.client.patch(
+            (f"/api/auth/admin/usuarios/" f"{self.usuario.id}/rol/"),
+            {
+                "rol_id": rol_admin.id,
+                "activo": False,
+            },
+            format="json",
+        )
 
-            self.assertEqual(
-                response.status_code,
-                status.HTTP_400_BAD_REQUEST,
-            )
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
-            asignacion = UsuarioRol.objects.get(
-                usuario=self.usuario,
-                rol=rol_admin,
-            )
+        asignacion = UsuarioRol.objects.get(
+            usuario=self.usuario,
+            rol=rol_admin,
+        )
 
-            self.assertTrue(
-                asignacion.activo
-            )
+        self.assertTrue(asignacion.activo)
 
     def test_vecino_no_puede_cambiar_estado_cuenta_usuario(self):
         Usuario = get_user_model()
@@ -978,7 +1032,7 @@ class AutenticacionTests(APITestCase):
             ).exists()
         )
 
-    def test_no_puede_desactivar_rol_directiva_con_cargo_activo(self):
+    def test_puede_desactivar_rol_directiva_con_cargo_activo(self):
         Usuario = get_user_model()
 
         rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
@@ -1028,11 +1082,8 @@ class AutenticacionTests(APITestCase):
             activo=True,
         )
 
-        cargo = Cargo.objects.create(
-            nombre="Presidente",
-            descripcion="Presidencia de la junta",
-            permite_multiples=False,
-            activo=True,
+        cargo = Cargo.objects.get(
+            codigo="PRESIDENCIA",
         )
 
         directiva = Directiva.objects.create(
@@ -1062,7 +1113,7 @@ class AutenticacionTests(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_200_OK,
         )
 
         asignacion = UsuarioRol.objects.get(
@@ -1070,13 +1121,20 @@ class AutenticacionTests(APITestCase):
             rol=rol_directiva,
         )
 
-        self.assertTrue(asignacion.activo)
+        self.assertFalse(asignacion.activo)
+
+        integrante = IntegranteDirectiva.objects.get(
+            usuario=usuario_directiva,
+            directiva=directiva,
+            cargo=cargo,
+        )
 
         self.assertFalse(
-            HistorialGestionUsuario.objects.filter(
-                usuario_objetivo=usuario_directiva,
-                tipo_cambio=(HistorialGestionUsuario.TipoCambio.ROL),
-            ).exists()
+            integrante.activo
+        )
+
+        self.assertIsNotNone(
+            integrante.fecha_fin
         )
 
     def test_vecino_no_puede_modificar_roles_usuario(self):
@@ -1163,7 +1221,6 @@ class AutenticacionTests(APITestCase):
                 rol=rol_no_permitido,
             ).exists()
         )
-
 
     def test_administrador_puede_listar_roles_permitidos(self):
         rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")

@@ -3,12 +3,6 @@ import CambiarPerfilButton from '../../components/auth/CambiarPerfilButton'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-type PerfilDirectiva = {
-  sector_id: number | null
-  sector_nombre: string | null
-  junta_id: number | null
-  junta_nombre: string | null
-}
 
 type PerfilTerritorial = {
   sector_nombre: string | null
@@ -54,8 +48,8 @@ function DirectivaInicioPage() {
   const [perfilTerritorial, setPerfilTerritorial] =
     useState<PerfilTerritorial | null>(null)
 
-  const [perfil, setPerfil] =
-    useState<PerfilDirectiva | null>(null)
+  const [, setPerfil] =
+    useState<PerfilTerritorial | null>(null)
 
   const [juntaId, setJuntaId] =
     useState<number | null>(null)
@@ -153,7 +147,7 @@ function DirectivaInicioPage() {
         }
 
         const data =
-          (await response.json()) as PerfilDirectiva
+          (await response.json()) as PerfilTerritorial
 
         setPerfil(data)
       } catch (error) {

@@ -26,6 +26,7 @@ type IntegranteDirectivaActual = {
     usuario: number
     usuario_username: string
     usuario_nombres: string
+    cargo_codigo: string | null
     usuario_apellido_paterno: string
     sector_id: number | null
     sector_nombre: string | null
@@ -518,9 +519,7 @@ function GestionDirectivaPage() {
         (integrante) =>
             integrante.usuario === usuarioSesionId &&
             integrante.activo &&
-            ['presidente', 'presidenta'].includes(
-                integrante.cargo_nombre.trim().toLowerCase(),
-            ),
+            integrante.cargo_codigo === 'PRESIDENCIA',
     )
     return (
         <main className="min-h-screen bg-base-200 px-4 py-8">
