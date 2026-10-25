@@ -325,6 +325,8 @@ class HistorialGestionUsuario(models.Model):
             f"{self.usuario_objetivo.username} - "
             f"{self.realizado_por.username}"
         )
+
+
 class CaracterizacionComunitaria(models.Model):
     class NivelEducacional(models.TextChoices):
         SIN_ESTUDIOS = "SIN_ESTUDIOS", "Sin estudios formales"
@@ -371,7 +373,17 @@ class CaracterizacionComunitaria(models.Model):
     cantidad_menores_18 = models.PositiveSmallIntegerField(
         default=0,
     )
+    cantidad_18_29 = models.PositiveSmallIntegerField(
+        default=0,
+    )
 
+    cantidad_30_44 = models.PositiveSmallIntegerField(
+        default=0,
+    )
+
+    cantidad_45_59 = models.PositiveSmallIntegerField(
+        default=0,
+    )
     cantidad_adultos_mayores = models.PositiveSmallIntegerField(
         default=0,
     )

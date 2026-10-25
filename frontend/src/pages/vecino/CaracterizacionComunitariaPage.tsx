@@ -4,8 +4,12 @@ import { Link } from 'react-router-dom'
 
 type CaracterizacionComunitaria = {
     id: number
+    fecha_nacimiento: string | null
     cantidad_personas_hogar: number
     cantidad_menores_18: number
+    cantidad_18_29: number
+    cantidad_30_44: number
+    cantidad_45_59: number
     cantidad_adultos_mayores: number
     nivel_educacional: string
     situacion_laboral: string
@@ -22,10 +26,22 @@ function CaracterizacionComunitariaPage() {
     const [error, setError] = useState('')
     const [mensaje, setMensaje] = useState('')
 
+    const [fechaNacimiento, setFechaNacimiento] =
+        useState('')
+
     const [cantidadPersonasHogar, setCantidadPersonasHogar] =
         useState('1')
 
     const [cantidadMenores18, setCantidadMenores18] =
+        useState('0')
+
+    const [cantidad18a29, setCantidad18a29] =
+        useState('0')
+
+    const [cantidad30a44, setCantidad30a44] =
+        useState('0')
+
+    const [cantidad45a59, setCantidad45a59] =
         useState('0')
 
     const [cantidadAdultosMayores, setCantidadAdultosMayores] =
@@ -64,12 +80,28 @@ function CaracterizacionComunitariaPage() {
                 const data =
                     (await response.json()) as CaracterizacionComunitaria
 
+                setFechaNacimiento(
+                    data.fecha_nacimiento ?? '',
+                )
+
                 setCantidadPersonasHogar(
                     String(data.cantidad_personas_hogar),
                 )
 
                 setCantidadMenores18(
                     String(data.cantidad_menores_18),
+                )
+
+                setCantidad18a29(
+                    String(data.cantidad_18_29),
+                )
+
+                setCantidad30a44(
+                    String(data.cantidad_30_44),
+                )
+
+                setCantidad45a59(
+                    String(data.cantidad_45_59),
                 )
 
                 setCantidadAdultosMayores(
@@ -107,7 +139,16 @@ function CaracterizacionComunitariaPage() {
         const personas = Number(cantidadPersonasHogar)
         const menores = Number(cantidadMenores18)
         const adultosMayores = Number(cantidadAdultosMayores)
+        const rango18a29 = Number(cantidad18a29)
+        const rango30a44 = Number(cantidad30a44)
+        const rango45a59 = Number(cantidad45a59)
 
+        const totalRangosEtarios =
+            menores +
+            rango18a29 +
+            rango30a44 +
+            rango45a59 +
+            adultosMayores
         if (personas < 1) {
             setError(
                 'El hogar debe tener al menos una persona.',
@@ -142,7 +183,23 @@ function CaracterizacionComunitariaPage() {
             )
             return
         }
+        if (
+            rango18a29 < 0 ||
+            rango30a44 < 0 ||
+            rango45a59 < 0
+        ) {
+            setError(
+                'Las cantidades por rango etario no pueden ser negativas.',
+            )
+            return
+        }
 
+        if (totalRangosEtarios !== personas) {
+            setError(
+                'La suma de los rangos etarios debe coincidir con el total de personas del hogar.',
+            )
+            return
+        }
         setGuardando(true)
 
         try {
@@ -155,8 +212,15 @@ function CaracterizacionComunitariaPage() {
                     },
                     credentials: 'include',
                     body: JSON.stringify({
+                        fecha_nacimiento:
+                            fechaNacimiento === ''
+                                ? null
+                                : fechaNacimiento,
                         cantidad_personas_hogar: personas,
                         cantidad_menores_18: menores,
+                        cantidad_18_29: Number(cantidad18a29),
+                        cantidad_30_44: Number(cantidad30a44),
+                        cantidad_45_59: Number(cantidad45a59),
                         cantidad_adultos_mayores: adultosMayores,
                         nivel_educacional: nivelEducacional,
                         situacion_laboral: situacionLaboral,
@@ -299,78 +363,189 @@ function CaracterizacionComunitariaPage() {
 
 
                         <div className="space-y-8 p-6">
+                            <div>
+                                <h3 className="mb-4 text-lg font-bold">
+                                    Datos personales para caracterización
+                                </h3>
 
+                                <div className="grid gap-5 md:grid-cols-2">
+                                    <label className="form-control">
+                                        <div className="label">
+                                            <span className="label-text font-semibold">
+                                                Fecha de nacimiento
+                                            </span>
+                                        </div>
+
+                                        <input
+                                            type="date"
+                                            className="input input-bordered w-full"
+                                            value={fechaNacimiento}
+                                            onChange={(event) =>
+                                                setFechaNacimiento(event.target.value)
+                                            }
+                                        />
+
+                                        <div className="label">
+                                            <span className="label-text-alt text-base-content/50">
+                                                Se utiliza únicamente para generar rangos etarios
+                                                e indicadores agregados.
+                                            </span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="divider" />
                             {/* Composición del hogar */}
                             <div>
                                 <h3 className="mb-4 text-lg font-bold">
                                     Composición del hogar
                                 </h3>
 
-                                <div className="grid gap-5 md:grid-cols-3">
-                                    <label className="form-control">
-                                        <div className="label">
-                                            <span className="label-text font-semibold">
-                                                Personas en el hogar
-                                            </span>
+                                <div className="space-y-6">
+                                    <div className="grid gap-5 md:grid-cols-3">
+                                        <label className="form-control">
+                                            <div className="label">
+                                                <span className="label-text font-semibold">
+                                                    Personas en el hogar
+                                                </span>
+                                            </div>
+
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className="input input-bordered w-full"
+                                                value={cantidadPersonasHogar}
+                                                onChange={(event) =>
+                                                    setCantidadPersonasHogar(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                required
+                                            />
+                                        </label>
+                                    </div>
+
+                                    <div>
+                                        <div className="mb-3">
+                                            <h4 className="font-semibold">
+                                                Distribución etaria del hogar
+                                            </h4>
+
+                                            <p className="text-sm text-base-content/60">
+                                                Indica cuántas personas del hogar pertenecen
+                                                a cada rango de edad. La suma debe coincidir
+                                                con el total de personas del hogar.
+                                            </p>
                                         </div>
 
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            className="input input-bordered w-full"
-                                            value={cantidadPersonasHogar}
-                                            onChange={(event) =>
-                                                setCantidadPersonasHogar(
-                                                    event.target.value,
-                                                )
-                                            }
-                                            required
-                                        />
-                                    </label>
+                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text">
+                                                        0 a 17 años
+                                                    </span>
+                                                </div>
 
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input input-bordered w-full"
+                                                    value={cantidadMenores18}
+                                                    onChange={(event) =>
+                                                        setCantidadMenores18(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
 
-                                    <label className="form-control">
-                                        <div className="label">
-                                            <span className="label-text font-semibold">
-                                                Menores de 18 años
-                                            </span>
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text">
+                                                        18 a 29 años
+                                                    </span>
+                                                </div>
+
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input input-bordered w-full"
+                                                    value={cantidad18a29}
+                                                    onChange={(event) =>
+                                                        setCantidad18a29(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text">
+                                                        30 a 44 años
+                                                    </span>
+                                                </div>
+
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input input-bordered w-full"
+                                                    value={cantidad30a44}
+                                                    onChange={(event) =>
+                                                        setCantidad30a44(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text">
+                                                        45 a 59 años
+                                                    </span>
+                                                </div>
+
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input input-bordered w-full"
+                                                    value={cantidad45a59}
+                                                    onChange={(event) =>
+                                                        setCantidad45a59(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+
+                                            <label className="form-control">
+                                                <div className="label">
+                                                    <span className="label-text">
+                                                        60 años o más
+                                                    </span>
+                                                </div>
+
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input input-bordered w-full"
+                                                    value={cantidadAdultosMayores}
+                                                    onChange={(event) =>
+                                                        setCantidadAdultosMayores(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
                                         </div>
-
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className="input input-bordered w-full"
-                                            value={cantidadMenores18}
-                                            onChange={(event) =>
-                                                setCantidadMenores18(
-                                                    event.target.value,
-                                                )
-                                            }
-                                            required
-                                        />
-                                    </label>
-
-
-                                    <label className="form-control">
-                                        <div className="label">
-                                            <span className="label-text font-semibold">
-                                                Adultos mayores
-                                            </span>
-                                        </div>
-
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className="input input-bordered w-full"
-                                            value={cantidadAdultosMayores}
-                                            onChange={(event) =>
-                                                setCantidadAdultosMayores(
-                                                    event.target.value,
-                                                )
-                                            }
-                                            required
-                                        />
-                                    </label>
+                                    </div>
                                 </div>
                             </div>
 

@@ -1,13 +1,17 @@
-from django.db.models import Avg, Count, Q
-
+from django.db.models import Avg, Count, Q, Sum
+from datetime import date
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+import csv
+
+from django.http import HttpResponse
 
 from organizacion.models import (
     Directiva,
     IntegranteDirectiva,
     JuntaVecinos,
+    Sector,
 )
 from organizacion.permissions import EsDirectiva, EsMunicipal
 
@@ -81,6 +85,11 @@ class CaracterizacionComunitariaDirectivaView(generics.GenericAPIView):
             )
 
         resumen = caracterizaciones.aggregate(
+            personas_0_17=Sum("cantidad_menores_18"),
+            personas_18_29=Sum("cantidad_18_29"),
+            personas_30_44=Sum("cantidad_30_44"),
+            personas_45_59=Sum("cantidad_45_59"),
+            personas_60_mas=Sum("cantidad_adultos_mayores"),
             promedio_personas_hogar=Avg("cantidad_personas_hogar"),
             hogares_con_menores=Count(
                 "id",
@@ -142,6 +151,52 @@ class CaracterizacionComunitariaMunicipalView(generics.GenericAPIView):
 
     MINIMO_RESPUESTAS = 3
 
+    @staticmethod
+    def fecha_hace_anios(fecha_base, anios):
+        try:
+            return fecha_base.replace(year=fecha_base.year - anios)
+        except ValueError:
+            return fecha_base.replace(
+                year=fecha_base.year - anios,
+                month=2,
+                day=28,
+            )
+
+    @classmethod
+    def filtrar_por_rango_etario(cls, queryset, rango_etario):
+        hoy = date.today()
+
+        fecha_18 = cls.fecha_hace_anios(hoy, 18)
+        fecha_30 = cls.fecha_hace_anios(hoy, 30)
+        fecha_45 = cls.fecha_hace_anios(hoy, 45)
+        fecha_60 = cls.fecha_hace_anios(hoy, 60)
+
+        if rango_etario == "0_17":
+            return queryset.filter(usuario__fecha_nacimiento__gt=fecha_18)
+
+        if rango_etario == "18_29":
+            return queryset.filter(
+                usuario__fecha_nacimiento__lte=fecha_18,
+                usuario__fecha_nacimiento__gt=fecha_30,
+            )
+
+        if rango_etario == "30_44":
+            return queryset.filter(
+                usuario__fecha_nacimiento__lte=fecha_30,
+                usuario__fecha_nacimiento__gt=fecha_45,
+            )
+
+        if rango_etario == "45_59":
+            return queryset.filter(
+                usuario__fecha_nacimiento__lte=fecha_45,
+                usuario__fecha_nacimiento__gt=fecha_60,
+            )
+
+        if rango_etario == "60_MAS":
+            return queryset.filter(usuario__fecha_nacimiento__lte=fecha_60)
+
+        return queryset
+
     def get(self, request):
         caracterizaciones = CaracterizacionComunitaria.objects.filter(
             usuario__is_active=True,
@@ -149,10 +204,49 @@ class CaracterizacionComunitariaMunicipalView(generics.GenericAPIView):
             usuario__sector__junta_vecinos__activa=True,
             usuario__estado_asociacion_sector=("CONFIRMADA"),
         )
+        rango_etario = request.query_params.get("rango_etario")
+        junta_id = request.query_params.get("junta_id")
+        sector_id = request.query_params.get("sector_id")
+
+        if junta_id:
+            caracterizaciones = caracterizaciones.filter(
+                usuario__sector__junta_vecinos_id=junta_id
+            )
+
+        if sector_id:
+            caracterizaciones = caracterizaciones.filter(usuario__sector_id=sector_id)
+
+        if rango_etario:
+            caracterizaciones = self.filtrar_por_rango_etario(
+                caracterizaciones,
+                rango_etario,
+            )
+
+        sectores_disponibles = Sector.objects.filter(
+            activo=True,
+            junta_vecinos__activa=True,
+        )
+
+        if junta_id:
+            sectores_disponibles = sectores_disponibles.filter(
+                junta_vecinos_id=junta_id
+            )
+
+        sectores_disponibles = sectores_disponibles.order_by(
+            "junta_vecinos__nombre",
+            "nombre",
+        )
 
         total_general = caracterizaciones.count()
 
-        juntas = JuntaVecinos.objects.filter(activa=True).order_by("nombre")
+        juntas = JuntaVecinos.objects.filter(activa=True)
+
+        if junta_id:
+            juntas = juntas.filter(id=junta_id)
+        elif sector_id:
+            juntas = juntas.filter(sectores__id=sector_id)
+
+        juntas = juntas.order_by("nombre")
 
         resumen_juntas = []
 
@@ -188,6 +282,11 @@ class CaracterizacionComunitariaMunicipalView(generics.GenericAPIView):
                 }
 
             resumen = caracterizaciones_junta.aggregate(
+                personas_0_17=Sum("cantidad_menores_18"),
+                personas_18_29=Sum("cantidad_18_29"),
+                personas_30_44=Sum("cantidad_30_44"),
+                personas_45_59=Sum("cantidad_45_59"),
+                personas_60_mas=Sum("cantidad_adultos_mayores"),
                 promedio_personas_hogar=Avg("cantidad_personas_hogar"),
                 hogares_con_menores=Count(
                     "id",
@@ -222,6 +321,11 @@ class CaracterizacionComunitariaMunicipalView(generics.GenericAPIView):
                     "hogares_con_adultos_mayores": resumen[
                         "hogares_con_adultos_mayores"
                     ],
+                    "personas_0_17": resumen["personas_0_17"] or 0,
+                    "personas_18_29": resumen["personas_18_29"] or 0,
+                    "personas_30_44": resumen["personas_30_44"] or 0,
+                    "personas_45_59": resumen["personas_45_59"] or 0,
+                    "personas_60_mas": resumen["personas_60_mas"] or 0,
                     "acceso_internet": {
                         "si": resumen["hogares_con_internet"],
                         "no": resumen["hogares_sin_internet"],
@@ -238,7 +342,160 @@ class CaracterizacionComunitariaMunicipalView(generics.GenericAPIView):
         return Response(
             {
                 "total_caracterizados": total_general,
-                "minimo_requerido": (self.MINIMO_RESPUESTAS),
+                "minimo_requerido": self.MINIMO_RESPUESTAS,
+                "sectores": [
+                    {
+                        "sector_id": sector.id,
+                        "sector_nombre": sector.nombre,
+                        "junta_id": sector.junta_vecinos_id,
+                        "junta_nombre": sector.junta_vecinos.nombre,
+                    }
+                    for sector in sectores_disponibles
+                ],
                 "juntas": resumen_juntas,
             }
         )
+
+
+class CaracterizacionComunitariaMunicipalCsvView(
+    CaracterizacionComunitariaMunicipalView
+):
+    def get(self, request):
+        caracterizaciones = CaracterizacionComunitaria.objects.filter(
+            usuario__is_active=True,
+            usuario__sector__isnull=False,
+            usuario__sector__junta_vecinos__activa=True,
+            usuario__estado_asociacion_sector="CONFIRMADA",
+        )
+
+        junta_id = request.query_params.get("junta_id")
+        sector_id = request.query_params.get("sector_id")
+        rango_etario = request.query_params.get("rango_etario")
+
+        if junta_id:
+            caracterizaciones = caracterizaciones.filter(
+                usuario__sector__junta_vecinos_id=junta_id
+            )
+
+        if sector_id:
+            caracterizaciones = caracterizaciones.filter(usuario__sector_id=sector_id)
+
+        if rango_etario:
+            caracterizaciones = self.filtrar_por_rango_etario(
+                caracterizaciones,
+                rango_etario,
+            )
+
+        juntas = JuntaVecinos.objects.filter(activa=True)
+
+        if junta_id:
+            juntas = juntas.filter(id=junta_id)
+        elif sector_id:
+            juntas = juntas.filter(sectores__id=sector_id)
+
+        juntas = juntas.order_by("nombre")
+
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="reporte_municipal.csv"'
+
+        response.write("\ufeff")
+
+        writer = csv.writer(response)
+
+        writer.writerow(
+            [
+                "Junta de Vecinos",
+                "Total caracterizaciones",
+                "Estado de datos",
+                "Promedio personas por hogar",
+                "Hogares con menores",
+                "Hogares con adultos mayores",
+                "Personas 0 a 17 años",
+                "Personas 18 a 29 años",
+                "Personas 30 a 44 años",
+                "Personas 45 a 59 años",
+                "Personas 60 años o más",
+                "Acceso a internet (%)",
+            ]
+        )
+
+        for junta in juntas:
+            datos = caracterizaciones.filter(usuario__sector__junta_vecinos_id=junta.id)
+
+            total = datos.count()
+
+            if total < self.MINIMO_RESPUESTAS:
+                writer.writerow(
+                    [
+                        junta.nombre,
+                        total,
+                        "Datos insuficientes",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                    ]
+                )
+                continue
+
+            resumen = datos.aggregate(
+                personas_0_17=Sum("cantidad_menores_18"),
+                personas_18_29=Sum("cantidad_18_29"),
+                personas_30_44=Sum("cantidad_30_44"),
+                personas_45_59=Sum("cantidad_45_59"),
+                personas_60_mas=Sum("cantidad_adultos_mayores"),
+                promedio_personas_hogar=Avg("cantidad_personas_hogar"),
+                hogares_con_menores=Count(
+                    "id",
+                    filter=Q(cantidad_menores_18__gt=0),
+                ),
+                hogares_con_adultos_mayores=Count(
+                    "id",
+                    filter=Q(cantidad_adultos_mayores__gt=0),
+                ),
+                hogares_con_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet=True),
+                ),
+                respuestas_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet__isnull=False),
+                ),
+            )
+
+            respuestas_internet = resumen["respuestas_internet"] or 0
+
+            porcentaje_internet = (
+                round(
+                    (resumen["hogares_con_internet"] / respuestas_internet) * 100,
+                    2,
+                )
+                if respuestas_internet > 0
+                else 0
+            )
+
+            promedio = resumen["promedio_personas_hogar"]
+
+            writer.writerow(
+                [
+                    junta.nombre,
+                    total,
+                    "Datos disponibles",
+                    round(float(promedio), 2) if promedio is not None else 0,
+                    resumen["hogares_con_menores"],
+                    resumen["hogares_con_adultos_mayores"],
+                    resumen["personas_0_17"] or 0,
+                    resumen["personas_18_29"] or 0,
+                    resumen["personas_30_44"] or 0,
+                    resumen["personas_45_59"] or 0,
+                    resumen["personas_60_mas"] or 0,
+                    porcentaje_internet,
+                ]
+            )
+
+        return response

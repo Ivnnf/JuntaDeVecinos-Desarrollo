@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom'
 
 type Distribucion = Record<string, number>
 
+type SectorDisponible = {
+  sector_id: number
+  sector_nombre: string
+  junta_id: number
+  junta_nombre: string
+}
+
 type JuntaIndicadores = {
   junta_id: number
   junta_nombre: string
@@ -12,6 +19,13 @@ type JuntaIndicadores = {
   promedio_personas_hogar?: number
   hogares_con_menores?: number
   hogares_con_adultos_mayores?: number
+
+  personas_0_17?: number
+  personas_18_29?: number
+  personas_30_44?: number
+  personas_45_59?: number
+  personas_60_mas?: number
+
   acceso_internet?: {
     si: number
     no: number
@@ -26,6 +40,7 @@ type RespuestaIndicadores = {
   total_caracterizados: number
   minimo_requerido: number
   juntas: JuntaIndicadores[]
+  sectores: SectorDisponible[]
 }
 
 function IndicadoresMunicipalesPage() {
@@ -38,17 +53,49 @@ function IndicadoresMunicipalesPage() {
   const [error, setError] =
     useState('')
 
+  const [exportando, setExportando] =
+    useState(false)
+
   const [filtroJunta, setFiltroJunta] =
     useState('TODAS')
+
+  const [filtroSector, setFiltroSector] =
+    useState('TODOS')
+
+  const [filtroRangoEtario, setFiltroRangoEtario] =
+    useState('TODOS')
+
+  useEffect(() => {
+    setFiltroSector('TODOS')
+  }, [filtroJunta])
 
   useEffect(() => {
     const cargarIndicadores = async () => {
       try {
         setCargando(true)
         setError('')
+        const params = new URLSearchParams()
+
+        if (filtroJunta !== 'TODAS') {
+          params.set('junta_id', filtroJunta)
+        }
+
+        if (filtroSector !== 'TODOS') {
+          params.set('sector_id', filtroSector)
+        }
+
+        if (filtroRangoEtario !== 'TODOS') {
+          params.set('rango_etario', filtroRangoEtario)
+        }
+
+        const query = params.toString()
+
+        const url =
+          'http://localhost:8000/api/profiles/municipal/caracterizacion/' +
+          (query ? `?${query}` : '')
 
         const response = await fetch(
-          'http://localhost:8000/api/profiles/municipal/caracterizacion/',
+          url,
           {
             credentials: 'include',
           },
@@ -76,8 +123,68 @@ function IndicadoresMunicipalesPage() {
     }
 
     void cargarIndicadores()
-  }, [])
+  }, [
+    filtroJunta,
+    filtroSector,
+    filtroRangoEtario,
+  ])
+  const exportarCsv = async () => {
+    try {
+      setExportando(true)
+      setError('')
 
+      const params = new URLSearchParams()
+
+      if (filtroJunta !== 'TODAS') {
+        params.set('junta_id', filtroJunta)
+      }
+
+      if (filtroSector !== 'TODOS') {
+        params.set('sector_id', filtroSector)
+      }
+
+      if (filtroRangoEtario !== 'TODOS') {
+        params.set('rango_etario', filtroRangoEtario)
+      }
+
+      const query = params.toString()
+
+      const url =
+        'http://localhost:8000/api/profiles/municipal/caracterizacion/exportar/' +
+        (query ? `?${query}` : '')
+
+      const response = await fetch(url, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error(
+          'No fue posible exportar el reporte municipal.',
+        )
+      }
+
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+
+      const enlace = document.createElement('a')
+      enlace.href = downloadUrl
+      enlace.download = 'reporte_municipal.csv'
+
+      document.body.appendChild(enlace)
+      enlace.click()
+      enlace.remove()
+
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Ocurrió un error al exportar el reporte.',
+      )
+    } finally {
+      setExportando(false)
+    }
+  }
   const juntasConDatos =
     datos?.juntas.filter(
       (junta) => junta.datos_disponibles,
@@ -302,9 +409,10 @@ function IndicadoresMunicipalesPage() {
                   <select
                     className="select select-bordered select-sm w-full"
                     value={filtroJunta}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setFiltroJunta(event.target.value)
-                    }
+                      setFiltroSector('TODOS')
+                    }}
                   >
                     <option value="TODAS">
                       Todas las Juntas
@@ -320,6 +428,87 @@ function IndicadoresMunicipalesPage() {
                     ))}
                   </select>
                 </label>
+                <label className="form-control w-full sm:w-72">
+                  <div className="label py-1">
+                    <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                      Filtrar por Sector
+                    </span>
+                  </div>
+
+                  <select
+                    className="select select-bordered select-sm w-full"
+                    value={filtroSector}
+                    onChange={(event) =>
+                      setFiltroSector(event.target.value)
+                    }
+                  >
+                    <option value="TODOS">
+                      Todos los Sectores
+                    </option>
+
+                    {datos.sectores.map((sector) => (
+                      <option
+                        key={sector.sector_id}
+                        value={String(sector.sector_id)}
+                      >
+                        {sector.sector_nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form-control w-full sm:w-72">
+                  <div className="label py-1">
+                    <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                      Filtrar por Rango Etario
+                    </span>
+                  </div>
+
+                  <select
+                    className="select select-bordered select-sm w-full"
+                    value={filtroRangoEtario}
+                    onChange={(event) =>
+                      setFiltroRangoEtario(event.target.value)
+                    }
+                  >
+                    <option value="TODOS">
+                      Todos los Rangos
+                    </option>
+
+                    <option value="0_17">
+                      Menores de 18 años
+                    </option>
+
+                    <option value="18_29">
+                      18 a 29 años
+                    </option>
+
+                    <option value="30_44">
+                      30 a 44 años
+                    </option>
+
+                    <option value="45_59">
+                      45 a 59 años
+                    </option>
+
+                    <option value="60_MAS">
+                      60 años o más
+                    </option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm w-full sm:w-auto"
+                  onClick={() => void exportarCsv()}
+                  disabled={exportando}
+                >
+                  {exportando && (
+                    <span className="loading loading-spinner loading-xs" />
+                  )}
+
+                  {exportando
+                    ? 'Exportando...'
+                    : 'Exportar CSV'}
+                </button>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -412,8 +601,8 @@ function IndicadoresMunicipalesPage() {
                   const internetTotal =
                     junta.acceso_internet
                       ? junta.acceso_internet.si +
-                        junta.acceso_internet.no +
-                        junta.acceso_internet.sin_respuesta
+                      junta.acceso_internet.no +
+                      junta.acceso_internet.sin_respuesta
                       : 0
 
                   return (
@@ -565,9 +754,9 @@ function IndicadoresMunicipalesPage() {
                               <p className="mt-2 text-3xl font-bold">
                                 {junta.acceso_internet
                                   ? `${porcentaje(
-                                      junta.acceso_internet.si,
-                                      internetTotal,
-                                    )}%`
+                                    junta.acceso_internet.si,
+                                    internetTotal,
+                                  )}%`
                                   : '—'}
                               </p>
 
@@ -576,7 +765,66 @@ function IndicadoresMunicipalesPage() {
                               </p>
                             </div>
                           </div>
+                          {/* Distribución etaria */}
+                          <div className="mb-6 rounded-xl border border-base-300 bg-base-100 p-5">
+                            <div className="mb-4">
+                              <h4 className="font-bold">
+                                Distribución etaria del hogar
+                              </h4>
 
+                              <p className="mt-1 text-sm text-base-content/55">
+                                Total de personas registradas por rango de edad
+                                en las caracterizaciones seleccionadas.
+                              </p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                              <div className="rounded-lg bg-base-200/60 p-4">
+                                <p className="text-xs font-semibold uppercase text-base-content/55">
+                                  0 a 17 años
+                                </p>
+                                <p className="mt-2 text-2xl font-bold">
+                                  {junta.personas_0_17 ?? 0}
+                                </p>
+                              </div>
+
+                              <div className="rounded-lg bg-base-200/60 p-4">
+                                <p className="text-xs font-semibold uppercase text-base-content/55">
+                                  18 a 29 años
+                                </p>
+                                <p className="mt-2 text-2xl font-bold">
+                                  {junta.personas_18_29 ?? 0}
+                                </p>
+                              </div>
+
+                              <div className="rounded-lg bg-base-200/60 p-4">
+                                <p className="text-xs font-semibold uppercase text-base-content/55">
+                                  30 a 44 años
+                                </p>
+                                <p className="mt-2 text-2xl font-bold">
+                                  {junta.personas_30_44 ?? 0}
+                                </p>
+                              </div>
+
+                              <div className="rounded-lg bg-base-200/60 p-4">
+                                <p className="text-xs font-semibold uppercase text-base-content/55">
+                                  45 a 59 años
+                                </p>
+                                <p className="mt-2 text-2xl font-bold">
+                                  {junta.personas_45_59 ?? 0}
+                                </p>
+                              </div>
+
+                              <div className="rounded-lg bg-base-200/60 p-4">
+                                <p className="text-xs font-semibold uppercase text-base-content/55">
+                                  60 años o más
+                                </p>
+                                <p className="mt-2 text-2xl font-bold">
+                                  {junta.personas_60_mas ?? 0}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                           {/* Acceso a internet */}
                           {junta.acceso_internet && (
                             <section className="mb-5 rounded-2xl border border-cyan-500/20 bg-base-200/30 p-5">

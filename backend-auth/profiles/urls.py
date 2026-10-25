@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     CaracterizacionComunitariaDirectivaView,
+    CaracterizacionComunitariaMunicipalCsvView,
     CaracterizacionComunitariaMunicipalView,
     MiCaracterizacionComunitariaView,
 )
@@ -11,6 +12,11 @@ urlpatterns = [
         "municipal/caracterizacion/",
         CaracterizacionComunitariaMunicipalView.as_view(),
         name="municipal-caracterizacion",
+    ),
+    path(
+        "municipal/caracterizacion/exportar/",
+        CaracterizacionComunitariaMunicipalCsvView.as_view(),
+        name="municipal-caracterizacion-exportar",
     ),
     path(
         "mi-caracterizacion/",
