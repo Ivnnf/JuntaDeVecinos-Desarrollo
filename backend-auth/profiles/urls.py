@@ -5,9 +5,15 @@ from .views import (
     CaracterizacionComunitariaMunicipalCsvView,
     CaracterizacionComunitariaMunicipalView,
     MiCaracterizacionComunitariaView,
+    AnalisisCaracterizacionMunicipalView,
 )
 
 urlpatterns = [
+    path(
+        "municipal/caracterizacion/analisis/",
+        AnalisisCaracterizacionMunicipalView.as_view(),
+        name="municipal-caracterizacion-analisis",
+    ),
     path(
         "municipal/caracterizacion/",
         CaracterizacionComunitariaMunicipalView.as_view(),

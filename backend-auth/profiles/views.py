@@ -357,6 +357,305 @@ class CaracterizacionComunitariaMunicipalView(generics.GenericAPIView):
         )
 
 
+class AnalisisCaracterizacionMunicipalView(CaracterizacionComunitariaMunicipalView):
+    def get(self, request):
+        caracterizaciones = CaracterizacionComunitaria.objects.filter(
+            usuario__is_active=True,
+            usuario__sector__isnull=False,
+            usuario__sector__junta_vecinos__activa=True,
+            usuario__estado_asociacion_sector="CONFIRMADA",
+        )
+
+        junta_id = request.query_params.get("junta_id")
+        sector_id = request.query_params.get("sector_id")
+        rango_etario = request.query_params.get("rango_etario")
+
+        if junta_id:
+            caracterizaciones = caracterizaciones.filter(
+                usuario__sector__junta_vecinos_id=junta_id
+            )
+
+        if sector_id:
+            caracterizaciones = caracterizaciones.filter(usuario__sector_id=sector_id)
+
+        if rango_etario:
+            caracterizaciones = self.filtrar_por_rango_etario(
+                caracterizaciones,
+                rango_etario,
+            )
+
+        total = caracterizaciones.count()
+
+        if total < self.MINIMO_RESPUESTAS:
+            return Response(
+                {
+                    "total_caracterizaciones": total,
+                    "minimo_requerido": self.MINIMO_RESPUESTAS,
+                    "datos_suficientes": False,
+                    "distribucion_etaria": None,
+                    "rango_etario_predominante": None,
+                }
+            )
+
+        caracterizaciones_con_etario_completo = 0
+
+        for caracterizacion in caracterizaciones:
+            total_etario = (
+                caracterizacion.cantidad_menores_18
+                + caracterizacion.cantidad_18_29
+                + caracterizacion.cantidad_30_44
+                + caracterizacion.cantidad_45_59
+                + caracterizacion.cantidad_adultos_mayores
+            )
+
+            if total_etario == caracterizacion.cantidad_personas_hogar:
+                caracterizaciones_con_etario_completo += 1
+
+        porcentaje_cobertura_etaria = round(
+            (caracterizaciones_con_etario_completo / total) * 100,
+            2,
+        )
+
+        distribucion_etaria = {
+            "0_17": caracterizaciones.aggregate(total=Sum("cantidad_menores_18"))[
+                "total"
+            ]
+            or 0,
+            "18_29": caracterizaciones.aggregate(total=Sum("cantidad_18_29"))["total"]
+            or 0,
+            "30_44": caracterizaciones.aggregate(total=Sum("cantidad_30_44"))["total"]
+            or 0,
+            "45_59": caracterizaciones.aggregate(total=Sum("cantidad_45_59"))["total"]
+            or 0,
+            "60_MAS": caracterizaciones.aggregate(
+                total=Sum("cantidad_adultos_mayores")
+            )["total"]
+            or 0,
+        }
+
+        rango_predominante = (
+            max(
+                distribucion_etaria,
+                key=distribucion_etaria.get,
+            )
+            if any(distribucion_etaria.values())
+            else None
+        )
+
+        etiquetas_rangos = {
+            "0_17": "0 a 17 años",
+            "18_29": "18 a 29 años",
+            "30_44": "30 a 44 años",
+            "45_59": "45 a 59 años",
+            "60_MAS": "60 años o más",
+        }
+
+        rango_predominante_texto = (
+            etiquetas_rangos.get(rango_predominante) if rango_predominante else None
+        )
+
+        resumen_internet = caracterizaciones.aggregate(
+            hogares_con_internet=Count(
+                "id",
+                filter=Q(acceso_internet=True),
+            ),
+            hogares_sin_internet=Count(
+                "id",
+                filter=Q(acceso_internet=False),
+            ),
+            respuestas_internet=Count(
+                "id",
+                filter=Q(acceso_internet__isnull=False),
+            ),
+        )
+
+        respuestas_internet = resumen_internet["respuestas_internet"] or 0
+
+        porcentaje_internet = (
+            round(
+                (resumen_internet["hogares_con_internet"] / respuestas_internet) * 100,
+                2,
+            )
+            if respuestas_internet > 0
+            else None
+        )
+
+        if porcentaje_internet is None:
+            nivel_conectividad = None
+        elif porcentaje_internet >= 80:
+            nivel_conectividad = "ALTA"
+        elif porcentaje_internet >= 50:
+            nivel_conectividad = "MEDIA"
+        else:
+            nivel_conectividad = "BAJA"
+
+        distribucion_laboral = {
+            item["situacion_laboral"]: item["total"]
+            for item in (
+                caracterizaciones.values("situacion_laboral")
+                .annotate(total=Count("id"))
+                .order_by("situacion_laboral")
+            )
+        }
+
+        if distribucion_laboral:
+            maximo_laboral = max(distribucion_laboral.values())
+
+            situaciones_maximas = [
+                situacion
+                for situacion, cantidad in distribucion_laboral.items()
+                if cantidad == maximo_laboral
+            ]
+
+            situacion_laboral_predominante = (
+                situaciones_maximas[0] if len(situaciones_maximas) == 1 else None
+            )
+
+            empate_laboral = len(situaciones_maximas) > 1
+        else:
+            situacion_laboral_predominante = None
+            empate_laboral = False
+
+        conectividad_por_vivienda = []
+
+        resumen_vivienda_internet = (
+            caracterizaciones.values("tipo_vivienda")
+            .annotate(
+                total=Count("id"),
+                respuestas_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet__isnull=False),
+                ),
+                con_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet=True),
+                ),
+            )
+            .order_by("tipo_vivienda")
+        )
+
+        for item in resumen_vivienda_internet:
+            respuestas = item["respuestas_internet"] or 0
+
+            if (
+                item["total"] < self.MINIMO_RESPUESTAS
+                or respuestas < self.MINIMO_RESPUESTAS
+            ):
+                continue
+
+            porcentaje = (
+                round(
+                    (item["con_internet"] / respuestas) * 100,
+                    2,
+                )
+                if respuestas > 0
+                else None
+            )
+
+            conectividad_por_vivienda.append(
+                {
+                    "tipo_vivienda": item["tipo_vivienda"],
+                    "total": item["total"],
+                    "respuestas_internet": respuestas,
+                    "con_internet": item["con_internet"],
+                    "porcentaje_internet": porcentaje,
+                }
+            )
+
+        hallazgos = []
+
+        if porcentaje_cobertura_etaria == 100 and rango_predominante_texto:
+            hallazgos.append(
+                {
+                    "tipo": "DEMOGRAFIA",
+                    "titulo": "Rango etario predominante",
+                    "descripcion": (
+                        "El rango etario con mayor presencia en las "
+                        f"caracterizaciones seleccionadas es "
+                        f"{rango_predominante_texto}."
+                    ),
+                }
+            )
+        elif porcentaje_cobertura_etaria < 100:
+            hallazgos.append(
+                {
+                    "tipo": "DEMOGRAFIA",
+                    "titulo": "Cobertura etaria incompleta",
+                    "descripcion": (
+                        f"El {porcentaje_cobertura_etaria}% de las "
+                        "caracterizaciones seleccionadas cuenta con "
+                        "distribución etaria completa. Se recomienda "
+                        "completar los datos antes de interpretar un "
+                        "rango etario predominante."
+                    ),
+                }
+            )
+
+        if nivel_conectividad:
+            hallazgos.append(
+                {
+                    "tipo": "CONECTIVIDAD",
+                    "titulo": "Nivel de conectividad",
+                    "descripcion": (
+                        f"El {porcentaje_internet}% de los hogares con "
+                        "respuesta sobre conectividad dispone de acceso "
+                        f"a Internet. El nivel se clasifica como "
+                        f"{nivel_conectividad.lower()}."
+                    ),
+                }
+            )
+
+        if empate_laboral:
+            hallazgos.append(
+                {
+                    "tipo": "SITUACION_LABORAL",
+                    "titulo": "Distribución laboral equilibrada",
+                    "descripcion": (
+                        "No existe una situación laboral claramente "
+                        "predominante entre las caracterizaciones "
+                        "seleccionadas."
+                    ),
+                }
+            )
+        elif situacion_laboral_predominante:
+            hallazgos.append(
+                {
+                    "tipo": "SITUACION_LABORAL",
+                    "titulo": "Situación laboral predominante",
+                    "descripcion": (
+                        "La situación laboral con mayor presencia es "
+                        f"{situacion_laboral_predominante}."
+                    ),
+                }
+            )
+
+        return Response(
+            {
+                "total_caracterizaciones": total,
+                "minimo_requerido": self.MINIMO_RESPUESTAS,
+                "datos_suficientes": (total >= self.MINIMO_RESPUESTAS),
+                "caracterizaciones_con_etario_completo": (
+                    caracterizaciones_con_etario_completo
+                ),
+                "porcentaje_cobertura_etaria": (porcentaje_cobertura_etaria),
+                "distribucion_etaria": distribucion_etaria,
+                "rango_etario_predominante": rango_predominante,
+                "rango_etario_predominante_texto": (rango_predominante_texto),
+                "hogares_con_internet": resumen_internet["hogares_con_internet"],
+                "porcentaje_internet": porcentaje_internet,
+                "nivel_conectividad": nivel_conectividad,
+                "conectividad_por_vivienda": conectividad_por_vivienda,
+                "distribucion_laboral": distribucion_laboral,
+                "situacion_laboral_predominante": (situacion_laboral_predominante),
+                "empate_laboral": empate_laboral,
+                "situaciones_laborales_principales": (
+                    situaciones_maximas if distribucion_laboral else []
+                ),
+                "hallazgos": hallazgos,
+            }
+        )
+
+
 class CaracterizacionComunitariaMunicipalCsvView(
     CaracterizacionComunitariaMunicipalView
 ):

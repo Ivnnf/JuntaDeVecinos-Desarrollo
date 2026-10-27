@@ -43,12 +43,38 @@ type RespuestaIndicadores = {
   sectores: SectorDisponible[]
 }
 
+type HallazgoMunicipal = {
+  tipo: string
+  titulo: string
+  descripcion: string
+}
+
+type AnalisisMunicipal = {
+  total_caracterizaciones: number
+  minimo_requerido: number
+  datos_suficientes: boolean
+  distribucion_etaria: Record<string, number> | null
+  rango_etario_predominante: string | null
+  rango_etario_predominante_texto: string | null
+  hogares_con_internet?: number
+  porcentaje_internet?: number | null
+  nivel_conectividad?: string | null
+  distribucion_laboral?: Record<string, number>
+  situacion_laboral_predominante?: string | null
+  empate_laboral?: boolean
+  situaciones_laborales_principales?: string[]
+  hallazgos?: HallazgoMunicipal[]
+}
+
 function IndicadoresMunicipalesPage() {
   const [datos, setDatos] =
     useState<RespuestaIndicadores | null>(null)
 
   const [cargando, setCargando] =
     useState(true)
+
+  const [analisisMunicipal, setAnalisisMunicipal] =
+    useState<AnalisisMunicipal | null>(null)
 
   const [error, setError] =
     useState('')
@@ -123,6 +149,54 @@ function IndicadoresMunicipalesPage() {
     }
 
     void cargarIndicadores()
+  }, [
+    filtroJunta,
+    filtroSector,
+    filtroRangoEtario,
+  ])
+
+  useEffect(() => {
+    const cargarAnalisisMunicipal = async () => {
+      try {
+        const params = new URLSearchParams()
+
+        if (filtroJunta !== 'TODAS') {
+          params.set('junta_id', filtroJunta)
+        }
+
+        if (filtroSector !== 'TODOS') {
+          params.set('sector_id', filtroSector)
+        }
+
+        if (filtroRangoEtario !== 'TODOS') {
+          params.set('rango_etario', filtroRangoEtario)
+        }
+
+        const query = params.toString()
+
+        const url =
+          'http://localhost:8000/api/profiles/municipal/caracterizacion/analisis/' +
+          (query ? `?${query}` : '')
+
+        const response = await fetch(url, {
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          setAnalisisMunicipal(null)
+          return
+        }
+
+        const data: AnalisisMunicipal =
+          await response.json()
+
+        setAnalisisMunicipal(data)
+      } catch {
+        setAnalisisMunicipal(null)
+      }
+    }
+
+    void cargarAnalisisMunicipal()
   }, [
     filtroJunta,
     filtroSector,
@@ -293,6 +367,8 @@ function IndicadoresMunicipalesPage() {
       0,
     )
 
+
+
     return (
       <div className="space-y-3">
         {entradas.map(([clave, valor]) => {
@@ -419,6 +495,7 @@ function IndicadoresMunicipalesPage() {
                     </option>
 
                     {datos.juntas.map((junta) => (
+
                       <option
                         key={junta.junta_id}
                         value={String(junta.junta_id)}
@@ -577,7 +654,51 @@ function IndicadoresMunicipalesPage() {
                 </div>
               </div>
             </section>
+            {/* Análisis territorial */}
+            {analisisMunicipal?.datos_suficientes &&
+              analisisMunicipal.hallazgos &&
+              analisisMunicipal.hallazgos.length > 0 && (
+                <section className="mb-6">
+                  <div className="mb-4">
+                    <h2 className="text-2xl font-bold">
+                      Análisis territorial
+                    </h2>
 
+                    <p className="mt-1 text-sm text-base-content/55">
+                      Hallazgos detectados automáticamente a partir de
+                      las caracterizaciones seleccionadas.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {analisisMunicipal.hallazgos.map(
+                      (hallazgo, index) => (
+                        <div
+                          key={`${hallazgo.tipo}-${index}`}
+                          className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm"
+                        >
+                          <div className="mb-3">
+                            <span className="badge badge-outline badge-sm">
+                              {hallazgo.tipo.replaceAll('_', ' ')}
+                            </span>
+                          </div>
+
+                          <h3 className="font-bold">
+                            {hallazgo.titulo}
+                          </h3>
+
+                          <p className="mt-2 text-sm leading-relaxed text-base-content/65">
+                            {hallazgo.descripcion}
+                          </p>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </section>
+              )}
+
+            {/* Juntas */}
+            <section></section>
             {/* Juntas */}
             <section>
               <div className="mb-4">
