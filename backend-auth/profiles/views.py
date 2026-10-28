@@ -562,6 +562,201 @@ class AnalisisCaracterizacionMunicipalView(CaracterizacionComunitariaMunicipalVi
                 }
             )
 
+        conectividad_por_situacion_laboral = []
+
+        resumen_laboral_internet = (
+            caracterizaciones.values("situacion_laboral")
+            .annotate(
+                total=Count("id"),
+                respuestas_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet__isnull=False),
+                ),
+                con_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet=True),
+                ),
+            )
+            .order_by("situacion_laboral")
+        )
+
+        for item in resumen_laboral_internet:
+            respuestas = item["respuestas_internet"] or 0
+
+            if (
+                item["total"] < self.MINIMO_RESPUESTAS
+                or respuestas < self.MINIMO_RESPUESTAS
+            ):
+                continue
+
+            porcentaje = round(
+                (item["con_internet"] / respuestas) * 100,
+                2,
+            )
+
+            conectividad_por_situacion_laboral.append(
+                {
+                    "situacion_laboral": item["situacion_laboral"],
+                    "total": item["total"],
+                    "respuestas_internet": respuestas,
+                    "con_internet": item["con_internet"],
+                    "porcentaje_internet": porcentaje,
+                }
+            )
+
+        conectividad_por_nivel_educacional = []
+
+        resumen_educacion_internet = (
+            caracterizaciones.values("nivel_educacional")
+            .annotate(
+                total=Count("id"),
+                respuestas_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet__isnull=False),
+                ),
+                con_internet=Count(
+                    "id",
+                    filter=Q(acceso_internet=True),
+                ),
+            )
+            .order_by("nivel_educacional")
+        )
+
+        for item in resumen_educacion_internet:
+            respuestas = item["respuestas_internet"] or 0
+
+            if (
+                item["total"] < self.MINIMO_RESPUESTAS
+                or respuestas < self.MINIMO_RESPUESTAS
+            ):
+                continue
+
+            porcentaje = round(
+                (item["con_internet"] / respuestas) * 100,
+                2,
+            )
+
+            conectividad_por_nivel_educacional.append(
+                {
+                    "nivel_educacional": item["nivel_educacional"],
+                    "total": item["total"],
+                    "respuestas_internet": respuestas,
+                    "con_internet": item["con_internet"],
+                    "porcentaje_internet": porcentaje,
+                }
+            )
+
+        brecha_conectividad_educacional = None
+
+        grupos_educacionales_validos = [
+            item
+            for item in conectividad_por_nivel_educacional
+            if item["porcentaje_internet"] is not None
+        ]
+
+        if len(grupos_educacionales_validos) >= 2:
+            grupo_educacional_mayor = max(
+                grupos_educacionales_validos,
+                key=lambda item: item["porcentaje_internet"],
+            )
+
+            grupo_educacional_menor = min(
+                grupos_educacionales_validos,
+                key=lambda item: item["porcentaje_internet"],
+            )
+
+            diferencia_educacional = round(
+                grupo_educacional_mayor["porcentaje_internet"]
+                - grupo_educacional_menor["porcentaje_internet"],
+                2,
+            )
+
+            if diferencia_educacional >= 20:
+                brecha_conectividad_educacional = {
+                    "nivel_educacional_mayor": grupo_educacional_mayor[
+                        "nivel_educacional"
+                    ],
+                    "porcentaje_mayor": grupo_educacional_mayor["porcentaje_internet"],
+                    "nivel_educacional_menor": grupo_educacional_menor[
+                        "nivel_educacional"
+                    ],
+                    "porcentaje_menor": grupo_educacional_menor["porcentaje_internet"],
+                    "diferencia_puntos": diferencia_educacional,
+                }
+
+        brecha_conectividad_vivienda = None
+
+        conectividad_vivienda_homogenea = False
+
+        grupos_vivienda_validos = [
+            item
+            for item in conectividad_por_vivienda
+            if item["porcentaje_internet"] is not None
+        ]
+
+        if len(grupos_vivienda_validos) >= 2:
+            grupo_mayor = max(
+                grupos_vivienda_validos,
+                key=lambda item: item["porcentaje_internet"],
+            )
+
+            grupo_menor = min(
+                grupos_vivienda_validos,
+                key=lambda item: item["porcentaje_internet"],
+            )
+
+            diferencia = round(
+                grupo_mayor["porcentaje_internet"] - grupo_menor["porcentaje_internet"],
+                2,
+            )
+
+            conectividad_vivienda_homogenea = False
+
+            if diferencia >= 20:
+                brecha_conectividad_vivienda = {
+                    "tipo_vivienda_mayor": grupo_mayor["tipo_vivienda"],
+                    "porcentaje_mayor": grupo_mayor["porcentaje_internet"],
+                    "tipo_vivienda_menor": grupo_menor["tipo_vivienda"],
+                    "porcentaje_menor": grupo_menor["porcentaje_internet"],
+                    "diferencia_puntos": diferencia,
+                }
+            else:
+                conectividad_vivienda_homogenea = True
+
+        brecha_conectividad_laboral = None
+
+        grupos_laborales_validos = [
+            item
+            for item in conectividad_por_situacion_laboral
+            if item["porcentaje_internet"] is not None
+        ]
+
+        if len(grupos_laborales_validos) >= 2:
+            grupo_laboral_mayor = max(
+                grupos_laborales_validos,
+                key=lambda item: item["porcentaje_internet"],
+            )
+
+            grupo_laboral_menor = min(
+                grupos_laborales_validos,
+                key=lambda item: item["porcentaje_internet"],
+            )
+
+            diferencia_laboral = round(
+                grupo_laboral_mayor["porcentaje_internet"]
+                - grupo_laboral_menor["porcentaje_internet"],
+                2,
+            )
+
+            if diferencia_laboral >= 20:
+                brecha_conectividad_laboral = {
+                    "situacion_laboral_mayor": grupo_laboral_mayor["situacion_laboral"],
+                    "porcentaje_mayor": grupo_laboral_mayor["porcentaje_internet"],
+                    "situacion_laboral_menor": grupo_laboral_menor["situacion_laboral"],
+                    "porcentaje_menor": grupo_laboral_menor["porcentaje_internet"],
+                    "diferencia_puntos": diferencia_laboral,
+                }
+
         hallazgos = []
 
         if porcentaje_cobertura_etaria == 100 and rango_predominante_texto:
@@ -601,6 +796,66 @@ class AnalisisCaracterizacionMunicipalView(CaracterizacionComunitariaMunicipalVi
                         "respuesta sobre conectividad dispone de acceso "
                         f"a Internet. El nivel se clasifica como "
                         f"{nivel_conectividad.lower()}."
+                    ),
+                }
+            )
+        if brecha_conectividad_vivienda:
+
+            hallazgos.append(
+                {
+                    "tipo": "BRECHA_DIGITAL",
+                    "titulo": "Brecha de conectividad por vivienda",
+                    "descripcion": (
+                        "Se detectó una diferencia de "
+                        f"{brecha_conectividad_vivienda['diferencia_puntos']} "
+                        "puntos porcentuales en acceso a Internet entre "
+                        f"{brecha_conectividad_vivienda['tipo_vivienda_mayor']} "
+                        "y "
+                        f"{brecha_conectividad_vivienda['tipo_vivienda_menor']}."
+                    ),
+                }
+            )
+        elif conectividad_vivienda_homogenea:
+            hallazgos.append(
+                {
+                    "tipo": "PATRON_TERRITORIAL",
+                    "titulo": "Conectividad homogénea por tipo de vivienda",
+                    "descripcion": (
+                        "Los tipos de vivienda con información suficiente "
+                        "presentan niveles similares de acceso a Internet, "
+                        "sin una brecha significativa entre los grupos "
+                        "analizados."
+                    ),
+                }
+            )
+        if brecha_conectividad_laboral:
+            hallazgos.append(
+                {
+                    "tipo": "BRECHA_DIGITAL",
+                    "titulo": "Brecha de conectividad por situación laboral",
+                    "descripcion": (
+                        "Se detectó una diferencia de "
+                        f"{brecha_conectividad_laboral['diferencia_puntos']} "
+                        "puntos porcentuales en acceso a Internet entre "
+                        f"{brecha_conectividad_laboral['situacion_laboral_mayor']} "
+                        "y "
+                        f"{brecha_conectividad_laboral['situacion_laboral_menor']}."
+                    ),
+                }
+            )
+
+        if brecha_conectividad_educacional:
+            hallazgos.append(
+                {
+                    "tipo": "BRECHA_DIGITAL",
+                    "titulo": "Brecha de conectividad por nivel educacional",
+                    "descripcion": (
+                        "Se detectó una diferencia de "
+                        f"{brecha_conectividad_educacional['diferencia_puntos']} "
+                        "puntos porcentuales en acceso a Internet entre "
+                        f"{brecha_conectividad_educacional['nivel_educacional_mayor']} "
+                        "y "
+                        f"{brecha_conectividad_educacional['nivel_educacional_menor']}."
                     ),
                 }
             )
@@ -645,6 +900,16 @@ class AnalisisCaracterizacionMunicipalView(CaracterizacionComunitariaMunicipalVi
                 "porcentaje_internet": porcentaje_internet,
                 "nivel_conectividad": nivel_conectividad,
                 "conectividad_por_vivienda": conectividad_por_vivienda,
+                "brecha_conectividad_vivienda": brecha_conectividad_vivienda,
+                "conectividad_vivienda_homogenea": (conectividad_vivienda_homogenea),
+                "conectividad_por_situacion_laboral": (
+                    conectividad_por_situacion_laboral
+                ),
+                "brecha_conectividad_laboral": (brecha_conectividad_laboral),
+                "conectividad_por_nivel_educacional": (
+                    conectividad_por_nivel_educacional
+                ),
+                "brecha_conectividad_educacional": (brecha_conectividad_educacional),
                 "distribucion_laboral": distribucion_laboral,
                 "situacion_laboral_predominante": (situacion_laboral_predominante),
                 "empate_laboral": empate_laboral,

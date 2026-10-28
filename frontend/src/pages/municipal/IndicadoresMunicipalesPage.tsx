@@ -59,6 +59,49 @@ type AnalisisMunicipal = {
   hogares_con_internet?: number
   porcentaje_internet?: number | null
   nivel_conectividad?: string | null
+  conectividad_por_vivienda?: {
+    tipo_vivienda: string
+    total: number
+    respuestas_internet: number
+    con_internet: number
+    porcentaje_internet: number | null
+  }[]
+  conectividad_por_situacion_laboral?: {
+    situacion_laboral: string
+    total: number
+    respuestas_internet: number
+    con_internet: number
+    porcentaje_internet: number | null
+  }[]
+  conectividad_por_nivel_educacional?: {
+    nivel_educacional: string
+    total: number
+    respuestas_internet: number
+    con_internet: number
+    porcentaje_internet: number | null
+  }[]
+  brecha_conectividad_educacional?: {
+    nivel_educacional_mayor: string
+    porcentaje_mayor: number
+    nivel_educacional_menor: string
+    porcentaje_menor: number
+    diferencia_puntos: number
+  } | null
+  brecha_conectividad_laboral?: {
+    situacion_laboral_mayor: string
+    porcentaje_mayor: number
+    situacion_laboral_menor: string
+    porcentaje_menor: number
+    diferencia_puntos: number
+  } | null
+  brecha_conectividad_vivienda?: {
+    tipo_vivienda_mayor: string
+    porcentaje_mayor: number
+    tipo_vivienda_menor: string
+    porcentaje_menor: number
+    diferencia_puntos: number
+  } | null
+  conectividad_vivienda_homogenea?: boolean
   distribucion_laboral?: Record<string, number>
   situacion_laboral_predominante?: string | null
   empate_laboral?: boolean
