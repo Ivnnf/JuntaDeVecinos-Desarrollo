@@ -438,7 +438,7 @@ class AnalisisCaracterizacionMunicipalView(CaracterizacionComunitariaMunicipalVi
                 distribucion_etaria,
                 key=distribucion_etaria.get,
             )
-            if any(distribucion_etaria.values())
+            if porcentaje_cobertura_etaria == 100 and any(distribucion_etaria.values())
             else None
         )
 
