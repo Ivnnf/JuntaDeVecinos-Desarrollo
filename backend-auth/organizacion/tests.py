@@ -4,6 +4,17 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 
+from .services.validacion_residencia import (
+    extraer_datos_personales,
+    extraer_fecha_emision,
+    validar_antiguedad_documento,
+    analizar_documento_residencia,
+    validar_coincidencia_comuna,
+    determinar_estado_verificacion,
+)
+
+from unittest.mock import patch
+
 from profiles.models import (
     HistorialGestionUsuario,
     Rol,
@@ -1299,4 +1310,416 @@ class GestionDirectivaTests(APITestCase):
             Cargo.objects.filter(
                 nombre="Vicepresidente",
             ).exists()
+        )
+
+
+class ExtraccionDatosResidenciaTests(APITestCase):
+
+    def test_extrae_nombre_direccion_y_comuna_en_misma_linea(self):
+        lineas = [
+            {
+                "texto": "Nombre del cliente: Juan Perez Soto",
+            },
+            {
+                "texto": "Direccion: Avenida Siempre Viva 123",
+            },
+            {
+                "texto": "Comuna: Puente Alto",
+            },
+        ]
+
+        resultado = extraer_datos_personales(lineas)
+
+        self.assertEqual(
+            resultado["nombre"],
+            "Juan Perez Soto",
+        )
+
+        self.assertEqual(
+            resultado["direccion"],
+            "Avenida Siempre Viva 123",
+        )
+
+        self.assertEqual(
+            resultado["comuna"],
+            "Puente Alto",
+        )
+
+    def test_extrae_datos_cuando_etiqueta_y_valor_estan_en_cajas_separadas(self):
+        lineas = [
+            {
+                "texto": "Nombre del cliente",
+                "caja": [
+                    [10, 10],
+                    [120, 10],
+                    [120, 30],
+                    [10, 30],
+                ],
+            },
+            {
+                "texto": "Juan Perez Soto",
+                "caja": [
+                    [150, 10],
+                    [280, 10],
+                    [280, 30],
+                    [150, 30],
+                ],
+            },
+            {
+                "texto": "Direccion",
+                "caja": [
+                    [10, 50],
+                    [90, 50],
+                    [90, 70],
+                    [10, 70],
+                ],
+            },
+            {
+                "texto": "Avenida Siempre Viva 123",
+                "caja": [
+                    [120, 50],
+                    [320, 50],
+                    [320, 70],
+                    [120, 70],
+                ],
+            },
+            {
+                "texto": "Comuna",
+                "caja": [
+                    [10, 90],
+                    [80, 90],
+                    [80, 110],
+                    [10, 110],
+                ],
+            },
+            {
+                "texto": "Puente Alto",
+                "caja": [
+                    [110, 90],
+                    [220, 90],
+                    [220, 110],
+                    [110, 110],
+                ],
+            },
+        ]
+
+        resultado = extraer_datos_personales(lineas)
+
+        self.assertEqual(
+            resultado["nombre"],
+            "Juan Perez Soto",
+        )
+
+        self.assertEqual(
+            resultado["direccion"],
+            "Avenida Siempre Viva 123",
+        )
+
+        self.assertEqual(
+            resultado["comuna"],
+            "Puente Alto",
+        )
+
+    def test_extrae_datos_sin_etiquetas_usando_bloque_domicilio(self):
+        lineas = [
+            {
+                "texto": "Juan Perez Soto",
+                "caja": [
+                    [20, 10],
+                    [180, 10],
+                    [180, 30],
+                    [20, 30],
+                ],
+            },
+            {
+                "texto": "Avenida Siempre Viva 123",
+                "caja": [
+                    [20, 45],
+                    [240, 45],
+                    [240, 65],
+                    [20, 65],
+                ],
+            },
+            {
+                "texto": "Puente Alto",
+                "caja": [
+                    [20, 80],
+                    [140, 80],
+                    [140, 100],
+                    [20, 100],
+                ],
+            },
+        ]
+
+        resultado = extraer_datos_personales(lineas)
+
+        self.assertEqual(
+            resultado["nombre"],
+            "Juan Perez Soto",
+        )
+
+        self.assertEqual(
+            resultado["direccion"],
+            "Avenida Siempre Viva 123",
+        )
+
+        self.assertEqual(
+            resultado["comuna"],
+            "Puente Alto",
+        )
+
+    def test_extrae_fecha_emision_sin_confundirla_con_vencimiento(self):
+        texto = """
+        Fecha de emision: 15-10-2026
+        Fecha de vencimiento: 05-11-2026
+        """
+
+        resultado = extraer_fecha_emision(
+            texto,
+        )
+
+        self.assertEqual(
+            resultado,
+            date(2026, 10, 15),
+        )
+
+    def test_extrae_fecha_emision_desde_cajas_separadas(self):
+        lineas = [
+            {
+                "texto": "Fecha de emision",
+                "caja": [
+                    [10, 10],
+                    [130, 10],
+                    [130, 30],
+                    [10, 30],
+                ],
+            },
+            {
+                "texto": "15-10-2026",
+                "caja": [
+                    [160, 10],
+                    [250, 10],
+                    [250, 30],
+                    [160, 30],
+                ],
+            },
+            {
+                "texto": "Fecha de vencimiento",
+                "caja": [
+                    [10, 50],
+                    [150, 50],
+                    [150, 70],
+                    [10, 70],
+                ],
+            },
+            {
+                "texto": "05-11-2026",
+                "caja": [
+                    [180, 50],
+                    [270, 50],
+                    [270, 70],
+                    [180, 70],
+                ],
+            },
+        ]
+
+        resultado = extraer_fecha_emision(
+            "",
+            lineas,
+        )
+
+        self.assertEqual(
+            resultado,
+            date(2026, 10, 15),
+        )
+
+    @patch(
+        "organizacion.services.validacion_residencia.timezone.localdate",
+        return_value=date(2026, 11, 3),
+    )
+    def test_documento_de_exactamente_90_dias_es_vigente(
+        self,
+        mock_localdate,
+    ):
+        resultado = validar_antiguedad_documento(date(2026, 8, 5))
+
+        self.assertTrue(resultado["valida"])
+
+        self.assertEqual(
+            resultado["dias_antiguedad"],
+            90,
+        )
+
+        self.assertEqual(
+            resultado["motivo"],
+            "Documento vigente.",
+        )
+
+    @patch(
+        "organizacion.services.validacion_residencia.timezone.localdate",
+        return_value=date(2026, 11, 3),
+    )
+    def test_documento_de_91_dias_no_es_vigente(
+        self,
+        mock_localdate,
+    ):
+        resultado = validar_antiguedad_documento(date(2026, 8, 4))
+
+        self.assertFalse(resultado["valida"])
+
+        self.assertEqual(
+            resultado["dias_antiguedad"],
+            91,
+        )
+
+        self.assertIn(
+            "90",
+            resultado["motivo"],
+        )
+
+    @patch(
+        "organizacion.services.validacion_residencia.timezone.localdate",
+        return_value=date(2026, 11, 3),
+    )
+    def test_documento_con_fecha_futura_no_es_vigente(
+        self,
+        mock_localdate,
+    ):
+        resultado = validar_antiguedad_documento(date(2026, 11, 4))
+
+        self.assertFalse(resultado["valida"])
+
+        self.assertEqual(
+            resultado["dias_antiguedad"],
+            -1,
+        )
+
+        self.assertIn(
+            "futuro",
+            resultado["motivo"],
+        )
+
+    @patch(
+        "organizacion.services.validacion_residencia.timezone.localdate",
+        return_value=date(2026, 11, 3),
+    )
+    def test_analiza_documento_residencia_completo(
+        self,
+        mock_localdate,
+    ):
+        resultado_ocr = {
+            "texto_completo": (
+                "Nombre del cliente: Juan Perez Soto\n"
+                "Direccion: Avenida Siempre Viva 123\n"
+                "Comuna: Puente Alto\n"
+                "Fecha de emision: 15-10-2026"
+            ),
+            "lineas": [
+                {
+                    "texto": "Nombre del cliente: Juan Perez Soto",
+                },
+                {
+                    "texto": "Direccion: Avenida Siempre Viva 123",
+                },
+                {
+                    "texto": "Comuna: Puente Alto",
+                },
+                {
+                    "texto": "Fecha de emision: 15-10-2026",
+                },
+            ],
+            "confianza_promedio": 0.96,
+        }
+
+        resultado = analizar_documento_residencia(resultado_ocr)
+
+        self.assertEqual(
+            resultado["nombre"],
+            "Juan Perez Soto",
+        )
+
+        self.assertEqual(
+            resultado["direccion"],
+            "Avenida Siempre Viva 123",
+        )
+
+        self.assertEqual(
+            resultado["comuna"],
+            "Puente Alto",
+        )
+
+        self.assertEqual(
+            resultado["fecha_emision"],
+            date(2026, 10, 15),
+        )
+
+        self.assertEqual(
+            resultado["confianza_ocr"],
+            0.96,
+        )
+
+        self.assertTrue(resultado["documento_vigente"])
+
+        self.assertEqual(
+            resultado["dias_antiguedad"],
+            19,
+        )
+
+    def test_comuna_coincide_aunque_ocr_agregue_texto_adicional(self):
+        resultado = validar_coincidencia_comuna(
+            "PUENTE ALTO - REGION METROPOLITANA",
+            "Puente Alto",
+        )
+
+        self.assertTrue(resultado["coincide"])
+
+        self.assertIn(
+            "coincide",
+            resultado["motivo"].lower(),
+        )
+
+    def test_comuna_distinta_no_coincide(self):
+        resultado = validar_coincidencia_comuna(
+            "La Florida",
+            "Puente Alto",
+        )
+
+        self.assertFalse(resultado["coincide"])
+
+        self.assertIn(
+            "no coincide",
+            resultado["motivo"].lower(),
+        )
+
+    def test_documento_vigente_y_comuna_correcta_pasa_a_revision_manual(self):
+        estado = determinar_estado_verificacion(
+            documento_vigente=True,
+            comuna_coincide=True,
+        )
+
+        self.assertEqual(
+            estado,
+            "REVISION_MANUAL",
+        )
+
+    def test_documento_no_vigente_se_rechaza(self):
+        estado = determinar_estado_verificacion(
+            documento_vigente=False,
+            comuna_coincide=True,
+        )
+
+        self.assertEqual(
+            estado,
+            "RECHAZADA",
+        )
+
+    def test_comuna_incorrecta_rechaza_verificacion(self):
+        estado = determinar_estado_verificacion(
+            documento_vigente=True,
+            comuna_coincide=False,
+        )
+
+        self.assertEqual(
+            estado,
+            "RECHAZADA",
         )
