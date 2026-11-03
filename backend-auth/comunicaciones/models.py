@@ -4,6 +4,7 @@ from django.db import models
 from organizacion.models import Directiva
 from eventos.models import Evento
 
+
 class Publicacion(models.Model):
     directiva = models.ForeignKey(
         Directiva,
@@ -118,42 +119,28 @@ class Notificacion(models.Model):
                 ),
                 name="ck_notificacion_un_origen",
             ),
-
             models.UniqueConstraint(
                 fields=[
                     "publicacion",
                     "usuario",
                 ],
-                condition=models.Q(
-                    publicacion__isnull=False,
-                ),
                 name="uq_notificacion_publicacion_usuario",
             ),
-
             models.UniqueConstraint(
                 fields=[
                     "evento",
                     "usuario",
                 ],
-                condition=models.Q(
-                    evento__isnull=False,
-                ),
                 name="uq_notificacion_evento_usuario",
             ),
         ]
 
     def __str__(self):
         if self.publicacion:
-            return (
-                f"{self.usuario} - "
-                f"{self.publicacion.titulo}"
-            )
+            return f"{self.usuario} - " f"{self.publicacion.titulo}"
 
         if self.evento:
-            return (
-                f"{self.usuario} - "
-                f"{self.evento.titulo}"
-            )
+            return f"{self.usuario} - " f"{self.evento.titulo}"
 
         return str(self.usuario)
 
