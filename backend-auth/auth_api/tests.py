@@ -10,6 +10,7 @@ from organizacion.models import (
     IntegranteDirectiva,
     JuntaVecinos,
     Sector,
+    VerificacionResidencia,
 )
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
@@ -1129,13 +1130,9 @@ class AutenticacionTests(APITestCase):
             cargo=cargo,
         )
 
-        self.assertFalse(
-            integrante.activo
-        )
+        self.assertFalse(integrante.activo)
 
-        self.assertIsNotNone(
-            integrante.fecha_fin
-        )
+        self.assertIsNotNone(integrante.fecha_fin)
 
     def test_vecino_no_puede_modificar_roles_usuario(self):
         Usuario = get_user_model()
@@ -1265,4 +1262,70 @@ class AutenticacionTests(APITestCase):
         self.assertNotIn(
             "SupervisorPrueba",
             nombres,
+        )
+
+    def test_registro_vecino_si_falla_ocr_pasa_a_revision_manual(self):
+        junta = JuntaVecinos.objects.create(
+            nombre="Junta OCR Fallido Test",
+            comuna="Puente Alto",
+            activa=True,
+        )
+
+        sector = Sector.objects.create(
+            junta_vecinos=junta,
+            nombre="Sector OCR Fallido Test",
+            activo=True,
+        )
+
+        archivo = SimpleUploadedFile(
+            "comprobante_fallido.png",
+            b"contenido de prueba",
+            content_type="image/png",
+        )
+
+        with patch(
+            "auth_api.serializers.extraer_texto_documento",
+            side_effect=Exception("Error OCR simulado"),
+        ):
+            response = self.client.post(
+                "/api/auth/registro/",
+                {
+                    "username": "vecino_ocr_fallido",
+                    "rut": "12.345.678-5",
+                    "nombres": "Vecino",
+                    "apellido_paterno": "OCR",
+                    "apellido_materno": "Fallido",
+                    "email": "ocr.fallido@test.cl",
+                    "password": "PasswordNuevo123!",
+                    "confirmar_password": "PasswordNuevo123!",
+                    "sector_id": sector.id,
+                    "tipo_documento": "ELECTRICIDAD",
+                    "archivo": archivo,
+                },
+                format="multipart",
+            )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        Usuario = get_user_model()
+
+        usuario = Usuario.objects.get(
+            username="vecino_ocr_fallido",
+        )
+
+        verificacion = VerificacionResidencia.objects.get(
+            usuario=usuario,
+        )
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.assertIn(
+            "revisión manual",
+            verificacion.observacion_automatica.lower(),
         )

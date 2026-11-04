@@ -20,7 +20,6 @@ from organizacion.services.validacion_residencia import (
 )
 
 
-
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
 
@@ -329,24 +328,21 @@ class RegistroVecinoSerializer(serializers.Serializer):
                 ]
             )
 
-        except Exception as error:
+        except Exception:
 
-            observaciones = [
-                analisis["motivo_antiguedad"],
-                validacion_comuna["motivo"],
-            ]
+            verificacion.estado = VerificacionResidencia.Estado.REVISION_MANUAL
 
-            if documento_duplicado:
-                observaciones.append(
-                    "El mismo archivo ya fue utilizado "
-                    "en otra verificación de residencia."
-                )
-
-            verificacion.observacion_automatica = " ".join(observaciones)
+            verificacion.observacion_automatica = (
+                "No fue posible procesar automáticamente "
+                "el documento de residencia. "
+                "Se requiere revisión manual."
+            )
 
             verificacion.save(
                 update_fields=[
                     "hash_archivo",
+                    "documento_duplicado",
+                    "estado",
                     "observacion_automatica",
                     "fecha_actualizacion",
                 ]
@@ -408,6 +404,7 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
             return obj.sector.junta_vecinos.nombre
 
         return None
+
     def get_junta_comuna(self, obj):
         if obj.sector:
             return obj.sector.junta_vecinos.comuna
@@ -714,9 +711,9 @@ class CrearUsuarioMunicipalSerializer(serializers.Serializer):
         )
 
         return usuario
-class CrearUsuarioVecinoAdminSerializer(
-    CrearUsuarioMunicipalSerializer
-):
+
+
+class CrearUsuarioVecinoAdminSerializer(CrearUsuarioMunicipalSerializer):
     junta_id = serializers.IntegerField(
         write_only=True,
     )
@@ -759,21 +756,13 @@ class CrearUsuarioVecinoAdminSerializer(
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data.pop(
-            "confirmar_password"
-        )
+        validated_data.pop("confirmar_password")
 
-        password = validated_data.pop(
-            "password"
-        )
+        password = validated_data.pop("password")
 
-        junta_id = validated_data.pop(
-            "junta_id"
-        )
+        junta_id = validated_data.pop("junta_id")
 
-        sector_id = validated_data.pop(
-            "sector_id"
-        )
+        sector_id = validated_data.pop("sector_id")
 
         sector = Sector.objects.select_related(
             "junta_vecinos",
@@ -784,15 +773,9 @@ class CrearUsuarioVecinoAdminSerializer(
             junta_vecinos__activa=True,
         )
 
-        request = self.context.get(
-            "request"
-        )
+        request = self.context.get("request")
 
-        administrador = (
-            request.user
-            if request is not None
-            else None
-        )
+        administrador = request.user if request is not None else None
 
         Usuario = get_user_model()
 
@@ -800,21 +783,13 @@ class CrearUsuarioVecinoAdminSerializer(
             password=password,
             is_active=True,
             sector=sector,
-            estado_asociacion_sector=(
-                "CONFIRMADA"
-            ),
-            confirmado_por_usuario=(
-                administrador
-            ),
-            fecha_confirmacion_sector=(
-                timezone.now()
-            ),
+            estado_asociacion_sector=("CONFIRMADA"),
+            confirmado_por_usuario=(administrador),
+            fecha_confirmacion_sector=(timezone.now()),
             **validated_data,
         )
 
-        rol_vecino = Rol.objects.get(
-            nombre__iexact="Vecino"
-        )
+        rol_vecino = Rol.objects.get(nombre__iexact="Vecino")
 
         UsuarioRol.objects.create(
             usuario=usuario,
@@ -824,9 +799,8 @@ class CrearUsuarioVecinoAdminSerializer(
 
         return usuario
 
-class CrearUsuarioVecinoAdminSerializer(
-    CrearUsuarioMunicipalSerializer
-):
+
+class CrearUsuarioVecinoAdminSerializer(CrearUsuarioMunicipalSerializer):
     junta_id = serializers.IntegerField(
         write_only=True,
     )
@@ -842,9 +816,7 @@ class CrearUsuarioVecinoAdminSerializer(
         sector_id = attrs.get("sector_id")
 
         sector = (
-            Sector.objects.select_related(
-                "junta_vecinos"
-            )
+            Sector.objects.select_related("junta_vecinos")
             .filter(
                 id=sector_id,
                 activo=True,
@@ -869,21 +841,13 @@ class CrearUsuarioVecinoAdminSerializer(
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data.pop(
-            "confirmar_password"
-        )
+        validated_data.pop("confirmar_password")
 
-        password = validated_data.pop(
-            "password"
-        )
+        password = validated_data.pop("password")
 
-        junta_id = validated_data.pop(
-            "junta_id"
-        )
+        junta_id = validated_data.pop("junta_id")
 
-        sector_id = validated_data.pop(
-            "sector_id"
-        )
+        sector_id = validated_data.pop("sector_id")
 
         sector = Sector.objects.get(
             id=sector_id,
@@ -894,11 +858,7 @@ class CrearUsuarioVecinoAdminSerializer(
 
         request = self.context.get("request")
 
-        administrador = (
-            request.user
-            if request is not None
-            else None
-        )
+        administrador = request.user if request is not None else None
 
         Usuario = get_user_model()
 
@@ -912,9 +872,7 @@ class CrearUsuarioVecinoAdminSerializer(
             **validated_data,
         )
 
-        rol_vecino = Rol.objects.get(
-            nombre__iexact="Vecino"
-        )
+        rol_vecino = Rol.objects.get(nombre__iexact="Vecino")
 
         UsuarioRol.objects.create(
             usuario=usuario,
