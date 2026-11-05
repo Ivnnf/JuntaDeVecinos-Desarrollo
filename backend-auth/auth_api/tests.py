@@ -436,6 +436,111 @@ class AutenticacionTests(APITestCase):
             ).exists()
         )
 
+    def test_registro_detecta_documento_residencia_duplicado(self):
+        junta = JuntaVecinos.objects.create(
+            nombre="Junta Documento Duplicado Test",
+            comuna="Puente Alto",
+            activa=True,
+        )
+
+        sector = Sector.objects.create(
+            junta_vecinos=junta,
+            nombre="Sector Documento Duplicado Test",
+            activo=True,
+        )
+
+        hash_duplicado = "a" * 64
+
+        VerificacionResidencia.objects.create(
+            usuario=self.usuario,
+            sector=sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.ELECTRICIDAD,
+            archivo="verificaciones_residencia/documento_original.png",
+            hash_archivo=hash_duplicado,
+        )
+
+        archivo = SimpleUploadedFile(
+            "documento_repetido.png",
+            b"contenido repetido",
+            content_type="image/png",
+        )
+
+        with (
+            patch(
+                "auth_api.serializers.calcular_hash_archivo",
+                return_value=hash_duplicado,
+            ),
+            patch(
+                "auth_api.serializers.extraer_texto_documento",
+                return_value="texto OCR de prueba",
+            ),
+            patch(
+                "auth_api.serializers.analizar_documento_residencia",
+                return_value={
+                    "nombre": "Vecino Duplicado",
+                    "direccion": "Calle Prueba 123",
+                    "comuna": "Puente Alto",
+                    "fecha_emision": date(2026, 10, 1),
+                    "confianza_ocr": 95.0,
+                    "documento_vigente": True,
+                    "motivo_antiguedad": ("Documento dentro del período permitido."),
+                },
+            ),
+            patch(
+                "auth_api.serializers.validar_coincidencia_comuna",
+                return_value={
+                    "coincide": True,
+                    "motivo": "La comuna coincide.",
+                },
+            ),
+        ):
+            response = self.client.post(
+                "/api/auth/registro/",
+                {
+                    "username": "vecino_documento_duplicado",
+                    "rut": "12.345.678-5",
+                    "nombres": "Vecino",
+                    "apellido_paterno": "Documento",
+                    "apellido_materno": "Duplicado",
+                    "email": "duplicado@test.cl",
+                    "password": "PasswordNuevo123!",
+                    "confirmar_password": "PasswordNuevo123!",
+                    "sector_id": sector.id,
+                    "tipo_documento": "ELECTRICIDAD",
+                    "archivo": archivo,
+                },
+                format="multipart",
+            )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        Usuario = get_user_model()
+
+        usuario = Usuario.objects.get(
+            username="vecino_documento_duplicado",
+        )
+
+        verificacion = VerificacionResidencia.objects.get(
+            usuario=usuario,
+        )
+
+        self.assertEqual(
+            verificacion.hash_archivo,
+            hash_duplicado,
+        )
+
+        self.assertTrue(
+            verificacion.documento_duplicado,
+        )
+
+        self.assertIn(
+            "mismo archivo ya fue utilizado",
+            verificacion.observacion_automatica.lower(),
+        )
+
     def test_registro_vecino_rechaza_rut_invalido(self):
         response = self.client.post(
             "/api/auth/registro/",
