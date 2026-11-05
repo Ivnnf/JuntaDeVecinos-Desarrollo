@@ -432,6 +432,63 @@ class AsociacionSectorTests(APITestCase):
             "CONFIRMADA",
         )
 
+    def test_listado_admin_muestra_verificacion_del_sector_actual(self):
+        otro_sector = Sector.objects.create(
+            junta_vecinos=self.junta,
+            nombre="Sector Historico Test",
+            activo=True,
+        )
+
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "PENDIENTE"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        verificacion_actual = VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/sector_actual.pdf",
+            estado=VerificacionResidencia.Estado.VALIDADA,
+        )
+
+        VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=otro_sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.AGUA,
+            archivo="verificaciones_residencia/sector_historico.pdf",
+            estado=VerificacionResidencia.Estado.RECHAZADA,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.get(
+            reverse("asociaciones-sector-todas"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        asociacion = next(
+            item for item in response.data if item["id"] == self.vecino.id
+        )
+
+        self.assertEqual(
+            asociacion["verificacion_residencia"]["id"],
+            verificacion_actual.id,
+        )
+
+        self.assertEqual(
+            asociacion["verificacion_residencia"]["estado"],
+            VerificacionResidencia.Estado.VALIDADA,
+        )
+
 
 class GestionDirectivaTests(APITestCase):
 

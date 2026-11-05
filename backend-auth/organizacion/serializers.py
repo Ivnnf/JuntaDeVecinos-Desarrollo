@@ -75,7 +75,9 @@ class AsociacionSectorPendienteSerializer(serializers.ModelSerializer):
     verificacion_residencia = serializers.SerializerMethodField()
 
     def get_verificacion_residencia(self, obj):
-        verificacion = obj.verificaciones_residencia.all().first()
+        verificacion = obj.verificaciones_residencia.filter(
+            sector=obj.sector,
+        ).first()
 
         if verificacion is None:
             return None
