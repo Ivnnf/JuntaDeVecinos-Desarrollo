@@ -547,6 +547,32 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
         ).upper()
 
         if accion == "CONFIRMAR":
+            verificacion = usuario.verificaciones_residencia.all().first()
+
+            if verificacion is None:
+                return Response(
+                    {
+                        "detail": (
+                            "No es posible confirmar esta asociación "
+                            "porque el usuario no tiene una verificación "
+                            "de residencia registrada."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if verificacion.estado != VerificacionResidencia.Estado.VALIDADA:
+                return Response(
+                    {
+                        "detail": (
+                            "No es posible confirmar esta asociación "
+                            "porque la verificación de residencia "
+                            f"se encuentra en estado {verificacion.estado}."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             usuario.estado_asociacion_sector = "CONFIRMADA"
             usuario.confirmado_por_usuario = request.user
             usuario.fecha_confirmacion_sector = timezone.now()

@@ -27,6 +27,7 @@ from .models import (
     IntegranteDirectiva,
     JuntaVecinos,
     Sector,
+    VerificacionResidencia,
 )
 
 Usuario = get_user_model()
@@ -159,6 +160,14 @@ class AsociacionSectorTests(APITestCase):
             ]
         )
 
+        VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/prueba.pdf",
+            estado=VerificacionResidencia.Estado.VALIDADA,
+        )
+
         self.client.force_authenticate(user=self.admin)
 
         url = reverse(
@@ -194,6 +203,102 @@ class AsociacionSectorTests(APITestCase):
         )
 
         self.assertIsNotNone(self.vecino.fecha_confirmacion_sector)
+
+    def test_admin_no_puede_confirmar_sin_verificacion_residencia(self):
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "PENDIENTE"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = reverse(
+            "resolver-asociacion-sector",
+            kwargs={
+                "usuario_id": self.vecino.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "CONFIRMAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.vecino.refresh_from_db()
+
+        self.assertEqual(
+            self.vecino.estado_asociacion_sector,
+            "PENDIENTE",
+        )
+
+        self.assertIn(
+            "no tiene una verificación",
+            response.data["detail"],
+        )
+
+    def test_admin_no_puede_confirmar_con_verificacion_no_validada(self):
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "PENDIENTE"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/prueba_pendiente.pdf",
+            estado=VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = reverse(
+            "resolver-asociacion-sector",
+            kwargs={
+                "usuario_id": self.vecino.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "CONFIRMAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.vecino.refresh_from_db()
+
+        self.assertEqual(
+            self.vecino.estado_asociacion_sector,
+            "PENDIENTE",
+        )
+
+        self.assertIn(
+            "REVISION_MANUAL",
+            response.data["detail"],
+        )
 
     def test_admin_puede_rechazar_asociacion_pendiente(self):
         self.vecino.sector = self.sector
