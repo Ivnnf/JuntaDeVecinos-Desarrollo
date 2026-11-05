@@ -1583,6 +1583,151 @@ class GestionDirectivaTests(APITestCase):
             vecino_pendiente.fecha_confirmacion_sector,
         )
 
+    def test_directiva_no_puede_validar_verificacion_rechazada_directamente(self):
+        UsuarioRol.objects.create(
+            usuario=self.vecino,
+            rol=self.rol_directiva,
+            activo=True,
+        )
+
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        vecino_pendiente = Usuario.objects.create_user(
+            username="vecino_verificacion_rechazada",
+            email="vecino.rechazada@test.cl",
+            password="ClaveSegura123!",
+            nombres="Vecino",
+            apellido_paterno="Rechazado",
+            sector=self.sector,
+            estado_asociacion_sector="PENDIENTE",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino_pendiente,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=vecino_pendiente,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/rechazada_test.pdf",
+            estado=VerificacionResidencia.Estado.RECHAZADA,
+        )
+
+        self.client.force_authenticate(user=self.vecino)
+
+        url = reverse(
+            "directiva-resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.RECHAZADA,
+        )
+
+    def test_directiva_puede_enviar_verificacion_rechazada_a_revision_manual(self):
+        UsuarioRol.objects.create(
+            usuario=self.vecino,
+            rol=self.rol_directiva,
+            activo=True,
+        )
+
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        vecino_pendiente = Usuario.objects.create_user(
+            username="vecino_rechazado_revision",
+            email="vecino.revision@test.cl",
+            password="ClaveSegura123!",
+            nombres="Vecino",
+            apellido_paterno="Revision",
+            sector=self.sector,
+            estado_asociacion_sector="PENDIENTE",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino_pendiente,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=vecino_pendiente,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/revision_test.pdf",
+            estado=VerificacionResidencia.Estado.RECHAZADA,
+        )
+
+        self.client.force_authenticate(user=self.vecino)
+
+        url = reverse(
+            "directiva-resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "REVISION_MANUAL",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.assertEqual(
+            verificacion.revisado_por,
+            self.vecino,
+        )
+
+        self.assertIsNotNone(
+            verificacion.fecha_revision,
+        )
+
 
 class ExtraccionDatosResidenciaTests(APITestCase):
 

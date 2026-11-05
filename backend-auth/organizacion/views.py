@@ -488,9 +488,36 @@ class ResolverVerificacionResidenciaDirectivaView(generics.GenericAPIView):
         ).upper()
 
         if accion == "REVISION_MANUAL":
+            estados_permitidos = {
+                VerificacionResidencia.Estado.PENDIENTE,
+                VerificacionResidencia.Estado.RECHAZADA,
+            }
+
+            if verificacion.estado not in estados_permitidos:
+                return Response(
+                    {
+                        "detail": (
+                            "Solo se puede enviar a revisión manual "
+                            "una verificación pendiente o rechazada."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             verificacion.estado = VerificacionResidencia.Estado.REVISION_MANUAL
 
         elif accion == "VALIDAR":
+            if verificacion.estado != VerificacionResidencia.Estado.REVISION_MANUAL:
+                return Response(
+                    {
+                        "detail": (
+                            "Solo se puede validar una verificación "
+                            "que se encuentre en revisión manual."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             verificacion.estado = VerificacionResidencia.Estado.VALIDADA
 
         else:
