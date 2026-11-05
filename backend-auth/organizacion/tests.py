@@ -1417,6 +1417,119 @@ class GestionDirectivaTests(APITestCase):
             ).exists()
         )
 
+    def test_directiva_valida_residencia_y_confirma_asociacion(self):
+        UsuarioRol.objects.create(
+            usuario=self.vecino,
+            rol=self.rol_directiva,
+            activo=True,
+        )
+
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        vecino_pendiente = Usuario.objects.create_user(
+            username="vecino_verificacion_directiva",
+            email="vecino.verificacion@test.cl",
+            password="ClaveSegura123!",
+            nombres="Vecino",
+            apellido_paterno="Pendiente",
+            sector=self.sector,
+            estado_asociacion_sector="PENDIENTE",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino_pendiente,
+            rol=self.rol_vecino,
+            activo=True,
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=vecino_pendiente,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/directiva_test.pdf",
+            estado=VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.client.force_authenticate(user=self.vecino)
+
+        url_verificacion = reverse(
+            "directiva-resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response_verificacion = self.client.post(
+            url_verificacion,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_verificacion.status_code,
+            status.HTTP_200_OK,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.VALIDADA,
+        )
+
+        self.assertEqual(
+            verificacion.revisado_por,
+            self.vecino,
+        )
+
+        self.assertIsNotNone(
+            verificacion.fecha_revision,
+        )
+
+        url_asociacion = reverse(
+            "directiva-resolver-asociacion-sector",
+            kwargs={
+                "usuario_id": vecino_pendiente.id,
+            },
+        )
+
+        response_asociacion = self.client.post(
+            url_asociacion,
+            {
+                "accion": "CONFIRMAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response_asociacion.status_code,
+            status.HTTP_200_OK,
+        )
+
+        vecino_pendiente.refresh_from_db()
+
+        self.assertEqual(
+            vecino_pendiente.estado_asociacion_sector,
+            "CONFIRMADA",
+        )
+
+        self.assertEqual(
+            vecino_pendiente.confirmado_por_usuario,
+            self.vecino,
+        )
+
+        self.assertIsNotNone(
+            vecino_pendiente.fecha_confirmacion_sector,
+        )
+
 
 class ExtraccionDatosResidenciaTests(APITestCase):
 
