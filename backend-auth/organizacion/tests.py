@@ -204,6 +204,59 @@ class AsociacionSectorTests(APITestCase):
 
         self.assertIsNotNone(self.vecino.fecha_confirmacion_sector)
 
+    def test_admin_no_puede_confirmar_con_verificacion_de_otro_sector(self):
+        otro_sector = Sector.objects.create(
+            junta_vecinos=self.junta,
+            nombre="Otro Sector Test",
+            activo=True,
+        )
+
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "PENDIENTE"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=otro_sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/otro_sector.pdf",
+            estado=VerificacionResidencia.Estado.VALIDADA,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = reverse(
+            "resolver-asociacion-sector",
+            kwargs={
+                "usuario_id": self.vecino.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "CONFIRMAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.vecino.refresh_from_db()
+
+        self.assertEqual(
+            self.vecino.estado_asociacion_sector,
+            "PENDIENTE",
+        )
+
     def test_admin_no_puede_confirmar_sin_verificacion_residencia(self):
         self.vecino.sector = self.sector
         self.vecino.estado_asociacion_sector = "PENDIENTE"

@@ -383,7 +383,9 @@ class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
         accion = request.data.get("accion", "").upper()
 
         if accion == "CONFIRMAR":
-            verificacion = usuario.verificaciones_residencia.all().first()
+            verificacion = usuario.verificaciones_residencia.filter(
+                sector=usuario.sector,
+            ).first()
 
             if verificacion is None:
                 return Response(
@@ -547,7 +549,9 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
         ).upper()
 
         if accion == "CONFIRMAR":
-            verificacion = usuario.verificaciones_residencia.all().first()
+            verificacion = usuario.verificaciones_residencia.filter(
+                sector=usuario.sector,
+            ).first()
 
             if verificacion is None:
                 return Response(
