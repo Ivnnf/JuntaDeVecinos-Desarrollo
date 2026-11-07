@@ -1,11 +1,12 @@
-from django.db.models import Avg, Count, Q, Sum
 from datetime import date
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 import csv
 
+from django.db.models import Avg, Count, Q, Sum
 from django.http import HttpResponse
+
+from rest_framework import generics
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
 
 from organizacion.models import (
     Directiva,
@@ -13,7 +14,7 @@ from organizacion.models import (
     JuntaVecinos,
     Sector,
 )
-from organizacion.permissions import EsDirectiva, EsMunicipal
+from organizacion.permissions import EsDirectiva, EsMunicipal, EsVecino
 
 from .models import CaracterizacionComunitaria
 from .serializers import CaracterizacionComunitariaSerializer
@@ -21,9 +22,19 @@ from .serializers import CaracterizacionComunitariaSerializer
 
 class MiCaracterizacionComunitariaView(generics.RetrieveUpdateAPIView):
     serializer_class = CaracterizacionComunitariaSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [EsVecino]
 
     def get_object(self):
+        usuario = self.request.user
+
+        if (
+            not getattr(usuario, "sector_id", None)
+            or usuario.estado_asociacion_sector != "CONFIRMADA"
+        ):
+            raise PermissionDenied(
+                "Debes tener una asociación territorial confirmada "
+                "para gestionar tu caracterización."
+            )
         caracterizacion, _ = CaracterizacionComunitaria.objects.get_or_create(
             usuario=self.request.user,
             defaults={

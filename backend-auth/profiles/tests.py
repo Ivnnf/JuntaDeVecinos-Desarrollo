@@ -9,7 +9,11 @@ from .models import (
     Usuario,
     UsuarioRol,
 )
-from .views import AnalisisCaracterizacionMunicipalView
+
+from .views import (
+    AnalisisCaracterizacionMunicipalView,
+    MiCaracterizacionComunitariaView,
+)
 
 
 class AnalisisCaracterizacionMunicipalTests(TestCase):
@@ -43,6 +47,74 @@ class AnalisisCaracterizacionMunicipalTests(TestCase):
             usuario=self.municipal,
             rol=self.rol_municipal,
             activo=True,
+        )
+
+    def test_municipal_no_puede_crear_caracterizacion_personal(self):
+        request = self.factory.get(
+            "/api/profiles/mi-caracterizacion/"
+        )
+
+        force_authenticate(
+            request,
+            user=self.municipal,
+        )
+
+        response = MiCaracterizacionComunitariaView.as_view()(
+            request
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.assertFalse(
+            CaracterizacionComunitaria.objects.filter(
+                usuario=self.municipal,
+            ).exists()
+        )
+
+    def test_vecino_no_confirmado_no_puede_crear_caracterizacion(self):
+        rol_vecino, _ = Rol.objects.get_or_create(
+            nombre="Vecino",
+        )
+
+        vecino = Usuario.objects.create_user(
+            username="vecino_pendiente_caracterizacion",
+            email="vecino.pendiente.caracterizacion@test.cl",
+            password="ClaveSegura123!",
+            sector=self.sector,
+            estado_asociacion_sector="PENDIENTE",
+        )
+
+        UsuarioRol.objects.create(
+            usuario=vecino,
+            rol=rol_vecino,
+            activo=True,
+        )
+
+        request = self.factory.get(
+            "/api/profiles/mi-caracterizacion/"
+        )
+
+        force_authenticate(
+            request,
+            user=vecino,
+        )
+
+        response = MiCaracterizacionComunitariaView.as_view()(
+            request
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.assertFalse(
+            CaracterizacionComunitaria.objects.filter(
+                usuario=vecino,
+            ).exists()
         )
 
     def crear_caracterizacion(
