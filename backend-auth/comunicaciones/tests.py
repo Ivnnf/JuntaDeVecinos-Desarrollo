@@ -1378,3 +1378,44 @@ class ConversacionesTests(APITestCase):
             response.data["mensajes"][1]["contenido"],
             "Segundo mensaje.",
         )
+
+    def test_vecino_no_puede_responder_si_asociacion_ya_no_esta_confirmada(self):
+        conversacion = Conversacion.objects.create(
+            vecino=self.vecino,
+            directiva=self.directiva,
+            asunto="Conversacion con asociacion no confirmada",
+        )
+
+        self.vecino.estado_asociacion_sector = "RECHAZADA"
+        self.vecino.save(
+            update_fields=[
+                "estado_asociacion_sector",
+            ]
+        )
+
+        self.client.force_authenticate(
+            user=self.vecino,
+        )
+
+        response = self.client.post(
+            reverse(
+                "mensajes-vecino-create",
+                kwargs={
+                    "conversacion_id": conversacion.id,
+                },
+            ),
+            {
+                "contenido": ("Este mensaje no deberia poder enviarse."),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertEqual(
+            conversacion.mensajes.count(),
+            0,
+        )

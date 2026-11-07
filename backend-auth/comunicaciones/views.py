@@ -410,7 +410,25 @@ class MensajeVecinoCreateView(generics.CreateAPIView):
             vecino=self.request.user,
             activa=True,
         )
+        usuario = self.request.user
 
+        tiene_rol_vecino = UsuarioRol.objects.filter(
+            usuario=usuario,
+            rol__nombre__iexact="Vecino",
+            activo=True,
+        ).exists()
+
+        if not tiene_rol_vecino:
+            raise PermissionDenied("Debes tener el rol Vecino activo.")
+
+        if (
+            not getattr(usuario, "sector_id", None)
+            or usuario.estado_asociacion_sector != "CONFIRMADA"
+        ):
+            raise PermissionDenied(
+                "Tu asociación territorial debe estar confirmada "
+                "para enviar mensajes."
+            )
         serializer.save(
             conversacion=conversacion,
             remitente=self.request.user,
