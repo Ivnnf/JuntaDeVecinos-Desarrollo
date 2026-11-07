@@ -13,7 +13,11 @@ from .services.validacion_residencia import (
     determinar_estado_verificacion,
 )
 
-from unittest.mock import patch
+from .services.ocr_residencia import (
+    extraer_texto_pdf,
+)
+
+from unittest.mock import MagicMock, patch
 
 from profiles.models import (
     HistorialGestionUsuario,
@@ -2195,4 +2199,106 @@ class ExtraccionDatosResidenciaTests(APITestCase):
         self.assertEqual(
             estado,
             "RECHAZADA",
+        )
+
+    def test_extraer_texto_pdf_procesa_todas_las_paginas(self):
+        documento = MagicMock()
+        documento.__len__.return_value = 2
+
+        pagina_1 = MagicMock()
+        pagina_2 = MagicMock()
+
+        documento.__getitem__.side_effect = [
+            pagina_1,
+            pagina_2,
+        ]
+
+        bitmap_1 = MagicMock()
+        bitmap_2 = MagicMock()
+
+        pagina_1.render.return_value = bitmap_1
+        pagina_2.render.return_value = bitmap_2
+
+        imagen_1 = MagicMock()
+        imagen_1.shape = (100, 200, 3)
+
+        imagen_2 = MagicMock()
+        imagen_2.shape = (120, 200, 3)
+
+        bitmap_1.to_numpy.return_value.copy.return_value = imagen_1
+        bitmap_2.to_numpy.return_value.copy.return_value = imagen_2
+
+        caja_1 = MagicMock()
+        caja_1.tolist.return_value = [
+            [0, 10],
+            [100, 10],
+            [100, 20],
+            [0, 20],
+        ]
+
+        caja_2 = MagicMock()
+        caja_2.tolist.return_value = [
+            [0, 5],
+            [100, 5],
+            [100, 15],
+            [0, 15],
+        ]
+
+        resultado_1 = MagicMock()
+        resultado_1.txts = ["Pagina uno"]
+        resultado_1.scores = [0.9]
+        resultado_1.boxes = [caja_1]
+
+        resultado_2 = MagicMock()
+        resultado_2.txts = ["Pagina dos"]
+        resultado_2.scores = [0.8]
+        resultado_2.boxes = [caja_2]
+
+        motor = MagicMock()
+        motor.side_effect = [
+            resultado_1,
+            resultado_2,
+        ]
+
+        with (
+            patch(
+                "organizacion.services.ocr_residencia.Path.exists",
+                return_value=True,
+            ),
+            patch(
+                "organizacion.services.ocr_residencia.pdfium.PdfDocument",
+                return_value=documento,
+            ),
+            patch(
+                "organizacion.services.ocr_residencia.obtener_motor_ocr",
+                return_value=motor,
+            ),
+                ):
+            resultado = extraer_texto_pdf(
+                "documento_multipagina.pdf"
+            )
+
+        self.assertEqual(
+            motor.call_count,
+            2,
+        )
+
+        self.assertEqual(
+            resultado["texto_completo"],
+            "Pagina uno\nPagina dos",
+        )
+
+        self.assertEqual(
+            len(resultado["lineas"]),
+            2,
+        )
+
+        self.assertGreater(
+            resultado["lineas"][1]["caja"][0][1],
+            resultado["lineas"][0]["caja"][0][1],
+        )
+
+        self.assertEqual(
+            resultado["confianza_promedio"],
+            0.85,
         )

@@ -109,35 +109,99 @@ def extraer_texto_pdf(ruta_archivo):
             "El PDF no contiene páginas."
         )
 
+    motor = obtener_motor_ocr()
+
+    textos_completos = []
+    lineas_completas = []
+
+    desplazamiento_vertical = 0
+
     try:
-        pagina = documento[0]
+        for indice_pagina in range(len(documento)):
+            pagina = documento[indice_pagina]
 
-        bitmap = pagina.render(
-            scale=3,
-            rev_byteorder=True,
-        )
-
-        try:
-            imagen = (
-                bitmap
-                .to_numpy()
-                .copy()
+            bitmap = pagina.render(
+                scale=3,
+                rev_byteorder=True,
             )
-        finally:
-            bitmap.close()
-            pagina.close()
+
+            try:
+                imagen = (
+                    bitmap
+                    .to_numpy()
+                    .copy()
+                )
+            finally:
+                bitmap.close()
+                pagina.close()
+
+            resultado = motor(imagen)
+
+            resultado_pagina = construir_resultado_ocr(
+                resultado
+            )
+
+            texto_pagina = resultado_pagina.get(
+                "texto_completo",
+                "",
+            )
+
+            if texto_pagina:
+                textos_completos.append(
+                    texto_pagina
+                )
+
+            for linea in resultado_pagina.get(
+                "lineas",
+                [],
+            ):
+                caja = linea.get("caja")
+
+                if caja:
+                    caja_ajustada = [
+                        [
+                            punto[0],
+                            punto[1] + desplazamiento_vertical,
+                        ]
+                        for punto in caja
+                    ]
+                else:
+                    caja_ajustada = caja
+
+                lineas_completas.append(
+                    {
+                        **linea,
+                        "caja": caja_ajustada,
+                    }
+                )
+
+            desplazamiento_vertical += imagen.shape[0]
 
     finally:
         documento.close()
 
-    motor = obtener_motor_ocr()
+    confianzas = [
+        linea["confianza"]
+        for linea in lineas_completas
+        if linea.get("confianza") is not None
+    ]
 
-    resultado = motor(imagen)
-
-    return construir_resultado_ocr(
-        resultado
+    confianza_promedio = (
+        round(
+            sum(confianzas) / len(confianzas),
+            4,
+        )
+        if confianzas
+        else 0.0
     )
 
+    return {
+        "texto_completo": "\n".join(
+            textos_completos
+        ),
+        "lineas": lineas_completas,
+        "confianza_promedio": confianza_promedio,
+    }
 
 def extraer_texto_documento(ruta_archivo):
     ruta = Path(ruta_archivo)
