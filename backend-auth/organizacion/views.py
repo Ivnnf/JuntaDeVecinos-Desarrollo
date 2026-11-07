@@ -548,6 +548,95 @@ class ResolverVerificacionResidenciaDirectivaView(generics.GenericAPIView):
         )
 
 
+class ResolverVerificacionResidenciaView(generics.GenericAPIView):
+    permission_classes = [EsAdministrador]
+
+    def post(self, request, verificacion_id):
+        try:
+            verificacion = VerificacionResidencia.objects.select_related(
+                "usuario",
+                "sector",
+                "sector__junta_vecinos",
+            ).get(
+                id=verificacion_id,
+            )
+        except VerificacionResidencia.DoesNotExist:
+            return Response(
+                {
+                    "detail": (
+                        "No existe una verificación de residencia "
+                        "que puedas gestionar."
+                    )
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        accion = request.data.get(
+            "accion",
+            "",
+        ).upper()
+
+        if accion == "REVISION_MANUAL":
+            estados_permitidos = {
+                VerificacionResidencia.Estado.PENDIENTE,
+                VerificacionResidencia.Estado.RECHAZADA,
+            }
+
+            if verificacion.estado not in estados_permitidos:
+                return Response(
+                    {
+                        "detail": (
+                            "Solo se puede enviar a revisión manual "
+                            "una verificación pendiente o rechazada."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            verificacion.estado = VerificacionResidencia.Estado.REVISION_MANUAL
+
+        elif accion == "VALIDAR":
+            if verificacion.estado != VerificacionResidencia.Estado.REVISION_MANUAL:
+                return Response(
+                    {
+                        "detail": (
+                            "Solo se puede validar una verificación "
+                            "que se encuentre en revisión manual."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            verificacion.estado = VerificacionResidencia.Estado.VALIDADA
+
+        else:
+            return Response(
+                {"detail": ("La acción debe ser " "REVISION_MANUAL o VALIDAR.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        verificacion.revisado_por = request.user
+        verificacion.fecha_revision = timezone.now()
+
+        verificacion.save(
+            update_fields=[
+                "estado",
+                "revisado_por",
+                "fecha_revision",
+                "fecha_actualizacion",
+            ]
+        )
+
+        return Response(
+            {
+                "message": ("Verificación de residencia " "actualizada correctamente."),
+                "verificacion_id": verificacion.id,
+                "estado": verificacion.estado,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class ResolverAsociacionSectorView(generics.GenericAPIView):
     permission_classes = [EsAdministrador]
 

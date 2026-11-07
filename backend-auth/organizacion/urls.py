@@ -27,6 +27,7 @@ from .views import (
     JuntasDisponiblesRegistroView,
     SectoresDisponiblesRegistroView,
     ResolverVerificacionResidenciaDirectivaView,
+    ResolverVerificacionResidenciaView,
 )
 
 urlpatterns = [
@@ -64,6 +65,11 @@ urlpatterns = [
         "juntas/<int:junta_id>/directiva-vigente/",
         DirectivaVigenteJuntaView.as_view(),
         name="directiva-vigente-junta",
+    ),
+    path(
+        "verificaciones-residencia/<int:verificacion_id>/resolver/",
+        ResolverVerificacionResidenciaView.as_view(),
+        name="resolver-verificacion-residencia",
     ),
     path(
         "resolver-asociacion-sector/<int:usuario_id>/",

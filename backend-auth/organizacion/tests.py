@@ -208,6 +208,109 @@ class AsociacionSectorTests(APITestCase):
 
         self.assertIsNotNone(self.vecino.fecha_confirmacion_sector)
 
+    def test_admin_puede_validar_verificacion_residencia_en_revision_manual(self):
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "PENDIENTE"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/revision_manual.pdf",
+            estado=VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = reverse(
+            "resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.VALIDADA,
+        )
+
+        self.assertEqual(
+            verificacion.revisado_por,
+            self.admin,
+        )
+
+        self.assertIsNotNone(
+            verificacion.fecha_revision,
+        )
+
+    def test_admin_no_puede_validar_verificacion_rechazada_directamente(self):
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "PENDIENTE"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/rechazada.pdf",
+            estado=VerificacionResidencia.Estado.RECHAZADA,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = reverse(
+            "resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.RECHAZADA,
+        )
+
     def test_admin_no_puede_confirmar_con_verificacion_de_otro_sector(self):
         otro_sector = Sector.objects.create(
             junta_vecinos=self.junta,

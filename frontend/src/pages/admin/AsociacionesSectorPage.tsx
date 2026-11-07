@@ -287,6 +287,69 @@ function AsociacionesSectorPage() {
     }
   }
 
+  const resolverVerificacion = async (
+    usuarioId: number,
+    verificacionId: number,
+    accion: 'REVISION_MANUAL' | 'VALIDAR',
+  ) => {
+    setError('')
+    setMensaje('')
+    setProcesandoId(usuarioId)
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/organizacion/verificaciones-residencia/${verificacionId}/resolver/`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            accion,
+          }),
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(
+          data.detail ??
+          'No fue posible actualizar la verificación.',
+        )
+        return
+      }
+
+      setAsociaciones((actuales) =>
+        actuales.map((asociacion) =>
+          asociacion.id === usuarioId &&
+            asociacion.verificacion_residencia
+            ? {
+              ...asociacion,
+              verificacion_residencia: {
+                ...asociacion.verificacion_residencia,
+                estado: data.estado,
+              },
+            }
+            : asociacion,
+        ),
+      )
+
+      setMensaje(
+        accion === 'VALIDAR'
+          ? 'Residencia validada correctamente.'
+          : 'Verificación enviada a revisión manual.',
+      )
+    } catch {
+      setError(
+        'No fue posible comunicarse con el servidor.',
+      )
+    } finally {
+      setProcesandoId(null)
+    }
+  }
+
   const obtenerNombreCompleto = (
     asociacion: AsociacionPendiente,
   ) => {
@@ -697,32 +760,79 @@ function AsociacionesSectorPage() {
 
                             <td>
                               {asociacion.verificacion_residencia ? (
-                                <span
-                                  className={
-                                    asociacion.verificacion_residencia.estado ===
+                                <div className="flex flex-col items-start gap-2">
+                                  <span
+                                    className={
+                                      asociacion.verificacion_residencia.estado ===
+                                        'VALIDADA'
+                                        ? 'badge badge-success whitespace-nowrap'
+                                        : asociacion.verificacion_residencia.estado ===
+                                          'RECHAZADA'
+                                          ? 'badge badge-error badge-outline whitespace-nowrap'
+                                          : asociacion.verificacion_residencia.estado ===
+                                            'REVISION_MANUAL'
+                                            ? 'badge badge-info badge-outline whitespace-nowrap'
+                                            : 'badge badge-warning badge-outline whitespace-nowrap'
+                                    }
+                                  >
+                                    {asociacion.verificacion_residencia.estado ===
                                       'VALIDADA'
-                                      ? 'badge badge-success whitespace-nowrap'
+                                      ? 'Validada'
                                       : asociacion.verificacion_residencia.estado ===
                                         'RECHAZADA'
-                                        ? 'badge badge-error badge-outline whitespace-nowrap'
+                                        ? 'Rechazada'
                                         : asociacion.verificacion_residencia.estado ===
                                           'REVISION_MANUAL'
-                                          ? 'badge badge-info badge-outline whitespace-nowrap'
-                                          : 'badge badge-warning badge-outline whitespace-nowrap'
-                                  }
-                                >
-                                  {asociacion.verificacion_residencia.estado ===
-                                    'VALIDADA'
-                                    ? 'Validada'
-                                    : asociacion.verificacion_residencia.estado ===
-                                      'RECHAZADA'
-                                      ? 'Rechazada'
-                                      : asociacion.verificacion_residencia.estado ===
-                                        'REVISION_MANUAL'
-                                        ? 'Revisión manual'
-                                        : 'Pendiente'}
-                                </span>
+                                          ? 'Revisión manual'
+                                          : 'Pendiente'}
+                                  </span>
+
+                                  {asociacion.estado_asociacion_sector ===
+                                    'PENDIENTE' &&
+                                    asociacion.verificacion_residencia.estado ===
+                                    'REVISION_MANUAL' && (
+                                      <button
+                                        type="button"
+                                        className="btn btn-xs btn-success"
+                                        disabled={procesando}
+                                        onClick={() =>
+                                          void resolverVerificacion(
+                                            asociacion.id,
+                                            asociacion.verificacion_residencia!.id,
+                                            'VALIDAR',
+                                          )
+                                        }
+                                      >
+                                        Validar residencia
+                                      </button>
+                                    )}
+
+                                  {asociacion.estado_asociacion_sector ===
+                                    'PENDIENTE' &&
+                                    (asociacion.verificacion_residencia.estado ===
+                                      'PENDIENTE' ||
+                                      asociacion.verificacion_residencia.estado ===
+                                      'RECHAZADA') && (
+                                      <button
+                                        type="button"
+                                        className="btn btn-xs btn-warning"
+                                        disabled={procesando}
+                                        onClick={() =>
+                                          void resolverVerificacion(
+                                            asociacion.id,
+                                            asociacion.verificacion_residencia!.id,
+                                            'REVISION_MANUAL',
+                                          )
+                                        }
+                                      >
+                                        Enviar a revisión manual
+                                      </button>
+                                    )}
+                                </div>
+
+
                               ) : (
+
                                 <span className="badge border border-base-content/30 bg-base-200 text-base-content whitespace-nowrap">
                                   Sin verificación
                                 </span>
