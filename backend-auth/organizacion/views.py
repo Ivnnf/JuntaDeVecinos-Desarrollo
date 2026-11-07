@@ -481,7 +481,20 @@ class ResolverVerificacionResidenciaDirectivaView(generics.GenericAPIView):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
-
+        if (
+            verificacion.usuario.estado_asociacion_sector != "PENDIENTE"
+            or verificacion.usuario.sector_id != verificacion.sector_id
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "La verificación solo puede modificarse mientras "
+                        "la asociación territorial esté pendiente y "
+                        "corresponda al sector actual del usuario."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         accion = request.data.get(
             "accion",
             "",
@@ -570,7 +583,20 @@ class ResolverVerificacionResidenciaView(generics.GenericAPIView):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
-
+        if (
+            verificacion.usuario.estado_asociacion_sector != "PENDIENTE"
+            or verificacion.usuario.sector_id != verificacion.sector_id
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "La verificación solo puede modificarse mientras "
+                        "la asociación territorial esté pendiente y "
+                        "corresponda al sector actual del usuario."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         accion = request.data.get(
             "accion",
             "",

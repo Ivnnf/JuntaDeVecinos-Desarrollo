@@ -311,6 +311,53 @@ class AsociacionSectorTests(APITestCase):
             VerificacionResidencia.Estado.RECHAZADA,
         )
 
+    def test_admin_no_puede_modificar_verificacion_de_asociacion_confirmada(self):
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "CONFIRMADA"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/confirmada.pdf",
+            estado=VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = reverse(
+            "resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
     def test_admin_no_puede_confirmar_con_verificacion_de_otro_sector(self):
         otro_sector = Sector.objects.create(
             junta_vecinos=self.junta,
@@ -594,6 +641,58 @@ class AsociacionSectorTests(APITestCase):
         self.assertEqual(
             asociacion["verificacion_residencia"]["estado"],
             VerificacionResidencia.Estado.VALIDADA,
+        )
+
+    def test_admin_no_puede_modificar_verificacion_de_otro_sector(self):
+        otro_sector = Sector.objects.create(
+            nombre="Sector Histórico",
+            junta_vecinos=self.junta,
+        )
+
+        self.vecino.sector = self.sector
+        self.vecino.estado_asociacion_sector = "PENDIENTE"
+        self.vecino.save(
+            update_fields=[
+                "sector",
+                "estado_asociacion_sector",
+            ]
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=self.vecino,
+            sector=otro_sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.AGUA,
+            archivo="verificaciones_residencia/historica.pdf",
+            estado=VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.client.force_authenticate(user=self.admin)
+
+        url = reverse(
+            "resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.REVISION_MANUAL,
         )
 
 
@@ -1815,6 +1914,135 @@ class GestionDirectivaTests(APITestCase):
             VerificacionResidencia.Estado.RECHAZADA,
         )
 
+    def test_directiva_no_puede_modificar_verificacion_de_asociacion_confirmada(self):
+        UsuarioRol.objects.create(
+            usuario=self.vecino,
+            rol=self.rol_directiva,
+            activo=True,
+        )
+
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        vecino_confirmado = Usuario.objects.create_user(
+            username="vecino_verificacion_confirmada",
+            email="vecino.confirmado@test.cl",
+            password="ClaveSegura123!",
+            nombres="Vecino",
+            apellido_paterno="Confirmado",
+            sector=self.sector,
+            estado_asociacion_sector="CONFIRMADA",
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=vecino_confirmado,
+            sector=self.sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.INTERNET,
+            archivo="verificaciones_residencia/directiva_confirmada.pdf",
+            estado=VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.client.force_authenticate(user=self.vecino)
+
+        url = reverse(
+            "directiva-resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+    def test_directiva_no_puede_modificar_verificacion_de_otro_sector(self):
+        UsuarioRol.objects.create(
+            usuario=self.vecino,
+            rol=self.rol_directiva,
+            activo=True,
+        )
+
+        IntegranteDirectiva.objects.create(
+            directiva=self.directiva,
+            usuario=self.vecino,
+            cargo=self.cargo_presidente,
+            fecha_inicio=date(2026, 1, 1),
+            activo=True,
+        )
+
+        otro_sector = Sector.objects.create(
+            nombre="Sector Histórico Directiva",
+            junta_vecinos=self.junta,
+        )
+
+        vecino_pendiente = Usuario.objects.create_user(
+            username="vecino_verificacion_historica",
+            email="vecino.historico@test.cl",
+            password="ClaveSegura123!",
+            nombres="Vecino",
+            apellido_paterno="Histórico",
+            sector=self.sector,
+            estado_asociacion_sector="PENDIENTE",
+        )
+
+        verificacion = VerificacionResidencia.objects.create(
+            usuario=vecino_pendiente,
+            sector=otro_sector,
+            tipo_documento=VerificacionResidencia.TipoDocumento.AGUA,
+            archivo="verificaciones_residencia/directiva_historica.pdf",
+            estado=VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.client.force_authenticate(user=self.vecino)
+
+        url = reverse(
+            "directiva-resolver-verificacion-residencia",
+            kwargs={
+                "verificacion_id": verificacion.id,
+            },
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "accion": "VALIDAR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        verificacion.refresh_from_db()
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
     def test_directiva_puede_enviar_verificacion_rechazada_a_revision_manual(self):
         UsuarioRol.objects.create(
             usuario=self.vecino,
@@ -2376,10 +2604,8 @@ class ExtraccionDatosResidenciaTests(APITestCase):
                 "organizacion.services.ocr_residencia.obtener_motor_ocr",
                 return_value=motor,
             ),
-                ):
-            resultado = extraer_texto_pdf(
-                "documento_multipagina.pdf"
-            )
+        ):
+            resultado = extraer_texto_pdf("documento_multipagina.pdf")
 
         self.assertEqual(
             motor.call_count,
