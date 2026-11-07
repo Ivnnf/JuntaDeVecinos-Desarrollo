@@ -371,6 +371,14 @@ class SolicitudDocumentoArchivoVecinoCreateView(generics.CreateAPIView):
         if not tiene_rol_vecino:
             raise PermissionDenied("Debes tener el rol Vecino para adjuntar archivos.")
 
+        if (
+            not getattr(usuario, "sector_id", None)
+            or usuario.estado_asociacion_sector != "CONFIRMADA"
+        ):
+            raise PermissionDenied(
+                "Debes tener una asociación territorial confirmada "
+                "para adjuntar archivos."
+            )
         solicitud = get_object_or_404(
             SolicitudDocumento,
             id=self.kwargs["solicitud_id"],

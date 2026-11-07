@@ -1119,6 +1119,56 @@ class SolicitudesDocumentoTests(APITestCase):
             0,
         )
 
+    def test_vecino_no_puede_adjuntar_archivo_si_asociacion_no_esta_confirmada(self):
+        solicitud = SolicitudDocumento.objects.create(
+            numero_seguimiento="DOC-HU12-ASOCIACION",
+            tipo_documento=self.tipo_activo,
+            vecino=self.vecino,
+            junta_vecinos=self.junta,
+            motivo="Solicitud con asociacion no confirmada.",
+            estado_actual=SolicitudDocumento.Estado.PENDIENTE,
+        )
+
+        self.vecino.estado_asociacion_sector = "RECHAZADA"
+        self.vecino.save(
+            update_fields=[
+                "estado_asociacion_sector",
+            ]
+        )
+
+        archivo = SimpleUploadedFile(
+            "comprobante.pdf",
+            b"contenido de prueba",
+            content_type="application/pdf",
+        )
+
+        self.client.force_authenticate(
+            user=self.vecino,
+        )
+
+        response = self.client.post(
+            reverse(
+                "solicitud-documento-archivo-vecino-create",
+                kwargs={
+                    "solicitud_id": solicitud.id,
+                },
+            ),
+            {
+                "archivo": archivo,
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertEqual(
+            solicitud.archivos.count(),
+            0,
+        )
+
     def test_directiva_puede_subir_documento_emitido_en_solicitud_aprobada(self):
         solicitud = SolicitudDocumento.objects.create(
             numero_seguimiento="DOC-HU12-006",
