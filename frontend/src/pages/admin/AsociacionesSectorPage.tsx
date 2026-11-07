@@ -55,6 +55,10 @@ function AsociacionesSectorPage() {
     useState<AsociacionPendiente[]>([])
 
   const [cargando, setCargando] = useState(true)
+
+  const [asociacionSeleccionada, setAsociacionSeleccionada] =
+    useState<AsociacionPendiente | null>(null)
+
   const [procesandoId, setProcesandoId] =
     useState<number | null>(null)
 
@@ -335,7 +339,23 @@ function AsociacionesSectorPage() {
             : asociacion,
         ),
       )
+      setAsociacionSeleccionada((actual) => {
+        if (
+          !actual ||
+          actual.id !== usuarioId ||
+          !actual.verificacion_residencia
+        ) {
+          return actual
+        }
 
+        return {
+          ...actual,
+          verificacion_residencia: {
+            ...actual.verificacion_residencia,
+            estado: data.estado,
+          },
+        }
+      })
       setMensaje(
         accion === 'VALIDAR'
           ? 'Residencia validada correctamente.'
@@ -756,6 +776,7 @@ function AsociacionesSectorPage() {
                                     ? 'Rechazada'
                                     : 'Pendiente'}
                               </span>
+
                             </td>
 
                             <td>
@@ -786,50 +807,16 @@ function AsociacionesSectorPage() {
                                           ? 'Revisión manual'
                                           : 'Pendiente'}
                                   </span>
-
-                                  {asociacion.estado_asociacion_sector ===
-                                    'PENDIENTE' &&
-                                    asociacion.verificacion_residencia.estado ===
-                                    'REVISION_MANUAL' && (
-                                      <button
-                                        type="button"
-                                        className="btn btn-xs btn-success"
-                                        disabled={procesando}
-                                        onClick={() =>
-                                          void resolverVerificacion(
-                                            asociacion.id,
-                                            asociacion.verificacion_residencia!.id,
-                                            'VALIDAR',
-                                          )
-                                        }
-                                      >
-                                        Validar residencia
-                                      </button>
-                                    )}
-
-                                  {asociacion.estado_asociacion_sector ===
-                                    'PENDIENTE' &&
-                                    (asociacion.verificacion_residencia.estado ===
-                                      'PENDIENTE' ||
-                                      asociacion.verificacion_residencia.estado ===
-                                      'RECHAZADA') && (
-                                      <button
-                                        type="button"
-                                        className="btn btn-xs btn-warning"
-                                        disabled={procesando}
-                                        onClick={() =>
-                                          void resolverVerificacion(
-                                            asociacion.id,
-                                            asociacion.verificacion_residencia!.id,
-                                            'REVISION_MANUAL',
-                                          )
-                                        }
-                                      >
-                                        Enviar a revisión manual
-                                      </button>
-                                    )}
+                                  <button
+                                    type="button"
+                                    className="btn btn-xs btn-outline"
+                                    onClick={() =>
+                                      setAsociacionSeleccionada(asociacion)
+                                    }
+                                  >
+                                    Revisar comprobante
+                                  </button>
                                 </div>
-
 
                               ) : (
 
@@ -896,6 +883,186 @@ function AsociacionesSectorPage() {
           </>
         )}
       </section>
+      {asociacionSeleccionada && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-3xl">
+            <h3 className="text-xl font-bold">
+              Revisión de comprobante
+            </h3>
+
+            <p className="mt-2 text-sm text-base-content/60">
+              {obtenerNombreCompleto(asociacionSeleccionada)}
+            </p>
+            {asociacionSeleccionada.verificacion_residencia && (() => {
+              const verificacion =
+                asociacionSeleccionada.verificacion_residencia
+
+              return (
+                <div className="mt-6 space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-base-300 p-4">
+                      <p className="text-xs font-semibold uppercase text-base-content/50">
+                        Tipo de comprobante
+                      </p>
+
+                      <p className="mt-1 font-medium">
+                        {verificacion.tipo_documento}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-base-300 p-4">
+                      <p className="text-xs font-semibold uppercase text-base-content/50">
+                        Fecha detectada
+                      </p>
+
+                      <p className="mt-1 font-medium">
+                        {verificacion.fecha_documento_extraida
+                          ? new Date(
+                            `${verificacion.fecha_documento_extraida}T00:00:00`,
+                          ).toLocaleDateString('es-CL')
+                          : 'No detectada'}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-base-300 p-4">
+                      <p className="text-xs font-semibold uppercase text-base-content/50">
+                        Nombre detectado
+                      </p>
+
+                      <p className="mt-1 font-medium">
+                        {verificacion.nombre_extraido ?? 'No detectado'}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-base-300 p-4">
+                      <p className="text-xs font-semibold uppercase text-base-content/50">
+                        Confianza OCR
+                      </p>
+
+                      <p className="mt-1 font-medium">
+                        {verificacion.confianza_ocr !== null
+                          ? `${(
+                            Number(verificacion.confianza_ocr) * 100
+                          ).toFixed(0)}%`
+                          : 'No disponible'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-base-300 p-4">
+                    <p className="text-xs font-semibold uppercase text-base-content/50">
+                      Dirección detectada
+                    </p>
+
+                    <p className="mt-1 font-medium">
+                      {verificacion.direccion_extraida ?? 'No detectada'}
+                    </p>
+
+                    <p className="mt-1 text-sm text-base-content/60">
+                      {verificacion.comuna_extraida ?? 'Comuna no detectada'}
+                    </p>
+                  </div>
+                  {verificacion.documento_duplicado && (
+                    <div className="alert alert-warning">
+                      <span>
+                        Este mismo archivo ya fue utilizado anteriormente en otra verificación.
+                      </span>
+                    </div>
+                  )}
+
+                  {verificacion.observacion_automatica && (
+                    <div className="rounded-xl border border-base-300 bg-base-200/50 p-4">
+                      <p className="text-xs font-semibold uppercase text-base-content/50">
+                        Análisis automático
+                      </p>
+
+                      <p className="mt-2 text-sm leading-6">
+                        {verificacion.observacion_automatica}
+                      </p>
+                    </div>
+                  )}
+
+                  {verificacion.archivo_url && (
+                    <a
+                      href={verificacion.archivo_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-outline btn-sm"
+                    >
+                      Ver comprobante adjunto
+                    </a>
+                  )}
+                </div>
+              )
+            })()}
+            <div className="modal-action">
+              {asociacionSeleccionada.estado_asociacion_sector ===
+                'PENDIENTE' &&
+                asociacionSeleccionada.verificacion_residencia?.estado ===
+                'REVISION_MANUAL' && (
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    disabled={procesandoId === asociacionSeleccionada.id}
+                    onClick={() =>
+                      void resolverVerificacion(
+                        asociacionSeleccionada.id,
+                        asociacionSeleccionada.verificacion_residencia!.id,
+                        'VALIDAR',
+                      )
+                    }
+                  >
+                    Validar residencia
+                  </button>
+                )}
+
+              {asociacionSeleccionada.estado_asociacion_sector ===
+                'PENDIENTE' &&
+                asociacionSeleccionada.verificacion_residencia &&
+                (
+                  asociacionSeleccionada.verificacion_residencia.estado ===
+                  'PENDIENTE' ||
+                  asociacionSeleccionada.verificacion_residencia.estado ===
+                  'RECHAZADA'
+                ) && (
+                  <button
+                    type="button"
+                    className="btn btn-warning"
+                    disabled={procesandoId === asociacionSeleccionada.id}
+                    onClick={() =>
+                      void resolverVerificacion(
+                        asociacionSeleccionada.id,
+                        asociacionSeleccionada.verificacion_residencia!.id,
+                        'REVISION_MANUAL',
+                      )
+                    }
+                  >
+                    Enviar a revisión manual
+                  </button>
+                )}
+              <button
+                type="button"
+                className="btn"
+                onClick={() =>
+                  setAsociacionSeleccionada(null)
+                }
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="modal-backdrop"
+            onClick={() =>
+              setAsociacionSeleccionada(null)
+            }
+          >
+            cerrar
+          </button>
+        </dialog>
+      )}
     </main>
   )
 }
