@@ -736,7 +736,10 @@ function AsociacionesSectorPage() {
                                     <button
                                       type="button"
                                       className="btn btn-sm btn-success"
-                                      disabled={procesando}
+                                      disabled={
+                                        procesando ||
+                                        asociacion.verificacion_residencia?.estado !== 'VALIDADA'
+                                      }
                                       onClick={() =>
                                         void resolverAsociacion(
                                           asociacion.id,
