@@ -386,6 +386,10 @@ class PerfilVecinoSerializer(serializers.ModelSerializer):
             "estado_asociacion_sector",
             "fecha_confirmacion_sector",
         ]
+        read_only_fields = [
+            "estado_asociacion_sector",
+            "fecha_confirmacion_sector",
+        ]
 
     def get_sector_nombre(self, obj):
         if obj.sector:

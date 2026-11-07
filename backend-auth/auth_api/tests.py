@@ -737,6 +737,82 @@ class AutenticacionTests(APITestCase):
             rut_original,
         )
 
+    def test_perfil_no_permite_confirmar_su_propia_asociacion(self):
+        self.usuario.estado_asociacion_sector = "PENDIENTE"
+        self.usuario.save(
+            update_fields=[
+                "estado_asociacion_sector",
+            ]
+        )
+
+        self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        response = self.client.patch(
+            "/api/auth/perfil/",
+            {
+                "estado_asociacion_sector": "CONFIRMADA",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.usuario.refresh_from_db()
+
+        self.assertEqual(
+            self.usuario.estado_asociacion_sector,
+            "PENDIENTE",
+        )
+
+    def test_perfil_no_permite_modificar_fecha_confirmacion_sector(self):
+        self.usuario.estado_asociacion_sector = "PENDIENTE"
+        self.usuario.fecha_confirmacion_sector = None
+        self.usuario.save(
+            update_fields=[
+                "estado_asociacion_sector",
+                "fecha_confirmacion_sector",
+            ]
+        )
+
+        self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        response = self.client.patch(
+            "/api/auth/perfil/",
+            {
+                "fecha_confirmacion_sector": "2026-11-07T12:00:00Z",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.usuario.refresh_from_db()
+
+        self.assertIsNone(
+            self.usuario.fecha_confirmacion_sector,
+        )
     def test_administrador_puede_listar_usuarios(self):
         rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
