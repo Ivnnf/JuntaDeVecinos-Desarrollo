@@ -28,6 +28,35 @@ class LoginSerializer(serializers.Serializer):
     recordar = serializers.BooleanField(required=False, default=False)
 
 
+class Desafio2FASerializer(serializers.Serializer):
+    challenge_token = serializers.CharField(
+        write_only=True,
+    )
+
+
+class Codigo2FASerializer(serializers.Serializer):
+    challenge_token = serializers.CharField(
+        write_only=True,
+    )
+
+    codigo = serializers.RegexField(
+        regex=r"^\d{6}$",
+        write_only=True,
+        error_messages={
+            "invalid": "El código debe contener exactamente 6 dígitos.",
+        },
+    )
+
+class Activar2FASerializer(serializers.Serializer):
+    codigo = serializers.RegexField(
+        regex=r"^\d{6}$",
+        write_only=True,
+        error_messages={
+            "invalid": "El código debe contener exactamente 6 dígitos.",
+        },
+    )
+
+
 class SolicitudRecuperacionSerializer(serializers.Serializer):
     email = serializers.EmailField()
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEventHandler } from 'react'
 import { Link } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 
 type JuntaVecinos = {
   id: number
@@ -882,7 +883,156 @@ function RegistroVecinoPage() {
                   : 'Las contraseñas no coinciden.'}
               </span>
             </div>
+            <section
+              className="jr-document jr-wide"
+              aria-labelledby="seguridad-cuenta-titulo"
+            >
+              <h3 id="seguridad-cuenta-titulo">
+                Seguridad de tu cuenta
+              </h3>
 
+              <p>
+                Para proteger tu información, la autenticación en dos pasos
+                será obligatoria en tu primer inicio de sesión.
+              </p>
+
+              <div className="jr-document-fields">
+
+                <p className="jr-note">
+                  <strong>Antes de continuar, ten a mano tu teléfono.</strong>
+                  <br />
+                  Para configurar la seguridad de tu cuenta necesitarás
+                  Microsoft Authenticator.
+                </p>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gap: '18px',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '18px',
+                      border: '1px solid rgba(224, 202, 146, .26)',
+                      borderRadius: '14px',
+                      background: 'rgba(9, 30, 21, .5)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <strong>Android</strong>
+
+                    <div
+                      style={{
+                        width: 'fit-content',
+                        margin: '14px auto',
+                        padding: '10px',
+                        borderRadius: '10px',
+                        background: '#ffffff',
+                      }}
+                    >
+                      <QRCodeSVG
+                        value="https://play.google.com/store/apps/details?id=com.azure.authenticator"
+                        size={130}
+                      />
+                    </div>
+
+                    <p className="jr-help">
+                      Escanea para descargar Microsoft Authenticator
+                      desde Google Play.
+                    </p>
+
+                    <a
+                      className="jr-back-link"
+                      href="https://play.google.com/store/apps/details?id=com.azure.authenticator"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      ABRIR GOOGLE PLAY
+                    </a>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '18px',
+                      border: '1px solid rgba(224, 202, 146, .26)',
+                      borderRadius: '14px',
+                      background: 'rgba(9, 30, 21, .5)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <strong>iPhone / iOS</strong>
+
+                    <div
+                      style={{
+                        width: 'fit-content',
+                        margin: '14px auto',
+                        padding: '10px',
+                        borderRadius: '10px',
+                        background: '#ffffff',
+                      }}
+                    >
+                      <QRCodeSVG
+                        value="https://apps.apple.com/cl/app/microsoft-authenticator/id983156458"
+                        size={130}
+                      />
+                    </div>
+
+                    <p className="jr-help">
+                      Escanea para descargar Microsoft Authenticator
+                      desde App Store.
+                    </p>
+
+                    <a
+                      className="jr-back-link"
+                      href="https://apps.apple.com/cl/app/microsoft-authenticator/id983156458"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      ABRIR APP STORE
+                    </a>
+                  </div>
+                </div>
+
+                <p className="jr-help">
+                  Verifica que la aplicación indique como desarrollador
+                  <strong> Microsoft Corporation</strong>.
+                </p>
+
+                <div>
+                  <strong>
+                    ¿Qué ocurrirá después de crear tu cuenta?
+                  </strong>
+
+                  <ol>
+                    <li>
+                      Iniciarás sesión con tu usuario y contraseña.
+                    </li>
+                    <li>
+                      El sistema te mostrará un código QR.
+                    </li>
+                    <li>
+                      Escanearás el QR con tu aplicación Authenticator.
+                    </li>
+                    <li>
+                      La aplicación generará un código de 6 dígitos.
+                    </li>
+                    <li>
+                      Ingresarás ese código para activar la protección
+                      de tu cuenta.
+                    </li>
+                  </ol>
+                </div>
+
+                <p className="jr-help">
+                  Después de configurarlo, en tus próximos ingresos deberás
+                  utilizar tu contraseña y el código generado por tu
+                  aplicación Authenticator.
+                </p>
+
+              </div>
+            </section>
             <section
               className="jr-document jr-wide"
               aria-labelledby="domicilio-titulo"

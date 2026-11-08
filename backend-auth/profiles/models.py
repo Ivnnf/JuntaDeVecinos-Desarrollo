@@ -105,6 +105,19 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
 
+    totp_secret = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    totp_habilitado = models.BooleanField(
+        default=False,
+    )
+
+    totp_requerido = models.BooleanField(
+    default=True,
+    )
+
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     is_active = models.BooleanField(default=True)

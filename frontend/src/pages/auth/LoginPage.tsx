@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
+
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -13,6 +15,19 @@ function LoginPage() {
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
+
+  const [requiere2FA, setRequiere2FA] = useState(false)
+  const [challengeToken, setChallengeToken] = useState('')
+  const [codigo2FA, setCodigo2FA] = useState('')
+
+  const [requiereConfigurar2FA, setRequiereConfigurar2FA] =
+    useState(false)
+
+  const [provisioningUri, setProvisioningUri] =
+    useState('')
+
+  const [secreto2FA, setSecreto2FA] =
+    useState('')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -38,6 +53,60 @@ function LoginPage() {
       )
 
       const data = await response.json()
+
+      if (data.requiere_configurar_2fa === true) {
+        const tokenDesafio = data.challenge_token
+
+        setChallengeToken(tokenDesafio)
+
+        const prepararResponse = await fetch(
+          'http://localhost:8000/api/auth/2fa/preparar-inicial/',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              challenge_token: tokenDesafio,
+            }),
+          }
+        )
+
+        const prepararData = await prepararResponse.json()
+
+        if (!prepararResponse.ok) {
+          setError(
+            prepararData.detail ??
+            'No fue posible preparar la autenticación en dos pasos.'
+          )
+          return
+        }
+
+        setProvisioningUri(
+          prepararData.provisioning_uri
+        )
+
+        setSecreto2FA(
+          prepararData.secreto
+        )
+
+        setRequiereConfigurar2FA(true)
+
+        setMensaje(
+          'Debes configurar la autenticación en dos pasos antes de continuar.'
+        )
+
+        return
+      }
+
+
+      if (data.requiere_2fa === true) {
+        setChallengeToken(data.challenge_token)
+        setRequiere2FA(true)
+        setMensaje('Ingresa el código de 6 dígitos de tu aplicación Authenticator.')
+        return
+      }
 
       if (!response.ok) {
         setError(
@@ -95,6 +164,171 @@ function LoginPage() {
     }
   }
 
+  async function handleVerificar2FA() {
+    setError('')
+    setMensaje('')
+    setCargando(true)
+
+    try {
+      const response = await fetch(
+        'http://localhost:8000/api/auth/2fa/verificar/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            challenge_token: challengeToken,
+            codigo: codigo2FA,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(
+          data.detail ??
+          'No fue posible verificar el código.'
+        )
+        return
+      }
+
+      const sesionResponse = await fetch(
+        'http://localhost:8000/api/auth/sesion/',
+        {
+          credentials: 'include',
+        }
+      )
+
+      const sesion = await sesionResponse.json()
+
+      if (!sesionResponse.ok) {
+        setError('No fue posible obtener la sesión del usuario.')
+        return
+      }
+
+      if (sesion.roles?.length > 1) {
+        navigate('/seleccionar-perfil')
+        return
+      }
+
+      if (sesion.roles?.includes(1)) {
+        navigate('/admin')
+        return
+      }
+
+      if (sesion.roles?.includes(2)) {
+        navigate('/directiva')
+        return
+      }
+
+      if (sesion.roles?.includes(3)) {
+        navigate('/vecino')
+        return
+      }
+
+      if (sesion.roles?.includes(4)) {
+        navigate('/municipal')
+        return
+      }
+
+      setMensaje('Autenticación correcta.')
+    } catch {
+      setError('No fue posible comunicarse con el servidor.')
+    } finally {
+      setCargando(false)
+    }
+  }
+  async function handleActivar2FAInicial() {
+    setError('')
+    setMensaje('')
+    setCargando(true)
+
+    try {
+      const response = await fetch(
+        'http://localhost:8000/api/auth/2fa/activar-inicial/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            challenge_token: challengeToken,
+            codigo: codigo2FA,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setRequiereConfigurar2FA(false)
+          setProvisioningUri('')
+          setSecreto2FA('')
+          setChallengeToken('')
+          setCodigo2FA('')
+        }
+
+        setError(
+          data.detail ??
+          'No fue posible activar la autenticación en dos pasos.'
+        )
+
+        return
+      }
+
+      const sesionResponse = await fetch(
+        'http://localhost:8000/api/auth/sesion/',
+        {
+          credentials: 'include',
+        }
+      )
+
+      const sesion = await sesionResponse.json()
+
+      if (!sesionResponse.ok) {
+        setError('No fue posible obtener la sesión del usuario.')
+        return
+      }
+
+      if (sesion.roles?.length > 1) {
+        navigate('/seleccionar-perfil')
+        return
+      }
+
+      if (sesion.roles?.includes(1)) {
+        navigate('/admin')
+        return
+      }
+
+      if (sesion.roles?.includes(2)) {
+        navigate('/directiva')
+        return
+      }
+
+      if (sesion.roles?.includes(3)) {
+        navigate('/vecino')
+        return
+      }
+
+      if (sesion.roles?.includes(4)) {
+        navigate('/municipal')
+        return
+      }
+
+      setMensaje(
+        'Autenticación en dos pasos configurada correctamente.'
+      )
+    } catch {
+      setError('No fue posible comunicarse con el servidor.')
+    } finally {
+      setCargando(false)
+    }
+  }
   return (
     <main className="jv-login">
       <style>{`
@@ -897,15 +1131,207 @@ function LoginPage() {
                 </Link>
 
               </div>
+              {requiereConfigurar2FA && provisioningUri && (
+                <div className="jv-field">
 
+                  <div>
+                    <h3>
+                      Configura la autenticación en dos pasos
+                    </h3>
+
+                    <p>
+                      Antes de continuar debes vincular tu cuenta
+                      con una aplicación de autenticación.
+                    </p>
+
+                    <p>
+                      Puedes utilizar Microsoft Authenticator,
+                      Google Authenticator u otra aplicación
+                      compatible.
+                    </p>
+
+                    <ol>
+                      <li>
+                        Abre Microsoft Authenticator en tu teléfono.
+                      </li>
+                      <li>
+                        Pulsa el botón + para agregar una cuenta.
+                      </li>
+                      <li>
+                        Selecciona Otra cuenta.
+                      </li>
+                      <li>
+                        Selecciona Escanear código QR.
+                      </li>
+                      <li>
+                        Escanea el código que aparece a continuación.
+                      </li>
+                    </ol>
+                    <div
+                      style={{
+                        marginTop: '16px',
+                        padding: '14px 16px',
+                        borderRadius: '12px',
+                        background: 'rgba(234, 216, 166, .12)',
+                        border: '1px solid rgba(234, 216, 166, .35)',
+                      }}
+                    >
+                      <strong>
+                        Completa la configuración dentro de los próximos 5 minutos.
+                      </strong>
+
+                      <p
+                        style={{
+                          margin: '6px 0 0',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        Por seguridad, la solicitud de configuración es temporal.
+                        Si el proceso expira, deberás volver a iniciar sesión para
+                        comenzar nuevamente.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      padding: '20px',
+                      background: '#ffffff',
+                      borderRadius: '16px',
+                      marginTop: '16px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <QRCodeSVG
+                      value={provisioningUri}
+                      size={220}
+                    />
+                  </div>
+
+                  <div>
+                    <p>
+                      <strong>
+                        ¿No puedes escanear el código?
+                      </strong>
+                    </p>
+
+                    <p>
+                      También puedes ingresar manualmente esta clave:
+                    </p>
+
+                    <code>
+                      {secreto2FA}
+                    </code>
+                    <div className="jv-field">
+
+                      <label
+                        className="jv-label"
+                        htmlFor="codigo2FAInicial"
+                      >
+                        Código de verificación
+
+                        <span className="jv-required">
+                          Obligatorio
+                        </span>
+                      </label>
+
+                      <input
+                        className="jv-input"
+                        id="codigo2FAInicial"
+                        name="codigo2FAInicial"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        placeholder="Ingresa los 6 dígitos"
+                        value={codigo2FA}
+                        onChange={(event) => {
+                          const valor = event.target.value
+                            .replace(/\D/g, '')
+                            .slice(0, 6)
+
+                          setCodigo2FA(valor)
+                        }}
+                        maxLength={6}
+                        required
+                      />
+
+                    </div>
+                    <button
+                      className="jv-submit"
+                      type="button"
+                      disabled={
+                        cargando ||
+                        codigo2FA.length !== 6
+                      }
+                      onClick={handleActivar2FAInicial}
+                    >
+                      {cargando
+                        ? 'ACTIVANDO…'
+                        : 'ACTIVAR Y CONTINUAR'}
+                    </button>
+                  </div>
+
+                </div>
+              )}
+              {requiere2FA && (
+                <div className="jv-field">
+
+                  <label
+                    className="jv-label"
+                    htmlFor="codigo2FA"
+                  >
+                    Código de verificación
+
+                    <span className="jv-required">
+                      Obligatorio
+                    </span>
+                  </label>
+
+                  <input
+                    className="jv-input"
+                    id="codigo2FA"
+                    name="codigo2FA"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="Ingresa los 6 dígitos"
+                    value={codigo2FA}
+                    onChange={(event) => {
+                      const valor = event.target.value
+                        .replace(/\D/g, '')
+                        .slice(0, 6)
+
+                      setCodigo2FA(valor)
+                    }}
+                    maxLength={6}
+                    required
+                  />
+
+                </div>
+              )}
               <button
                 className="jv-submit"
-                type="submit"
+                type={requiere2FA ? 'button' : 'submit'}
                 disabled={cargando}
+                onClick={
+                  requiere2FA
+                    ? handleVerificar2FA
+                    : undefined
+                }
               >
                 {cargando
-                  ? 'INGRESANDO…'
-                  : 'INICIAR SESIÓN'}
+                  ? (
+                    requiere2FA
+                      ? 'VERIFICANDO…'
+                      : 'INGRESANDO…'
+                  )
+                  : (
+                    requiere2FA
+                      ? 'VERIFICAR CÓDIGO'
+                      : 'INICIAR SESIÓN'
+                  )}
               </button>
 
             </form>

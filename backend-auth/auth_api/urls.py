@@ -15,6 +15,11 @@ from .views import (
     EstadoCuentaUsuarioView,
     RolUsuarioAdministracionView,
     RolAdministracionListView,
+    Configurar2FAView,
+    Activar2FAView,
+    Verificar2FAView,
+    Preparar2FAInicialView,
+    Activar2FAInicialView,
 )
 
 urlpatterns = [
@@ -45,6 +50,31 @@ urlpatterns = [
     ),
     path("health/", health, name="health"),
     path("login/", LoginView.as_view(), name="login"),
+    path(
+        "2fa/configurar/",
+        Configurar2FAView.as_view(),
+        name="2fa-configurar",
+    ),
+    path(
+        "2fa/preparar-inicial/",
+        Preparar2FAInicialView.as_view(),
+        name="2fa-preparar-inicial",
+    ),
+    path(
+        "2fa/activar/",
+        Activar2FAView.as_view(),
+        name="2fa-activar",
+    ),
+    path(
+        "2fa/verificar/",
+        Verificar2FAView.as_view(),
+        name="2fa-verificar",
+    ),
+    path(
+        "2fa/activar-inicial/",
+        Activar2FAInicialView.as_view(),
+        name="2fa-activar-inicial",
+    ),
     path("registro/", RegistroVecinoView.as_view(), name="registro-vecino"),
     path(
         "perfil/",

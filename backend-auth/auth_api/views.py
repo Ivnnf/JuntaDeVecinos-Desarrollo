@@ -15,6 +15,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .permissions import EsAdministrador
+
 from profiles.models import (
     HistorialGestionUsuario,
     Rol,
@@ -24,6 +25,9 @@ from organizacion.models import IntegranteDirectiva
 
 from .serializers import (
     LoginSerializer,
+    Desafio2FASerializer,
+    Codigo2FASerializer,
+    Activar2FASerializer,
     SolicitudRecuperacionSerializer,
     RestablecerPasswordSerializer,
     RegistroVecinoSerializer,
@@ -36,7 +40,21 @@ from .serializers import (
     CrearUsuarioVecinoAdminSerializer,
 )
 
-from utils.token import generar_tokens, refresh_access_token, verificar_token
+from utils.token import (
+    generar_tokens,
+    generar_token_desafio_2fa,
+    refresh_access_token,
+    verificar_token,
+)
+
+from .services.totp import (
+    generar_secreto_totp,
+    cifrar_secreto_totp,
+    descifrar_secreto_totp,
+    generar_uri_totp,
+    verificar_codigo_totp,
+)
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
 
@@ -133,7 +151,38 @@ class LoginView(APIView):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
+        if usuario.totp_requerido and not usuario.totp_habilitado:
+            challenge_token = generar_token_desafio_2fa(
+                usuario,
+                recordar=recordar,
+            )
 
+            return Response(
+                {
+                    "message": (
+                        "Debes configurar la autenticación "
+                        "en dos pasos antes de continuar."
+                    ),
+                    "requiere_configurar_2fa": True,
+                    "challenge_token": challenge_token,
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+
+        if usuario.totp_habilitado:
+            challenge_token = generar_token_desafio_2fa(
+                usuario,
+                recordar=recordar,
+            )
+
+            return Response(
+                {
+                    "message": "Se requiere verificación en dos pasos.",
+                    "requiere_2fa": True,
+                    "challenge_token": challenge_token,
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
         access_token, refresh_token, access_max_age, refresh_max_age = generar_tokens(
             usuario,
             recordar=recordar,
@@ -148,6 +197,401 @@ class LoginView(APIView):
                     "email": usuario.email,
                 },
             }
+        )
+
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            max_age=int(access_max_age),
+            path="/",
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            max_age=int(refresh_max_age),
+            path="/",
+        )
+
+        return response
+
+
+class Preparar2FAInicialView(APIView):
+    def post(self, request):
+        serializer = Desafio2FASerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        challenge_token = serializer.validated_data["challenge_token"]
+
+        payload = verificar_token(
+            challenge_token,
+            tipo_esperado="2fa_challenge",
+        )
+
+        if payload is None:
+            return Response(
+                {
+                    "detail": (
+                        "El desafío de autenticación es inválido " "o ha expirado."
+                    )
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        user_id = payload.get("user_id")
+
+        Usuario = get_user_model()
+
+        try:
+            usuario = Usuario.objects.get(
+                id=user_id,
+                is_active=True,
+            )
+        except Usuario.DoesNotExist:
+            return Response(
+                {"detail": "Usuario no válido."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not usuario.totp_requerido:
+            return Response(
+                {
+                    "detail": (
+                        "Este usuario no requiere configuración "
+                        "obligatoria de segundo factor."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if usuario.totp_habilitado:
+            return Response(
+                {"detail": ("El segundo factor ya se encuentra " "configurado.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if usuario.totp_secret:
+            secreto = descifrar_secreto_totp(usuario.totp_secret)
+        else:
+            secreto = generar_secreto_totp()
+
+            usuario.totp_secret = cifrar_secreto_totp(secreto)
+
+            usuario.save(update_fields=["totp_secret"])
+
+        uri = generar_uri_totp(
+            usuario,
+            secreto,
+        )
+
+        return Response(
+            {
+                "message": ("Configuración inicial de segundo factor preparada."),
+                "provisioning_uri": uri,
+                "secreto": secreto,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class Activar2FAInicialView(APIView):
+    def post(self, request):
+        serializer = Codigo2FASerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        challenge_token = serializer.validated_data["challenge_token"]
+        codigo = serializer.validated_data["codigo"]
+
+        payload = verificar_token(
+            challenge_token,
+            tipo_esperado="2fa_challenge",
+        )
+
+        if payload is None:
+            return Response(
+                {
+                    "detail": (
+                        "El proceso de configuración es inválido "
+                        "o ha expirado. Inicia sesión nuevamente."
+                    )
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        user_id = payload.get("user_id")
+
+        Usuario = get_user_model()
+
+        try:
+            usuario = Usuario.objects.get(
+                id=user_id,
+                is_active=True,
+            )
+        except Usuario.DoesNotExist:
+            return Response(
+                {"detail": "Usuario no válido."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not usuario.totp_requerido:
+            return Response(
+                {
+                    "detail": (
+                        "Este usuario no requiere configurar " "el segundo factor."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if usuario.totp_habilitado:
+            return Response(
+                {"detail": ("El segundo factor ya está activado.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not usuario.totp_secret:
+            return Response(
+                {
+                    "detail": (
+                        "Primero debes preparar la configuración " "del segundo factor."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        secreto = descifrar_secreto_totp(usuario.totp_secret)
+
+        if not verificar_codigo_totp(
+            secreto,
+            codigo,
+        ):
+            return Response(
+                {"detail": ("El código de verificación es inválido " "o ha expirado.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        usuario.totp_habilitado = True
+        usuario.save(update_fields=["totp_habilitado"])
+
+        recordar = payload.get(
+            "recordar",
+            False,
+        )
+
+        access_token, refresh_token, access_max_age, refresh_max_age = generar_tokens(
+            usuario,
+            recordar=recordar,
+        )
+
+        response = Response(
+            {
+                "message": ("Autenticación en dos pasos configurada " "correctamente."),
+                "usuario": {
+                    "id": usuario.id,
+                    "username": usuario.username,
+                    "email": usuario.email,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            max_age=int(access_max_age),
+            path="/",
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+            max_age=int(refresh_max_age),
+            path="/",
+        )
+
+        return response
+
+
+class Configurar2FAView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        usuario = request.user
+
+        if usuario.totp_habilitado:
+            return Response(
+                {
+                    "detail": (
+                        "El segundo factor ya está configurado " "para este usuario."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if usuario.totp_secret:
+            secreto = descifrar_secreto_totp(usuario.totp_secret)
+        else:
+            secreto = generar_secreto_totp()
+
+            usuario.totp_secret = cifrar_secreto_totp(secreto)
+            usuario.save(update_fields=["totp_secret"])
+
+        uri = generar_uri_totp(
+            usuario,
+            secreto,
+        )
+
+        return Response(
+            {
+                "message": ("Configuración de segundo factor preparada."),
+                "provisioning_uri": uri,
+                "secreto": secreto,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class Activar2FAView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = Activar2FASerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        usuario = request.user
+        codigo = serializer.validated_data["codigo"]
+
+        if usuario.totp_habilitado:
+            return Response(
+                {
+                    "detail": (
+                        "El segundo factor ya está activado " "para este usuario."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not usuario.totp_secret:
+            return Response(
+                {
+                    "detail": (
+                        "Primero debes iniciar la configuración " "del segundo factor."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        secreto = descifrar_secreto_totp(usuario.totp_secret)
+
+        if not verificar_codigo_totp(
+            secreto,
+            codigo,
+        ):
+            return Response(
+                {"detail": ("El código de verificación es inválido " "o ha expirado.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        usuario.totp_habilitado = True
+        usuario.save(update_fields=["totp_habilitado"])
+
+        return Response(
+            {"message": ("Segundo factor activado correctamente.")},
+            status=status.HTTP_200_OK,
+        )
+
+
+class Verificar2FAView(APIView):
+    def post(self, request):
+        serializer = Codigo2FASerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        challenge_token = serializer.validated_data["challenge_token"]
+        codigo = serializer.validated_data["codigo"]
+
+        payload = verificar_token(
+            challenge_token,
+            tipo_esperado="2fa_challenge",
+        )
+
+        if payload is None:
+            return Response(
+                {
+                    "detail": (
+                        "El desafío de autenticación es inválido " "o ha expirado."
+                    )
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        user_id = payload.get("user_id")
+
+        Usuario = get_user_model()
+
+        try:
+            usuario = Usuario.objects.get(
+                id=user_id,
+                is_active=True,
+            )
+        except Usuario.DoesNotExist:
+            return Response(
+                {"detail": "Usuario no válido."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not usuario.totp_habilitado or not usuario.totp_secret:
+            return Response(
+                {
+                    "detail": (
+                        "El segundo factor no está habilitado " "para este usuario."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        secreto = descifrar_secreto_totp(usuario.totp_secret)
+
+        if not verificar_codigo_totp(
+            secreto,
+            codigo,
+        ):
+            return Response(
+                {"detail": ("El código de verificación es inválido " "o ha expirado.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        recordar = payload.get(
+            "recordar",
+            False,
+        )
+
+        access_token, refresh_token, access_max_age, refresh_max_age = generar_tokens(
+            usuario,
+            recordar=recordar,
+        )
+
+        response = Response(
+            {
+                "message": "Autenticación en dos pasos correcta.",
+                "usuario": {
+                    "id": usuario.id,
+                    "username": usuario.username,
+                    "email": usuario.email,
+                },
+            },
+            status=status.HTTP_200_OK,
         )
 
         response.set_cookie(

@@ -63,6 +63,30 @@ def generar_tokens(user, recordar=False):
         refresh_exp_seconds,
     )
 
+def generar_token_desafio_2fa(user, recordar=False):
+    """
+    Genera un token temporal que permite completar
+    exclusivamente la verificación del segundo factor.
+    """
+
+    ahora = datetime.now(timezone.utc)
+
+    payload = {
+        "user_id": user.id,
+        "type": "2fa_challenge",
+        "recordar": recordar,
+        "iat": ahora,
+        "exp": ahora
+        + timedelta(
+            seconds=settings.TOTP_CHALLENGE_EXP_SECONDS
+        ),
+    }
+
+    return jwt.encode(
+        payload,
+        settings.SECRET_KEY,
+        algorithm="HS256",
+    )
 
 def verificar_token(token, tipo_esperado="access"):
     """
