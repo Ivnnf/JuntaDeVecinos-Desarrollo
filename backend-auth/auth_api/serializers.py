@@ -302,7 +302,17 @@ class RegistroVecinoSerializer(serializers.Serializer):
                 analisis["motivo_antiguedad"],
                 validacion_comuna["motivo"],
             ]
+            if not analisis["nombre"]:
+                observaciones.append(
+                    "No fue posible detectar claramente el nombre "
+                    "del titular en el documento."
+                )
 
+            if not analisis["direccion"]:
+                observaciones.append(
+                    "No fue posible detectar claramente la dirección "
+                    "del domicilio en el documento."
+                )
             if documento_duplicado:
                 observaciones.append(
                     "El mismo archivo ya fue utilizado "

@@ -1510,3 +1510,94 @@ class AutenticacionTests(APITestCase):
             "revisión manual",
             verificacion.observacion_automatica.lower(),
         )
+    def test_registro_advierte_si_ocr_no_extrae_nombre_o_direccion(self):
+        junta = JuntaVecinos.objects.create(
+            nombre="Junta OCR Incompleto Test",
+            comuna="Puente Alto",
+            activa=True,
+        )
+
+        sector = Sector.objects.create(
+            junta_vecinos=junta,
+            nombre="Sector OCR Incompleto Test",
+            activo=True,
+        )
+
+        archivo = SimpleUploadedFile(
+            "comprobante_incompleto.png",
+            b"contenido de prueba",
+            content_type="image/png",
+        )
+
+        analisis_ocr = {
+            "nombre": None,
+            "direccion": None,
+            "comuna": "Puente Alto",
+            "fecha_emision": date.today(),
+            "confianza_ocr": 0.96,
+            "documento_vigente": True,
+            "dias_antiguedad": 0,
+            "motivo_antiguedad": "Documento vigente.",
+        }
+
+        with (
+            patch(
+                "auth_api.serializers.extraer_texto_documento",
+                return_value={
+                    "texto_completo": "texto OCR",
+                    "lineas": [],
+                    "confianza_promedio": 0.96,
+                },
+            ),
+            patch(
+                "auth_api.serializers.analizar_documento_residencia",
+                return_value=analisis_ocr,
+            ),
+        ):
+            response = self.client.post(
+                "/api/auth/registro/",
+                {
+                    "username": "vecino_ocr_incompleto",
+                    "rut": "11.111.111-1",
+                    "nombres": "Vecino",
+                    "apellido_paterno": "OCR",
+                    "apellido_materno": "Incompleto",
+                    "email": "ocr.incompleto@test.cl",
+                    "password": "PasswordNuevo123!",
+                    "confirmar_password": "PasswordNuevo123!",
+                    "sector_id": sector.id,
+                    "tipo_documento": "ELECTRICIDAD",
+                    "archivo": archivo,
+                },
+                format="multipart",
+            )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        Usuario = get_user_model()
+
+        usuario = Usuario.objects.get(
+            username="vecino_ocr_incompleto",
+        )
+
+        verificacion = VerificacionResidencia.objects.get(
+            usuario=usuario,
+        )
+
+        self.assertEqual(
+            verificacion.estado,
+            VerificacionResidencia.Estado.REVISION_MANUAL,
+        )
+
+        self.assertIn(
+            "nombre",
+            verificacion.observacion_automatica.lower(),
+        )
+
+        self.assertIn(
+            "dirección",
+            verificacion.observacion_automatica.lower(),
+        )
