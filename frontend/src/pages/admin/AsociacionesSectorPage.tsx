@@ -48,6 +48,322 @@ type FiltroEstado =
   | 'SIN_VERIFICACION'
   | 'REVISION_MANUAL'
 
+// Estilos integrados: no necesita archivo CSS adicional.
+const estilosAsociaciones = String.raw`
+/* APT | Asociaciones Territoriales — estilo fotográfico integrado. */
+.apt-asociaciones {
+  --apt-verde-profundo: #0b2319;
+  --apt-verde-tarjeta: #102b20;
+  --apt-dorado: #d9ba68;
+  --apt-crema: #fbf4e2;
+  min-height: 100vh;
+  color: #f4f2e8;
+  background-color: #0b2319;
+  background-image:
+    linear-gradient(115deg, rgba(5, 28, 20, .76), rgba(5, 28, 20, .58)),
+    url('/casitas.webp');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+.apt-asociaciones > section { position: relative; }
+.apt-asociaciones h1,
+.apt-asociaciones h2,
+.apt-asociaciones h3 {
+  color: var(--apt-crema);
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: -.015em;
+}
+.apt-asociaciones p, .apt-asociaciones td, .apt-asociaciones label {
+  color: #f0f1e6;
+}
+.apt-asociaciones .text-base-content\/40,
+.apt-asociaciones .text-base-content\/45,
+.apt-asociaciones .text-base-content\/50,
+.apt-asociaciones .text-base-content\/60,
+.apt-asociaciones .text-base-content\/70 {
+  color: #d9e0d3;
+}
+.apt-asociaciones .apt-asociaciones-encabezado,
+.apt-asociaciones .apt-asociaciones-estadisticas > div,
+.apt-asociaciones .apt-asociaciones-panel,
+.apt-asociaciones .apt-asociaciones-cargando {
+  border: 1px solid rgba(220, 185, 94, .43);
+  border-radius: 1.5rem;
+  box-shadow: 0 18px 45px rgba(4, 20, 13, .27);
+  background-color: var(--apt-verde-tarjeta);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+/* Foto sutil del encabezado principal. */
+.apt-asociaciones .apt-asociaciones-encabezado {
+  background-image:
+    linear-gradient(115deg, rgba(6, 32, 23, .80), rgba(8, 42, 30, .77)),
+    url('/asociaciones-directiva.webp');
+  padding: 2rem;
+  transition: border-color .25s ease;
+}
+.apt-asociaciones .apt-asociaciones-encabezado:hover {
+  border-color: rgba(235, 205, 123, .65);
+}
+.apt-asociaciones .apt-asociaciones-encabezado h1 {
+  font-size: clamp(2.1rem, 3.3vw, 3rem);
+  line-height: 1.12;
+}
+/* Fotografías diferentes en los tres indicadores. */
+.apt-asociaciones .apt-asociaciones-estadisticas > div {
+  min-height: 132px;
+  padding: 1.4rem;
+  transition: transform .2s ease, border-color .2s ease;
+}
+.apt-asociaciones .apt-asociaciones-estadisticas > div:hover {
+  transform: translateY(-2px);
+  border-color: rgba(235, 205, 123, .72);
+}
+.apt-asociaciones .apt-asociaciones-estadisticas > div:nth-child(1) {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .79), rgba(8, 34, 24, .85)),
+    url('/registro-vecino.webp');
+}
+.apt-asociaciones .apt-asociaciones-estadisticas > div:nth-child(2) {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .78), rgba(8, 34, 24, .84)),
+    url('/sector.webp');
+}
+.apt-asociaciones .apt-asociaciones-estadisticas > div:nth-child(3) {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .79), rgba(8, 34, 24, .86)),
+    url('/gestion-directiva.webp');
+}
+.apt-asociaciones .apt-asociaciones-estadisticas > div > p {
+  color: #e3e7dc;
+  font-size: .94rem;
+}
+.apt-asociaciones .apt-asociaciones-estadisticas .text-3xl,
+.apt-asociaciones .apt-asociaciones-estadisticas .text-xl {
+  color: #fff8e8;
+  text-shadow: 0 2px 9px rgba(0,0,0,.28);
+}
+/* Un contenedor fotográfico único para filtros, título y tabla. */
+.apt-asociaciones .apt-asociaciones-panel {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .86), rgba(8, 34, 24, .89)),
+    url('/asociaciones-directiva.webp');
+  padding: 1.5rem;
+}
+.apt-asociaciones .apt-asociaciones-filtros-estado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-bottom: 1.6rem;
+  padding: .1rem 0 .1rem;
+}
+.apt-asociaciones .apt-asociaciones-filtros-territorio {
+  padding: 1.3rem;
+  border: 1px solid rgba(220, 185, 94, .34);
+  border-radius: 1.15rem;
+  background-color: rgba(6, 29, 19, .58);
+  background-image:
+    linear-gradient(115deg, rgba(6, 29, 19, .82), rgba(6, 29, 19, .87)),
+    url('/sector.webp');
+  background-size: cover;
+  background-position: center;
+}
+.apt-asociaciones .apt-asociaciones-titulo-lista {
+  border-top: 1px solid rgba(220, 185, 94, .22);
+  padding-top: 1.25rem;
+  margin-top: .25rem;
+}
+.apt-asociaciones .apt-asociaciones-tabla,
+.apt-asociaciones .apt-asociaciones-sin-resultados {
+  border: 1px solid rgba(220, 185, 94, .38);
+  border-radius: 1.1rem;
+  background-color: #0b281b;
+  background-image:
+    linear-gradient(115deg, rgba(7, 29, 20, .91), rgba(7, 29, 20, .94)),
+    url('/casitas.webp');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+.apt-asociaciones .apt-asociaciones-cargando {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .85), rgba(8, 34, 24, .87)),
+    url('/directivas.webp');
+}
+/* Contraste accesible para tablas grandes y controles. */
+.apt-asociaciones .apt-asociaciones-tabla .table {
+  width: 100%;
+  min-width: 1110px;
+  background: transparent;
+  color: #f6f4e9;
+}
+.apt-asociaciones .apt-asociaciones-tabla .table thead {
+  background: rgba(5, 23, 16, .78);
+  border-bottom: 1px solid rgba(220,185,94,.33);
+}
+.apt-asociaciones .apt-asociaciones-tabla .table thead th {
+  color: #f4dfaa;
+  font-size: .78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.apt-asociaciones .apt-asociaciones-tabla .table tbody tr {
+  background: rgba(11, 39, 26, .17);
+  border-bottom: 1px solid rgba(215, 183, 96, .18);
+  transition: background-color .2s ease;
+}
+.apt-asociaciones .apt-asociaciones-tabla .table tbody tr:nth-child(even) {
+  background: rgba(9, 36, 24, .37);
+}
+.apt-asociaciones .apt-asociaciones-tabla .table tbody tr:hover {
+  background: rgba(51, 87, 62, .54);
+}
+.apt-asociaciones .apt-asociaciones-tabla .table td {
+  color: #f3f2e8;
+  vertical-align: middle;
+  border-bottom-color: rgba(215, 183, 96, .12);
+}
+.apt-asociaciones .apt-asociaciones-tabla .rounded-full.bg-violet-500\/10 {
+  background: rgba(220, 185, 94, .20);
+  color: #f9dc8d;
+  border: 1px solid rgba(220,185,94,.4);
+}
+.apt-asociaciones .select {
+  width: 100%;
+  min-height: 2.9rem;
+  background-color: #092319;
+  border: 1px solid rgba(220,185,94,.45);
+  border-radius: .85rem;
+  color: #f6f3e8;
+  outline-color: #dabd76;
+}
+.apt-asociaciones .select:focus,
+.apt-asociaciones .select:focus-visible {
+  border-color: #e1bd6c;
+  outline: 1px solid #e1bd6c;
+}
+.apt-asociaciones .select option {
+  background: #102b20;
+  color: #fbf4e2;
+}
+.apt-asociaciones .btn {
+  border-radius: .75rem;
+  font-weight: 700;
+  transition: transform .2s ease, background-color .2s ease, border-color .2s ease;
+}
+.apt-asociaciones .btn:hover:not(:disabled) { transform: translateY(-1px); }
+.apt-asociaciones .btn-primary {
+  background: #d9ba68;
+  border-color: #d9ba68;
+  color: #142b1f;
+}
+.apt-asociaciones .btn-primary:hover:not(:disabled) {
+  background: #ebcf87;
+  border-color: #ebcf87;
+}
+.apt-asociaciones .btn-outline {
+  background-color: rgba(7, 30, 20, .65);
+  border-color: rgba(219, 188, 105, .57);
+  color: #f3e3b5;
+}
+.apt-asociaciones .btn-outline:hover:not(:disabled) {
+  background-color: rgba(211, 177, 97, .18);
+  border-color: #f0d288;
+  color: #fff3d3;
+}
+.apt-asociaciones .btn-warning:not(.btn-outline) {
+  background: #e6c477;
+  border-color: #e6c477;
+  color: #1b281f;
+}
+.apt-asociaciones .btn-success:not(.btn-outline) {
+  background: #90c6a0;
+  border-color: #90c6a0;
+  color: #0d291a;
+}
+.apt-asociaciones .btn-error:not(.btn-outline) {
+  background: #b86c69;
+  border-color: #b86c69;
+  color: #fff;
+}
+.apt-asociaciones .btn-info:not(.btn-outline) {
+  background: #a8c7c2;
+  border-color: #a8c7c2;
+  color: #10251f;
+}
+.apt-asociaciones .btn-neutral:not(.btn-outline) {
+  background: #668176;
+  border-color: #668176;
+  color: #fff;
+}
+.apt-asociaciones .badge {
+  border-color: rgba(231, 200, 123, .45);
+  color: #f9ecc8;
+  background-color: rgba(12, 47, 31, .75);
+  font-weight: 650;
+}
+.apt-asociaciones .badge-success:not(.badge-outline) {
+  color: #11291c;
+  background: #a5d7ac;
+  border-color: #a5d7ac;
+}
+.apt-asociaciones .badge-warning:not(.badge-outline) {
+  color: #172b20;
+  background: #e6c775;
+  border-color: #e6c775;
+}
+.apt-asociaciones .badge-error:not(.badge-outline) {
+  color: #fff;
+  background: #a94742;
+  border-color: #a94742;
+}
+.apt-asociaciones .badge-outline,
+.apt-asociaciones .badge-ghost {
+  background: rgba(8, 35, 24, .52);
+  color: #f6eaca;
+  border-color: rgba(228, 194, 111, .52);
+}
+.apt-asociaciones .alert {
+  border-radius: 1rem;
+  border-width: 1px;
+}
+.apt-asociaciones .alert-error { background-color: #3c1b1b; color: #ffe6e6; }
+.apt-asociaciones .alert-success { background-color: #173f2a; color: #ddfce5; }
+@media (max-width: 640px) {
+  .apt-asociaciones .apt-asociaciones-encabezado,
+  .apt-asociaciones .apt-asociaciones-panel { padding: 1.1rem; }
+  .apt-asociaciones .apt-asociaciones-filtros-territorio { padding: 1rem; }
+  .apt-asociaciones .apt-asociaciones-encabezado h1 { font-size: 2rem; }
+  .apt-asociaciones { background-attachment: scroll; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apt-asociaciones .btn,
+  .apt-asociaciones .apt-asociaciones-estadisticas > div,
+  .apt-asociaciones .apt-asociaciones-tabla .table tbody tr { transition: none; }
+}
+
+/* Modal original de verificación: apariencia consistente y contraste. */
+.apt-asociaciones .modal { z-index: 1000; }
+.apt-asociaciones .modal-box {
+  max-height: min(90vh, 920px);
+  overflow-y: auto;
+  border: 1px solid rgba(220,185,94,.55);
+  border-radius: 1.35rem;
+  background: #102b20;
+  color: #f6f0dd;
+  box-shadow: 0 22px 70px rgba(0,0,0,.5);
+}
+.apt-asociaciones .modal-box .rounded-xl { border-color: rgba(220,185,94,.3); }
+.apt-asociaciones .modal-box .bg-base-200\/50 { background: rgba(5,27,17,.6); }
+.apt-asociaciones .modal-backdrop { background: rgba(0,0,0,.58); }
+.apt-asociaciones .modal-box a.btn { white-space: normal; overflow-wrap: anywhere; }
+`
+
 function AsociacionesSectorPage() {
 
 
@@ -398,11 +714,12 @@ function AsociacionesSectorPage() {
   }
 
   return (
-    <main className="min-h-screen bg-base-200 px-4 py-8">
+    <main className="apt-asociaciones min-h-screen px-4 py-8">
+      <style>{estilosAsociaciones}</style>
       <section className="mx-auto w-full max-w-7xl">
 
         {/* Encabezado */}
-        <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+        <div className="apt-asociaciones-encabezado mb-7 rounded-3xl border p-6 shadow-lg">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
               <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -433,7 +750,7 @@ function AsociacionesSectorPage() {
 
         {/* Resumen */}
         {!cargando && (
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="apt-asociaciones-estadisticas mb-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-violet-500/30 bg-base-100 p-5 shadow-sm">
               <p className="text-sm font-medium text-base-content/60">
                 {configuracionFiltro.resumen}
@@ -499,7 +816,7 @@ function AsociacionesSectorPage() {
 
         {/* Cargando */}
         {cargando && (
-          <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+          <div className="apt-asociaciones-cargando rounded-2xl border p-10 text-center shadow-sm">
             <span className="loading loading-spinner loading-lg" />
 
             <p className="mt-4 text-base-content/60">
@@ -510,8 +827,9 @@ function AsociacionesSectorPage() {
 
         {!cargando && (
           <>
+            <div className="apt-asociaciones-panel mb-7">
             {/* Filtros por estado */}
-            <div className="mb-6 flex flex-wrap gap-2">
+            <div className="apt-asociaciones-filtros-estado mb-6 flex flex-wrap gap-2">
               <button
                 type="button"
                 className={`btn btn-sm ${filtroEstado === 'GENERAL'
@@ -583,7 +901,7 @@ function AsociacionesSectorPage() {
               </button>
             </div>
             {/* Filtros territoriales */}
-            <div className="mb-6 grid gap-4 md:grid-cols-2">
+            <div className="apt-asociaciones-filtros-territorio mb-6 grid gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-semibold">
                   Junta vecinal
@@ -645,7 +963,7 @@ function AsociacionesSectorPage() {
               </div>
             </div>
             {/* Título sección */}
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div className="apt-asociaciones-titulo-lista mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="text-2xl font-bold">
                   {configuracionFiltro.titulo}
@@ -667,7 +985,7 @@ function AsociacionesSectorPage() {
             </div>
 
             {asociacionesFiltradas.length === 0 ? (
-              <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+              <div className="apt-asociaciones-sin-resultados rounded-2xl border p-10 text-center shadow-sm">
                 <div className="mx-auto max-w-md">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
                     ✓
@@ -684,7 +1002,7 @@ function AsociacionesSectorPage() {
                 </div>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+              <div className="apt-asociaciones-tabla overflow-hidden rounded-2xl border shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="table">
                     <thead className="bg-base-200/70">
@@ -781,7 +1099,7 @@ function AsociacionesSectorPage() {
 
                             <td>
                               {asociacion.verificacion_residencia ? (
-                                <div className="flex flex-col items-start gap-2">
+                                <div className="flex min-w-[170px] flex-col items-start gap-2">
                                   <span
                                     className={
                                       asociacion.verificacion_residencia.estado ===
@@ -809,7 +1127,7 @@ function AsociacionesSectorPage() {
                                   </span>
                                   <button
                                     type="button"
-                                    className="btn btn-xs btn-outline"
+                                    className="btn btn-sm btn-outline whitespace-nowrap min-w-max px-3"
                                     onClick={() =>
                                       setAsociacionSeleccionada(asociacion)
                                     }
@@ -880,6 +1198,7 @@ function AsociacionesSectorPage() {
                 </div>
               </div>
             )}
+            </div>
           </>
         )}
       </section>

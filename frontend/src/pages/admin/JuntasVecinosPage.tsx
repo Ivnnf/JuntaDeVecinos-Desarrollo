@@ -10,6 +10,462 @@ type JuntaVecinos = {
     fecha_creacion: string
 }
 
+// Estilos de APT integrados en este archivo; sin CSS independiente.
+const estilosJuntas = String.raw`
+/* APT | Gestión de Juntas de Vecinos
+   Estilo aislado de esta página: no afecta a otras rutas ni al backend.
+   Los fondos se reutilizan desde frontend/public. */
+
+.apt-juntas {
+  --color-base-100: #152e24;
+  --color-base-200: #203d30;
+  --color-base-300: #697765;
+  --color-base-content: #f5efdd;
+  --color-primary: #dabb65;
+  --color-primary-content: #112a20;
+  --color-success: #53c9a0;
+  --color-success-content: #0b251a;
+  --color-info: #89c3cd;
+  --color-info-content: #0e2933;
+  --color-warning: #e7c66b;
+  --color-warning-content: #302309;
+  --color-error: #e8898a;
+  --color-error-content: #300b0e;
+
+  min-height: 100vh;
+  color: #f5efdd;
+  background-color: #10291f;
+  background-image:
+    linear-gradient(115deg, rgba(5, 28, 20, .75), rgba(5, 28, 20, .54)),
+    url('/casitas.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.apt-juntas > section { position: relative; }
+
+.apt-juntas h1,
+.apt-juntas h2,
+.apt-juntas h3 {
+  color: #fbf4e2;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+
+.apt-juntas h1 {
+  font-size: clamp(2.05rem, 3vw, 3.2rem);
+}
+
+.apt-juntas h2 {
+  font-size: clamp(1.55rem, 2.5vw, 2.15rem);
+}
+
+.apt-juntas .apt-juntas-encabezado {
+  background-color: #102b20;
+  background-image:
+    linear-gradient(115deg, rgba(6, 32, 23, .82), rgba(8, 42, 30, .78)),
+    url('/junta-v.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid rgba(210, 179, 92, .43);
+  box-shadow: 0 18px 45px rgba(4, 20, 13, .27);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* Tarjetas y contenedores de datos existentes */
+.apt-juntas .bg-base-100 {
+  background-color: rgba(15, 43, 31, .89);
+  border-color: rgba(215, 183, 96, .38);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 32px rgba(5, 25, 16, .22);
+}
+
+.apt-juntas .apt-juntas-estadisticas > div {
+  border-radius: 1.2rem;
+  padding: 1.4rem;
+  background-color: rgba(16, 43, 32, .91);
+  border: 1px solid rgba(215, 183, 96, .4);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Fotografía sutil dentro de cada indicador: misma estética de las
+   tarjetas del Panel de Administración, conservando el contraste. */
+.apt-juntas .apt-juntas-estadisticas > div {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  isolation: isolate;
+  transition: border-color .2s ease, transform .2s ease;
+}
+
+.apt-juntas .apt-juntas-estadisticas > div:hover {
+  border-color: rgba(235, 205, 123, .75);
+  transform: translateY(-2px);
+}
+
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(1) {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .80), rgba(8, 34, 24, .86)),
+    url('/casas.webp');
+}
+
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(2) {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .80), rgba(8, 34, 24, .86)),
+    url('/directivas.webp');
+}
+
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(3) {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .80), rgba(8, 34, 24, .86)),
+    url('/casitas.webp');
+}
+
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(4) {
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .80), rgba(8, 34, 24, .86)),
+    url('/muni-santiago.webp');
+}
+
+.apt-juntas .apt-juntas-estadisticas .text-3xl {
+  color: #f1cf72;
+  font-size: 2.2rem;
+  font-weight: 800;
+}
+
+.apt-juntas .apt-juntas-filtros {
+  border-top: 1px solid rgba(224, 196, 117, .38);
+  padding-top: 1.4rem;
+}
+
+/* Tablas con encabezados oscuros y filas legibles */
+.apt-juntas .apt-juntas-tabla {
+  border-color: rgba(215, 183, 96, .43);
+  background-color: rgba(13, 38, 27, .94);
+}
+
+.apt-juntas .table {
+  color: #f4f0e3;
+  font-size: .87rem;
+}
+
+.apt-juntas .table thead {
+  background: rgba(6, 28, 18, .97);
+  color: #f0d78b;
+}
+
+.apt-juntas .table thead th {
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .025em;
+  padding-block: 1.05rem;
+  white-space: nowrap;
+}
+
+.apt-juntas .table tbody tr {
+  border-bottom-color: rgba(225, 208, 158, .14);
+}
+
+.apt-juntas .table tbody tr:hover {
+  background-color: rgba(221, 181, 80, .09);
+}
+
+.apt-juntas .table tbody td {
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+/* Entradas de formulario: fondo claro para identificar áreas editables */
+.apt-juntas :is(.input, .select, .textarea) {
+  color: #142e24;
+  background-color: #edf2fa;
+  border: 1px solid #c0cdc9;
+  border-radius: .7rem;
+}
+
+.apt-juntas :is(.input, .select, .textarea)::placeholder {
+  color: #5c6d6a;
+}
+
+.apt-juntas :is(.input, .select, .textarea):focus-visible {
+  border-color: #bd9946;
+  outline: 2px solid #e3c36b;
+  outline-offset: 2px;
+}
+
+.apt-juntas select option {
+  color: #17352a;
+  background: #f1f4f8;
+}
+
+.apt-juntas :is(.input, .select, .textarea):disabled {
+  opacity: .72;
+  cursor: not-allowed;
+}
+
+.apt-juntas .label-text,
+.apt-juntas .label-text-alt {
+  color: #f1e8d1;
+}
+
+/* Marca visual APT: acciones positivas doradas, peligros en rojo. */
+.apt-juntas .btn:is(.btn-primary, .btn-success, .btn-info, .btn-warning):not(.btn-outline) {
+  background: linear-gradient(110deg, #eddba3, #cba747);
+  border: 1px solid #debf72;
+  color: #102b20;
+  font-weight: 800;
+  box-shadow: 0 5px 15px rgba(6, 21, 13, .17);
+}
+
+.apt-juntas .btn:is(.btn-primary, .btn-success, .btn-info, .btn-warning):not(.btn-outline):hover {
+  background: linear-gradient(110deg, #f6e3ae, #ddbc5d);
+  color: #0e2a1c;
+  filter: brightness(1.03);
+}
+
+.apt-juntas .btn.btn-outline {
+  background-color: rgba(225, 196, 114, .07);
+  border-color: rgba(225, 196, 114, .65);
+  color: #f7ebc7;
+}
+
+.apt-juntas .btn.btn-outline:hover {
+  background-color: rgba(220, 187, 95, .18);
+  border-color: #ebd186;
+  color: #fff8e4;
+}
+
+/* Acciones peligrosas deben conservar su semántica. */
+.apt-juntas .btn.btn-error:not(.btn-outline) {
+  background: #ab444b;
+  border-color: #db8385;
+  color: #fff5f3;
+}
+
+.apt-juntas .btn.btn-error.btn-outline {
+  color: #ffb0aa;
+  border-color: rgba(243, 146, 146, .75);
+}
+
+.apt-juntas .btn:focus-visible,
+.apt-juntas a:focus-visible {
+  outline: 2px solid #efd58c;
+  outline-offset: 3px;
+}
+
+/* Mantener diferencias útiles de estados y alertas. */
+.apt-juntas .badge {
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.apt-juntas .badge-outline,
+.apt-juntas .badge-ghost {
+  border-color: rgba(223, 195, 110, .55);
+  color: #f3dfac;
+}
+
+.apt-juntas .alert-error {
+  background-color: rgba(113, 37, 43, .93);
+  border: 1px solid rgba(247, 150, 151, .72);
+  color: #fff0ee;
+}
+
+.apt-juntas .alert-success {
+  background-color: rgba(21, 83, 58, .93);
+  border: 1px solid rgba(128, 215, 174, .55);
+  color: #edfff4;
+}
+
+.apt-juntas .alert-info,
+.apt-juntas .alert-warning {
+  background-color: rgba(88, 70, 35, .9);
+  border: 1px solid rgba(235, 202, 119, .59);
+  color: #fff5d7;
+}
+
+/* Diálogos: misma estética, sin perder formularios ni confirmaciones. */
+.apt-juntas .modal-box {
+  background: linear-gradient(135deg, #18382a, #11291e);
+  border: 1px solid rgba(223, 189, 100, .65);
+  color: #f5efdd;
+  border-radius: 1.3rem;
+  box-shadow: 0 28px 80px rgba(0, 10, 5, .55);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.apt-juntas .modal-box .bg-base-200\/60 {
+  background-color: rgba(7, 30, 19, .65);
+  border: 1px solid rgba(225, 199, 124, .22);
+}
+
+.apt-juntas .modal-backdrop {
+  background-color: rgba(2, 13, 9, .58);
+}
+
+@media (max-width: 640px) {
+  .apt-juntas {
+    background-attachment: scroll;
+  }
+
+  .apt-juntas .apt-juntas-encabezado {
+    padding: 1.3rem;
+  }
+
+  .apt-juntas .table { font-size: .82rem; }
+  .apt-juntas .table thead th { padding-inline: .65rem; }
+  .apt-juntas .table tbody td { padding-inline: .65rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apt-juntas .btn,
+  .apt-juntas .table tbody tr { transition: none; }
+}
+
+
+/* Encabezado del formulario: fotografía de barrio bajo una capa verde. */
+.apt-juntas .apt-juntas-formulario > div:first-child {
+  background-image:
+    linear-gradient(115deg, rgba(9, 36, 26, .78), rgba(9, 36, 26, .85)),
+    url('/junta-v.jpg');
+  background-position: center;
+  background-size: cover;
+}
+.apt-juntas .apt-juntas-formulario {
+  background-color: #102b20;
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .92), rgba(8, 34, 24, .89)),
+    url('/casitas.webp');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  border-color: rgba(215, 183, 96, .45);
+}
+.apt-juntas .apt-juntas-formulario .border-base-300 {
+  border-color: rgba(210, 178, 98, .32);
+}
+.apt-juntas .apt-juntas-formulario :is(.bg-base-200\/50, .bg-base-200\/70) {
+  background: rgba(8, 30, 20, .60);
+  border-color: rgba(215, 183, 96, .35);
+}
+.apt-juntas .apt-juntas-formulario .checkbox {
+  border-color: #e1c577;
+}
+.apt-juntas .apt-juntas-formulario .checkbox:checked {
+  background: #d7b758;
+  border-color: #e1c577;
+  color: #113124;
+}
+.apt-juntas .apt-juntas-encabezado .badge-warning {
+  color: #182d20;
+  background-color: #e5c775;
+  border-color: #e5c775;
+}
+.apt-juntas .apt-juntas-estadisticas .badge {
+  color: #f0d996;
+  background: rgba(14, 44, 31, .48);
+  border: 1px solid rgba(224, 188, 93, .60);
+  padding-inline: .6rem;
+}
+.apt-juntas .apt-juntas-tabla .btn.btn-warning:not(.btn-outline) {
+  color: #102b20;
+}
+.apt-juntas .apt-juntas-filtros {
+  border-top: 1px solid rgba(224, 196, 117, .40);
+  padding-top: 1.4rem;
+}
+.apt-juntas .apt-juntas-filtros h2 {
+  margin-bottom: .3rem;
+}
+.apt-juntas .apt-juntas-tabla .table tbody tr.bg-warning\/5 {
+  background-color: rgba(217, 178, 66, .13);
+}
+.apt-juntas .apt-juntas-tabla .table thead th:last-child,
+.apt-juntas .apt-juntas-tabla .table tbody td:last-child {
+  text-align: right;
+}
+/* Bloque de registros con fotografía tenue en toda su superficie. */
+.apt-juntas .apt-juntas-listado {
+  background-color: #102b20;
+  background-image:
+    linear-gradient(115deg, rgba(8, 34, 24, .86), rgba(8, 34, 24, .89)),
+    url('/junta-v.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  border: 1px solid rgba(215, 183, 96, .44);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 16px 34px rgba(4, 20, 13, .27);
+  overflow: hidden;
+}
+
+.apt-juntas .apt-juntas-listado .apt-juntas-filtros {
+  border-top: 0;
+  border-bottom: 1px solid rgba(224, 196, 117, .35);
+  padding-top: 0;
+  padding-bottom: 1.2rem;
+}
+
+.apt-juntas .apt-juntas-listado .apt-juntas-tabla {
+  background-color: #0d261b;
+  background-image:
+    linear-gradient(115deg, rgba(7, 31, 20, .94), rgba(7, 31, 20, .95)),
+    url('/casas.webp');
+  background-size: cover;
+  background-position: center;
+}
+
+@media (max-width: 640px) {
+  .apt-juntas .apt-juntas-formulario > div:first-child {
+    background-position: 60% center;
+  }
+  .apt-juntas .apt-juntas-listado {
+    padding: 1rem;
+  }
+}
+
+/* Detalles específicos de las juntas: formularios y listados consistentes. */
+.apt-juntas .apt-juntas-encabezado .badge-warning {
+  color: #172b20;
+  background: #e6c775;
+  border-color: #e6c775;
+}
+.apt-juntas .apt-juntas-estadisticas .badge {
+  color: #f0d996;
+  background: rgba(14, 44, 31, .48);
+  border: 1px solid rgba(224, 188, 93, .6);
+  padding-inline: .6rem;
+}
+.apt-juntas .apt-juntas-formulario .border-base-300 {
+  border-color: rgba(210, 178, 98, .35);
+}
+.apt-juntas .apt-juntas-listado .apt-juntas-tabla {
+  background-image:
+    linear-gradient(115deg, rgba(7, 31, 20, .93), rgba(7, 31, 20, .95)),
+    url('/casas.webp');
+  background-size: cover;
+  background-position: center;
+}
+.apt-juntas .apt-juntas-listado .apt-juntas-tabla tbody tr.bg-warning\/5 {
+  background: rgba(215, 180, 76, .10);
+}
+.apt-juntas .apt-juntas-listado .apt-juntas-tabla .table { min-width: 720px; }
+.apt-juntas .apt-juntas-formulario .form-control { min-width: 0; }
+.apt-juntas .apt-juntas-formulario .input,
+.apt-juntas .apt-juntas-formulario .select,
+.apt-juntas .apt-juntas-formulario .textarea { width: 100%; }
+`
+
 const COMUNAS_RM = [
     'Alhué',
     'Buin',
@@ -269,11 +725,12 @@ function JuntasVecinosPage() {
     }
 
     return (
-        <main className="min-h-screen bg-base-200 px-4 py-8">
+        <main className="apt-juntas min-h-screen px-4 py-8">
+            <style>{estilosJuntas}</style>
             <section className="mx-auto w-full max-w-7xl">
 
                 {/* Encabezado */}
-                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                <div className="apt-juntas-encabezado mb-6 rounded-3xl border border-base-300 bg-base-100 p-6 shadow-lg sm:p-8">
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div>
                             <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -316,7 +773,7 @@ function JuntasVecinosPage() {
 
                 {/* Resumen */}
                 {!cargando && (
-                    <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="apt-juntas-estadisticas mb-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
                                 Total juntas
@@ -394,7 +851,7 @@ function JuntasVecinosPage() {
                             void crearJunta(event)
                         }
                     }}
-                    className={`mb-6 overflow-hidden rounded-2xl border bg-base-100 shadow-sm ${
+                    className={`apt-juntas-formulario mb-7 overflow-hidden rounded-3xl border bg-base-100 shadow-lg ${
                         juntaEditando
                             ? 'border-amber-500/40'
                             : 'border-emerald-500/30'
@@ -574,9 +1031,9 @@ function JuntasVecinosPage() {
                 )}
 
                 {!cargando && (
-                    <>
+                    <div className="apt-juntas-listado mb-7">
                         {/* Título listado */}
-                        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                        <div className="apt-juntas-filtros mb-5 flex flex-wrap items-end justify-between gap-4">
                             <div>
                                 <h2 className="text-2xl font-bold">
                                     Juntas registradas
@@ -616,7 +1073,7 @@ function JuntasVecinosPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                            <div className="apt-juntas-tabla overflow-hidden rounded-3xl border border-base-300 bg-base-100 shadow-lg">
                                 <div className="overflow-x-auto">
                                     <table className="table">
                                         <thead className="bg-base-200/70">
@@ -722,7 +1179,7 @@ function JuntasVecinosPage() {
                                 </div>
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
             </section>
         </main>
