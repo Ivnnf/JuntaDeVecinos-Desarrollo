@@ -394,11 +394,103 @@ function SolicitudesDocumentoDirectivaPage() {
         ).length
 
     return (
-        <main className="min-h-screen bg-base-200 px-4 py-8">
-            <section className="mx-auto w-full max-w-6xl">
+        <main className="sd-page min-h-screen px-4 py-8">
+            <style>{`
+                .sd-page { --sd-gold:#dfbd60; --sd-cream:#f9f1dc; --sd-muted:#cbd6c7; position:relative; isolation:isolate; min-height:100vh; color:var(--sd-cream); font-family:'Segoe UI',Arial,sans-serif; background:#082519; overflow-x:hidden; }
+                .sd-page::before { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(120deg,rgba(4,22,14,.79),rgba(5,25,17,.76)),url('/images/photo-1441974231531-c6227db76b6e.jpg') center/cover no-repeat; }
+                .sd-page, .sd-page * { box-sizing:border-box; }
+                .sd-page .sd-container { max-width:1400px; }
+                .sd-page h1,.sd-page h2,.sd-page h3,.sd-page h4 { font-family:Georgia,'Times New Roman',serif; color:var(--sd-cream); }
+                .sd-page h1 { font-size:clamp(30px,3.1vw,42px); }
+                .sd-page h2 { font-size:clamp(23px,2.4vw,30px); }
+                .sd-page h3 { font-size:clamp(20px,2vw,25px); }
+                .sd-page .sd-photo { position:relative; isolation:isolate; overflow:hidden; }
+                .sd-page .sd-photo::before { content:''; position:absolute; inset:0; z-index:-1; pointer-events:none; border-radius:inherit; background:linear-gradient(115deg,rgba(5,27,17,.87),rgba(8,43,27,.80)),var(--sd-image) center/cover no-repeat; }
+                .sd-page .sd-hero { --sd-image:url('/images/photo-1473448912268-2022ce9509d8.jpg'); background:#092518; border-color:rgba(223,189,96,.48); padding:32px; box-shadow:0 15px 38px rgba(0,0,0,.25); }
+                .sd-page .sd-hero::before { border-radius:inherit; }
+                .sd-page .sd-pill { background:rgba(223,189,96,.17); color:#f5d67f; border:1px solid rgba(223,189,96,.65); }
+                .sd-page .sd-btn,.sd-page .btn { min-height:42px; background:rgba(223,189,96,.16); color:#f8e8b5; border:1px solid rgba(223,189,96,.65); border-radius:12px; box-shadow:none; font-weight:700; }
+                .sd-page .btn:hover { background:rgba(223,189,96,.31); color:#fff4d6; border-color:#e5c674; }
+                .sd-page .btn-primary,.sd-page .btn-secondary { background:linear-gradient(115deg,#ebd180,#c9a044); color:#112719; border-color:#e1bf63; }
+                .sd-page .btn-primary:hover,.sd-page .btn-secondary:hover { background:linear-gradient(115deg,#ffe69c,#e2b951); color:#112719; }
+                .sd-page .btn:disabled { opacity:.5; }
+                .sd-page .sd-stat { position:relative; isolation:isolate; overflow:hidden; border:1px solid rgba(223,189,96,.43); border-radius:19px; background:#0b2b1b; box-shadow:0 12px 30px rgba(0,0,0,.2); }
+                .sd-page .sd-stat::before { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(115deg,rgba(5,27,17,.88),rgba(9,40,25,.76)),var(--sd-stat-image) center/cover no-repeat; }
+                .sd-page .sd-stat-pending { --sd-stat-image:url('/images/photo-1449158743715-0a90ebb6d2d8.jpg'); }
+                .sd-page .sd-stat-review { --sd-stat-image:url('/images/photo-1473448912268-2022ce9509d8.jpg'); }
+                .sd-page .sd-stat-approved { --sd-stat-image:url('/images/photo-1500534623283-312aade485b7.jpg'); }
+                .sd-page .sd-stat-rejected { --sd-stat-image:url('/images/photo-1441974231531-c6227db76b6e.jpg'); }
+                .sd-page .sd-stat span.text-3xl { color:#f0d27b; }
+                .sd-page .sd-empty { --sd-image:url('/images/photo-1500534623283-312aade485b7.jpg'); background:#092519; border-color:rgba(223,189,96,.45); overflow:hidden; }
+                .sd-page .sd-empty::before { border-radius:inherit; }
+                .sd-page .sd-request { --sd-image:url('/images/photo-1449158743715-0a90ebb6d2d8.jpg'); background:#092519; border-color:rgba(223,189,96,.45); box-shadow:0 12px 30px rgba(0,0,0,.22); }
+                .sd-page .sd-request::before { border-radius:inherit; }
+                .sd-page .sd-request:nth-child(even) { --sd-image:url('/images/photo-1473448912268-2022ce9509d8.jpg'); }
+                .sd-page .sd-inset { background:rgba(4,22,14,.76); border-color:rgba(223,189,96,.28); border-radius:15px; }
+                .sd-page .sd-request .border-base-300 { border-color:rgba(223,189,96,.28); }
+                .sd-page .text-base-content\/40,.sd-page .text-base-content\/50,.sd-page .text-base-content\/60,.sd-page .text-base-content\/70,.sd-page .text-base-content\/80 { color:var(--sd-muted); }
+                .sd-page .text-base-content\/80 { color:var(--sd-cream); }
+                .sd-page .sd-request .flex, .sd-page .sd-request .grid { min-width:0; }
+                .sd-page .badge { max-width:100%; white-space:normal; height:auto; min-height:25px; overflow-wrap:anywhere; }
+                .sd-page .badge-ghost,.sd-page .badge-outline { border-color:rgba(223,189,96,.40); color:#f3e2b4; background:rgba(10,37,23,.55); }
+                .sd-page .badge-warning { color:#ffe19b; border-color:#dbaa53; }
+                .sd-page .badge-info { color:#b9e0fb; border-color:#86b9d8; }
+                .sd-page .badge-success { color:#b1efd0; border-color:#82cda9; }
+                .sd-page .badge-error { color:#ffbeba; border-color:#de8b89; }
+                .sd-page .select,.sd-page .textarea,.sd-page .file-input { width:100%; min-width:0; background:rgba(3,19,12,.91); color:var(--sd-cream); border:1px solid rgba(223,189,96,.45); border-radius:11px; color-scheme:dark; }
+                .sd-page .select:focus,.sd-page .textarea:focus,.sd-page .file-input:focus { outline:2px solid rgba(223,189,96,.75); outline-offset:1px; }
+                .sd-page .select option { color:#f9f1dc; background:#0c291b; }
+                .sd-page .textarea::placeholder { color:#aebdab; }
+                .sd-page .label-text { color:var(--sd-cream); }
+                .sd-page .alert-success { background:rgba(14,83,50,.9); border:1px solid rgba(122,206,157,.5); color:#e5ffed; }
+                .sd-page .alert-error { background:rgba(118,35,38,.92); border:1px solid rgba(230,119,119,.52); color:#ffeded; }
+                .sd-page .alert:not(.alert-success):not(.alert-error) { background:rgba(8,35,22,.9); color:var(--sd-cream); border:1px solid rgba(223,189,96,.43); }
+                .sd-page button:focus-visible,.sd-page a:focus-visible { outline:2px solid #f0d57e; outline-offset:3px; }
+                .sd-page .sd-request p,.sd-page .sd-request span,.sd-page .sd-request strong { overflow-wrap:anywhere; }
+                @media(max-width:640px) { .sd-page { padding:18px 12px 48px;  } .sd-page .sd-hero { padding:22px; } .sd-page .sd-hero .sd-btn { width:100%; } .sd-page .sd-request .p-6 { padding:19px; } .sd-page .sd-empty { padding:28px 18px; } }
+
+                /* Distinción cromática semántica: estados y operaciones */
+                .sd-page .sd-stat { --sd-accent:#e6c17a; border-color:color-mix(in srgb,var(--sd-accent) 60%,transparent); border-top:4px solid var(--sd-accent); }
+                .sd-page .sd-stat-pending { --sd-accent:#f0c16c; }
+                .sd-page .sd-stat-review { --sd-accent:#87cafa; }
+                .sd-page .sd-stat-approved { --sd-accent:#83d9aa; }
+                .sd-page .sd-stat-rejected { --sd-accent:#f2a0a4; }
+                .sd-page .sd-stat .text-3xl { color:var(--sd-accent); font-size:2.35rem; font-variant-numeric:tabular-nums; text-shadow:0 2px 15px rgba(0,0,0,.24); }
+                .sd-page .sd-stat > p { color:#f7f1dc; font-weight:700; }
+                .sd-page .sd-stat .badge { color:var(--sd-accent); border-color:var(--sd-accent); background:color-mix(in srgb,var(--sd-accent) 14%,transparent); }
+                .sd-page .sd-request { --sd-state:#e6c17a; border-left:5px solid var(--sd-state) !important; }
+                .sd-page .sd-request[data-estado='PENDIENTE'] { --sd-state:#f0c16c; }
+                .sd-page .sd-request[data-estado='EN_REVISION'] { --sd-state:#87cafa; }
+                .sd-page .sd-request[data-estado='APROBADA'] { --sd-state:#83d9aa; }
+                .sd-page .sd-request[data-estado='RECHAZADA'] { --sd-state:#f2a0a4; }
+                .sd-page .sd-request > div:first-child { border-bottom-color:color-mix(in srgb,var(--sd-state) 38%,transparent); }
+                .sd-page .sd-request > div:first-child h3 { color:#fff4de; }
+                .sd-page .sd-request .badge-warning { color:#ffe4a6; border-color:#e9bd6c; background:rgba(124,82,22,.30); }
+                .sd-page .sd-request .badge-info { color:#c5ebff; border-color:#8acbf0; background:rgba(24,90,126,.32); }
+                .sd-page .sd-request .badge-success { color:#d0fce1; border-color:#85d8a9; background:rgba(17,100,65,.34); }
+                .sd-page .sd-request .badge-error { color:#ffd6d5; border-color:#f0a0a4; background:rgba(123,39,52,.34); }
+                .sd-page .sd-request .badge-ghost { color:#ebdfc5; border-color:rgba(196,210,204,.35); background:rgba(100,117,105,.19); }
+                .sd-page .sd-request .sd-inset { border-left:3px solid rgba(141,194,219,.65); background:rgba(5,28,24,.80); }
+                .sd-page .sd-request .sd-file { background:rgba(5,28,21,.85); border:1px solid rgba(210,190,143,.32); }
+                .sd-page .sd-request .sd-file-issued { border-left:4px solid #83d9aa; }
+                .sd-page .sd-request .sd-file-attachment { border-left:4px solid #8bcaf0; }
+                .sd-page .sd-request .sd-download { background:rgba(40,91,131,.35); border-color:#83bce7; color:#daf0ff; }
+                .sd-page .sd-request .sd-download:hover { background:rgba(48,115,166,.58); border-color:#b8dcf8; color:#fff; }
+                .sd-page .sd-request .sd-upload { background:linear-gradient(115deg,#b7a4ef,#9076d6); color:#20182c; border-color:#d4c3ff; }
+                .sd-page .sd-request .sd-upload:hover { background:linear-gradient(115deg,#d0c2ff,#ac96ed); color:#20182c; }
+                .sd-page .sd-request .sd-save { background:linear-gradient(115deg,#a8d7ee,#74b8dc); color:#102b36; border-color:#b7e2fa; }
+                .sd-page .sd-request .sd-save:hover { background:linear-gradient(115deg,#d0eaf8,#95ccec); color:#102b36; }
+                .sd-page .sd-request .select:focus,.sd-page .sd-request .textarea:focus { outline-color:var(--sd-state); }
+                .sd-page .sd-request .sd-file .badge-info { background:rgba(29,83,118,.42); }
+                .sd-page .sd-request .sd-file .badge-success { background:rgba(18,92,55,.43); }
+                .sd-page :is(.btn,.select,.textarea,.file-input):focus-visible { outline:3px solid #ebd195; outline-offset:2px; }
+                @media (prefers-reduced-motion:reduce) { .sd-page .sd-request { transition:none; } }
+            `}</style>
+
+            <section className="sd-container mx-auto w-full max-w-6xl">
 
                 {/* Encabezado */}
-                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                <div className="sd-hero sd-photo mb-6 rounded-2xl border p-6 shadow-sm">
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div>
                             <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -406,7 +498,7 @@ function SolicitudesDocumentoDirectivaPage() {
                                     Solicitudes de Documentos
                                 </h1>
 
-                                <span className="badge badge-primary badge-lg">
+                                <span className="sd-pill badge badge-lg">
                                     Gestión
                                 </span>
                             </div>
@@ -419,7 +511,7 @@ function SolicitudesDocumentoDirectivaPage() {
 
                         <Link
                             to="/directiva"
-                            className="btn btn-outline"
+                            className="sd-btn btn btn-outline"
                         >
                             ← Volver al Panel
                         </Link>
@@ -453,9 +545,9 @@ function SolicitudesDocumentoDirectivaPage() {
                 {!cargando && (
                     <>
                         {/* Resumen */}
-                        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="sd-stats mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-                            <div className="rounded-2xl border border-amber-500/30 bg-base-100 p-5 shadow-sm">
+                            <div className="rounded-2xl border sd-stat sd-stat-pending p-5 shadow-sm">
                                 <p className="text-sm font-medium text-base-content/60">
                                     Pendientes
                                 </p>
@@ -471,7 +563,7 @@ function SolicitudesDocumentoDirectivaPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
+                            <div className="rounded-2xl border sd-stat sd-stat-review p-5 shadow-sm">
                                 <p className="text-sm font-medium text-base-content/60">
                                     En revisión
                                 </p>
@@ -487,7 +579,7 @@ function SolicitudesDocumentoDirectivaPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
+                            <div className="rounded-2xl border sd-stat sd-stat-approved p-5 shadow-sm">
                                 <p className="text-sm font-medium text-base-content/60">
                                     Aprobadas
                                 </p>
@@ -503,7 +595,7 @@ function SolicitudesDocumentoDirectivaPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border border-red-500/30 bg-base-100 p-5 shadow-sm">
+                            <div className="rounded-2xl border sd-stat sd-stat-rejected p-5 shadow-sm">
                                 <p className="text-sm font-medium text-base-content/60">
                                     Rechazadas
                                 </p>
@@ -544,7 +636,7 @@ function SolicitudesDocumentoDirectivaPage() {
                         </div>
 
                         {solicitudes.length === 0 ? (
-                            <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                            <div className="sd-empty sd-photo rounded-2xl border p-10 text-center shadow-sm">
                                 <div className="mx-auto max-w-md">
                                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
                                         ✓
@@ -565,7 +657,8 @@ function SolicitudesDocumentoDirectivaPage() {
                                 {solicitudes.map((solicitud) => (
                                     <article
                                         key={solicitud.id}
-                                        className={`overflow-hidden rounded-2xl border bg-base-100 shadow-sm transition-all duration-200 hover:shadow-md ${bordeEstado(
+                                        data-estado={solicitud.estado_actual}
+                                        className={`sd-request sd-photo overflow-hidden rounded-2xl border shadow-sm transition-all duration-200 hover:shadow-md ${bordeEstado(
                                             solicitud.estado_actual
                                         )}`}
                                     >
@@ -640,7 +733,7 @@ function SolicitudesDocumentoDirectivaPage() {
                                                     Motivo de la solicitud
                                                 </p>
 
-                                                <div className="rounded-xl bg-base-200/70 p-5">
+                                                <div className="sd-inset rounded-xl p-5">
                                                     <p className="whitespace-pre-wrap leading-relaxed">
                                                         {solicitud.motivo}
                                                     </p>
@@ -754,7 +847,7 @@ function SolicitudesDocumentoDirectivaPage() {
                                                         {solicitud.archivos.map((archivo) => (
                                                             <div
                                                                 key={archivo.id}
-                                                                className="flex h-full flex-col justify-between gap-4 rounded-xl border border-base-300 bg-base-100 p-4"
+                                                                className="sd-inset flex h-full flex-col justify-between gap-4 rounded-xl border p-4"
                                                             >
                                                                 <div>
                                                                     <div className="mb-2">
@@ -789,7 +882,7 @@ function SolicitudesDocumentoDirectivaPage() {
 
                                                                 <button
                                                                     type="button"
-                                                                    className="btn btn-sm btn-outline w-full"
+                                                                    className="btn btn-sm btn-outline sd-download w-full"
                                                                     onClick={() =>
                                                                         void descargarArchivo(archivo)
                                                                     }
@@ -804,7 +897,7 @@ function SolicitudesDocumentoDirectivaPage() {
 
                                             {/* Documento emitido */}
                                             {solicitud.estado_actual === 'APROBADA' && (
-                                                <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                                                <div className="sd-inset mt-6 rounded-2xl border p-5">
                                                     <div className="mb-4">
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <h4 className="font-bold">
@@ -845,7 +938,7 @@ function SolicitudesDocumentoDirectivaPage() {
 
                                                         <button
                                                             type="button"
-                                                            className="btn btn-secondary"
+                                                            className="btn btn-secondary sd-upload"
                                                             disabled={
                                                                 subiendoArchivoId === solicitud.id ||
                                                                 !archivosEmitidos[solicitud.id]
@@ -873,7 +966,7 @@ function SolicitudesDocumentoDirectivaPage() {
 
                                             {/* Historial */}
                                             {solicitud.historial.length > 0 && (
-                                                <div className="mt-6 rounded-2xl border border-base-300 bg-base-200/40 p-5">
+                                                <div className="sd-inset mt-6 rounded-2xl border p-5">
                                                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                                                         <div>
                                                             <h4 className="font-bold">
@@ -898,7 +991,7 @@ function SolicitudesDocumentoDirectivaPage() {
                                                             (registro) => (
                                                                 <div
                                                                     key={registro.id}
-                                                                    className="relative rounded-xl border border-base-300 bg-base-100 p-4"
+                                                                    className="sd-inset relative rounded-xl border p-4"
                                                                 >
                                                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                                                         <div className="flex flex-wrap items-center gap-2">
@@ -959,7 +1052,7 @@ function SolicitudesDocumentoDirectivaPage() {
 
                                                 <button
                                                     type="button"
-                                                    className="btn btn-primary"
+                                                    className="btn btn-primary sd-save"
                                                     disabled={
                                                         guardandoId ===
                                                         solicitud.id

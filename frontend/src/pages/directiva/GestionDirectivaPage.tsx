@@ -522,10 +522,124 @@ function GestionDirectivaPage() {
             integrante.cargo_codigo === 'PRESIDENCIA',
     )
     return (
-        <main className="min-h-screen bg-base-200 px-4 py-8">
+        <main className="gestion-bosque min-h-screen px-4 py-8">
+            <style>{`
+                .gestion-bosque { position:relative; isolation:isolate; min-height:100vh; color:#f7efd9; background:#091b17; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+                .gestion-bosque::before { content:""; position:fixed; inset:0; z-index:-1; background:linear-gradient(110deg,rgba(4,24,19,.85),rgba(5,35,26,.68) 48%,rgba(4,23,20,.91)),url("/images/photo-1486406146926-c627a92ad1ab.jpg") center/cover no-repeat; }
+                .gestion-bosque > section { position:relative; z-index:1; }
+                .gestion-bosque .gestion-hero { border:1px solid rgba(220,179,92,.46); background:linear-gradient(95deg,rgba(4,30,22,.92),rgba(11,40,32,.72)),url("/images/photo-1497366811353-6870744d04b2.jpg") center/cover; box-shadow:0 14px 42px rgba(0,0,0,.25); }
+                .gestion-bosque h1,.gestion-bosque h2,.gestion-bosque h3 { font-family:Georgia,"Times New Roman",serif; color:#fbf2dc; letter-spacing:-.02em; }
+                .gestion-bosque h1 {font-size:clamp(2rem,4vw,3.2rem);line-height:1.12;}
+                .gestion-bosque .gestion-hero p { color:#e2e8d8; }
+                .gestion-bosque .gestion-estadisticas > div { min-height:142px; border:1px solid rgba(224,183,92,.44); border-radius:20px; color:#fff3d5; box-shadow:0 12px 25px rgba(0,0,0,.18); }
+                .gestion-bosque .gestion-estadisticas > div:nth-child(1) { background:linear-gradient(120deg,rgba(6,34,26,.91),rgba(9,45,35,.74)),url("/images/photo-1527576539890-dfa815648363.jpg") center/cover; }
+                .gestion-bosque .gestion-estadisticas > div:nth-child(2) { background:linear-gradient(120deg,rgba(6,34,26,.89),rgba(9,45,35,.77)),url("/images/photo-1560518883-ce09059eeffa.jpg") center/cover; }
+                .gestion-bosque .gestion-estadisticas > div:nth-child(3) { background:linear-gradient(120deg,rgba(6,34,26,.91),rgba(9,45,35,.75)),url("/images/photo-1497366754035-f200968a6e72.jpg") center/cover; }
+                .gestion-bosque .gestion-estadisticas .text-3xl { color:#ffe29a; font-family:Georgia,"Times New Roman",serif; font-size:2.4rem; }
+                .gestion-bosque .gestion-panel { border:1px solid rgba(220,179,92,.45); border-radius:22px; box-shadow:0 16px 36px rgba(0,0,0,.28); background-color:rgba(10,37,28,.92); }
+                .gestion-bosque .gestion-miembros { background:linear-gradient(105deg,rgba(5,34,27,.96),rgba(8,44,33,.89)),url("/images/photo-1497366754035-f200968a6e72.jpg") center/cover; }
+                .gestion-bosque .gestion-asignar { background:linear-gradient(110deg,rgba(8,39,29,.95),rgba(10,46,34,.85)),url("/images/photo-1524758631624-e2822e304c36.jpg") center/cover; }
+                .gestion-bosque .gestion-reasignar { background:linear-gradient(110deg,rgba(8,39,29,.97),rgba(10,46,34,.9)),url("/images/photo-1497366412874-3415097a27e7.jpg") center/cover; }
+                .gestion-bosque .gestion-elegibles { background:linear-gradient(110deg,rgba(8,39,29,.97),rgba(10,46,34,.90)),url("/images/photo-1486406146926-c627a92ad1ab.jpg") center/cover; }
+                .gestion-bosque .gestion-panel > div:first-child {border-bottom-color:rgba(230,194,110,.28);}
+                .gestion-bosque p,.gestion-bosque td,.gestion-bosque th,.gestion-bosque label,.gestion-bosque span { color:inherit; }
+                .gestion-bosque [class~="text-base-content/50"],.gestion-bosque [class~="text-base-content/60"],.gestion-bosque [class~="text-base-content/70"],.gestion-bosque [class~="text-base-content/40"],.gestion-bosque [class~="text-base-content/45"] { color:#d8dfd1; }
+                .gestion-bosque .badge {border-radius:999px;border-color:rgba(228,190,99,.5);background:rgba(19,68,47,.72);color:#fbe4ac;font-weight:650;}
+                .gestion-bosque .badge-success {border-color:#7ccba4;background:rgba(27,100,65,.78);color:#d0f6df;}
+                .gestion-bosque .badge-warning {border-color:#d7ac58;color:#ffe0a1;background:rgba(83,60,22,.77);}
+                .gestion-bosque .badge-error {border-color:#f09990;color:#ffe2df;background:rgba(116,37,36,.76);}
+                .gestion-bosque .btn {border-radius:12px;min-height:40px;transition:filter .2s,transform .2s;}
+                .gestion-bosque .btn:hover:not(:disabled) {filter:brightness(1.09);transform:translateY(-1px);}
+                .gestion-bosque .btn-primary {background:linear-gradient(100deg,#f2d88d,#d5ae55);border:1px solid #efd18b;color:#193123;font-weight:750;}
+                .gestion-bosque .btn-outline {border:1px solid rgba(226,188,101,.72);background:rgba(10,43,31,.85);color:#fce8b7;}
+                .gestion-bosque .btn-error {background:rgba(115,32,32,.78);border-color:#c87871;color:#ffe4e0;}
+                .gestion-bosque .select,.gestion-bosque .input,.gestion-bosque .textarea {background:rgba(250,248,236,.97);border:1px solid #c9b67e;border-radius:11px;color:#173426;min-height:44px;max-width:100%;}
+                .gestion-bosque .select option {color:#193327;background:#fffaf0;}
+                .gestion-bosque .select:focus,.gestion-bosque .input:focus {outline:2px solid #e0be6e;outline-offset:1px;}
+                .gestion-bosque .label-text {color:#eee7cd;font-weight:650;}
+                .gestion-bosque table {color:#f7eed8;border-collapse:separate;border-spacing:0;}
+                .gestion-bosque thead {background:rgba(3,21,17,.72);}
+                .gestion-bosque th {font-weight:700;color:#f0d48d;}
+                .gestion-bosque td {border-color:rgba(231,197,118,.18);}
+                .gestion-bosque tbody tr:hover {background:rgba(202,170,89,.09);}
+                .gestion-bosque [class~="bg-base-200/60"],.gestion-bosque [class~="bg-base-200/50"] {background-color:rgba(4,22,18,.55);}
+                .gestion-bosque .alert {border:1px solid rgba(229,184,92,.42);background:rgba(13,57,40,.90);color:#fff0d3;border-radius:14px;}
+                .gestion-bosque .alert-error {border-color:#e19a85;background:rgba(111,35,35,.95);color:#ffe9e6;}
+                .gestion-bosque .alert-warning {border-color:#e0b76d;background:rgba(74,53,18,.85);color:#ffe8bf;}
+                .gestion-bosque .gestion-modal {z-index:1000;backdrop-filter:blur(5px);}
+                .gestion-bosque .gestion-modal-caja {background:linear-gradient(145deg,rgba(13,49,36,.99),rgba(7,28,23,.99));border:1px solid #d0a65f;color:#f8efd7;max-height:90vh;overflow:auto;}
+                .gestion-bosque .gestion-modal-caja [class*="bg-base-200"] {background:rgba(4,22,17,.62);}
+                @media(max-width:640px){ .gestion-bosque {padding:16px 12px;} .gestion-bosque .gestion-panel .p-6 {padding:1rem;} .gestion-bosque .gestion-hero{padding:1.3rem;} .gestion-bosque table {font-size:.85rem;} }
+
+                /* Identidad cromática profesional: cada sección mantiene una función clara. */
+                .gestion-bosque {
+                    --gestion-violeta:#bda9fa;
+                    --gestion-verde:#83e1ae;
+                    --gestion-celeste:#83d5f2;
+                    --gestion-ambar:#f5c778;
+                    --gestion-rojo:#f4a0a2;
+                }
+                .gestion-bosque .gestion-estadisticas > div {
+                    position:relative; overflow:hidden; border-width:1px;
+                    border-top-width:4px; padding-top:17px;
+                    transition:transform .2s ease,box-shadow .2s ease;
+                }
+                .gestion-bosque .gestion-estadisticas > div:hover {
+                    transform:translateY(-3px);box-shadow:0 18px 35px rgba(0,0,0,.32);
+                }
+                .gestion-bosque .gestion-estadisticas > div:nth-child(1) {
+                    border-color:rgba(189,169,250,.61); border-top-color:var(--gestion-violeta);
+                    background-image:linear-gradient(112deg,rgba(28,24,54,.94),rgba(15,39,41,.85)),url("/images/photo-1527576539890-dfa815648363.jpg");
+                }
+                .gestion-bosque .gestion-estadisticas > div:nth-child(2) {
+                    border-color:rgba(131,225,174,.58); border-top-color:var(--gestion-verde);
+                    background-image:linear-gradient(112deg,rgba(8,47,35,.96),rgba(10,45,35,.79)),url("/images/photo-1560518883-ce09059eeffa.jpg");
+                }
+                .gestion-bosque .gestion-estadisticas > div:nth-child(3) {
+                    border-color:rgba(131,213,242,.58); border-top-color:var(--gestion-celeste);
+                    background-image:linear-gradient(112deg,rgba(9,41,51,.96),rgba(8,45,43,.83)),url("/images/photo-1497366754035-f200968a6e72.jpg");
+                }
+                .gestion-bosque .gestion-estadisticas > div:nth-child(1) .text-3xl {color:#d9cbff;}
+                .gestion-bosque .gestion-estadisticas > div:nth-child(2) .text-3xl {color:#a1f3c6;}
+                .gestion-bosque .gestion-estadisticas > div:nth-child(3) .text-3xl {color:#a7e7fb;}
+                .gestion-bosque .gestion-estadisticas > div:nth-child(1) .badge {background:#554481;color:#f4edff;border-color:#c9b5ff;}
+                .gestion-bosque .gestion-estadisticas > div:nth-child(2) .badge {background:#215b42;color:#d9ffe9;border-color:#80e2ad;}
+                .gestion-bosque .gestion-estadisticas > div:nth-child(3) .badge {background:#1c5264;color:#e0f8ff;border-color:#81d9fa;}
+                .gestion-bosque .gestion-panel {border-top-width:4px;}
+                .gestion-bosque .gestion-miembros {border-top-color:var(--gestion-violeta);}
+                .gestion-bosque .gestion-asignar {border-top-color:var(--gestion-verde);}
+                .gestion-bosque .gestion-reasignar {border-top-color:var(--gestion-ambar);}
+                .gestion-bosque .gestion-elegibles {border-top-color:var(--gestion-celeste);}
+                .gestion-bosque .gestion-miembros h2 {color:#d8cafa;}
+                .gestion-bosque .gestion-asignar h2 {color:#a1f3c6;}
+                .gestion-bosque .gestion-reasignar h2 {color:#f9d690;}
+                .gestion-bosque .gestion-elegibles h2 {color:#a8e7fb;}
+                .gestion-bosque .badge-info {background:rgba(25,82,103,.88);border-color:#80d5f2;color:#d9f5ff;}
+                .gestion-bosque .badge-primary {background:rgba(81,64,124,.82);border-color:#bda9fa;color:#f0eaff;}
+                .gestion-bosque .badge-success {background:rgba(26,102,65,.88);border-color:#83e1ae;color:#e3ffef;}
+                .gestion-bosque .badge-warning {background:rgba(113,78,27,.83);border-color:#f5c778;color:#fff0c9;}
+                .gestion-bosque .badge-error {background:rgba(117,37,45,.90);border-color:#f4a0a2;color:#ffe8e8;}
+                .gestion-bosque .badge-ghost {background:rgba(94,105,106,.35);border-color:rgba(199,217,211,.3);color:#e5ece7;}
+                .gestion-bosque .gestion-miembros .btn-outline:not(.btn-error) {border-color:var(--gestion-violeta);color:#ebdcff;background:rgba(65,45,102,.5);}
+                .gestion-bosque .gestion-miembros .btn-outline:not(.btn-error):hover {background:rgba(112,85,167,.6);}
+                .gestion-bosque .gestion-asignar .btn-primary {background:linear-gradient(110deg,#a6ecc1,#62c793);border-color:#8fe4b2;color:#123522;}
+                .gestion-bosque .gestion-reasignar .btn-primary {background:linear-gradient(110deg,#f8d99a,#e7b45e);border-color:#f5d28a;color:#382709;}
+                .gestion-bosque .btn-error, .gestion-bosque .btn-error.btn-outline {background:rgba(115,36,42,.9);border:1px solid #f09da1;color:#ffe5e5;}
+                .gestion-bosque .btn-error:hover:not(:disabled) {background:#a8434d;color:white;}
+                .gestion-bosque .btn:focus-visible,.gestion-bosque .select:focus-visible {outline:3px solid #f2d286;outline-offset:3px;}
+                .gestion-bosque .gestion-elegibles tbody tr:nth-child(even),
+                .gestion-bosque .gestion-miembros tbody tr:nth-child(even) {background:rgba(100,126,112,.08);}
+                .gestion-bosque .gestion-modal-caja {border-top:4px solid var(--gestion-rojo);}
+                .gestion-bosque .gestion-modal-caja h3 {color:#ffd4d5;}
+                @media(prefers-reduced-motion:reduce) {
+                    .gestion-bosque .gestion-estadisticas > div,.gestion-bosque .btn {transition:none;}
+                    .gestion-bosque .gestion-estadisticas > div:hover,.gestion-bosque .btn:hover {transform:none;}
+                }
+            `}</style>
+
             <section className="mx-auto w-full max-w-6xl">
                 {/* Encabezado */}
-                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                <div className="gestion-hero mb-6 rounded-2xl border p-6 shadow-sm">
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div>
                             <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -585,7 +699,7 @@ function GestionDirectivaPage() {
                 {!cargando && !error && (
                     <>
                         {/* Resumen */}
-                        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="gestion-estadisticas mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
                                 <p className="text-sm font-medium text-base-content/60">
                                     Integrantes actuales
@@ -636,7 +750,7 @@ function GestionDirectivaPage() {
                         </div>
 
                         {/* Integrantes actuales */}
-                        <div className="mb-6 overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                        <div className="gestion-panel gestion-miembros mb-6 overflow-hidden rounded-2xl border shadow-sm">
                             <div className="border-b border-base-300 p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-4">
                                     <div>
@@ -847,7 +961,7 @@ function GestionDirectivaPage() {
                         </div>
 
                         {/* Asignar integrante */}
-                        <div className="mb-6 overflow-hidden rounded-2xl border border-indigo-500/30 bg-base-100 shadow-sm">
+                        <div className="gestion-panel gestion-asignar mb-6 overflow-hidden rounded-2xl border shadow-sm">
                             <div className="border-b border-base-300 p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-4">
                                     <div>
@@ -975,7 +1089,7 @@ function GestionDirectivaPage() {
 
                         {/* Reasignación de cargo */}
                         {integranteReasignando && (
-                            <div className="mb-6 overflow-hidden rounded-2xl border border-amber-500/30 bg-base-100 shadow-sm">
+                            <div className="gestion-panel gestion-reasignar mb-6 overflow-hidden rounded-2xl border shadow-sm">
                                 <div className="border-b border-base-300 p-6">
                                     <div className="flex flex-wrap items-center justify-between gap-4">
                                         <div>
@@ -1137,7 +1251,7 @@ function GestionDirectivaPage() {
                         )}
 
                         {/* Usuarios elegibles */}
-                        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                        <div className="gestion-panel gestion-elegibles overflow-hidden rounded-2xl border shadow-sm">
                             <div className="border-b border-base-300 p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-4">
                                     <div>
@@ -1238,8 +1352,8 @@ function GestionDirectivaPage() {
                     </>
                 )}
                 {integranteADesactivar && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-                        <div className="w-full max-w-md rounded-2xl border border-base-300 bg-base-100 shadow-2xl">
+                    <div className="gestion-modal fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4">
+                        <div className="gestion-modal-caja w-full max-w-md rounded-2xl border shadow-2xl">
                             <div className="border-b border-base-300 p-6">
                                 <div className="flex items-start gap-4">
                                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error/10 text-error">

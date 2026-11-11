@@ -355,11 +355,159 @@ function AsociacionesDirectivaPage() {
     }
 
     return (
-        <main className="min-h-screen bg-base-200 px-4 py-8">
+        <main className="apt-asociaciones min-h-screen px-4 py-8">
+            <style>{`
+/* Asociación territorial · APT · estilo bosque y dorado · solo presentación */
+.apt-asociaciones {
+  --apt-crema: #f7f1dc;
+  --apt-dorado: #e7bf69;
+  --apt-borde: rgba(226,188,106,.57);
+  color: var(--apt-crema);
+  position: relative;
+  isolation: isolate;
+  background: #0a2118;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.apt-asociaciones::before {
+  content: "";
+  position: fixed;
+  z-index: -2;
+  inset: 0;
+  background-image: linear-gradient(105deg,rgba(3,27,20,.80),rgba(9,34,27,.61) 52%,rgba(3,21,17,.82)),url('/images/photo-1600596542815-ffad4c1539a9.jpg');
+  background-size: cover;
+  background-position: center center;
+}
+.apt-asociaciones::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg,rgba(4,22,15,.10),rgba(2,16,12,.31));
+}
+.apt-asociaciones :is(h1,h2,h3,h4) { font-family: Georgia, 'Times New Roman', serif; color: #fff5d7; letter-spacing: -.025em; }
+.apt-asociaciones h1 { font-size: clamp(1.8rem,3.8vw,2.55rem); }
+.apt-asociaciones .apt-asociaciones-hero,
+.apt-asociaciones .apt-asociaciones-stat,
+.apt-asociaciones .apt-asociaciones-tabla,
+.apt-asociaciones .apt-asociaciones-vacio,
+.apt-asociaciones .apt-asociaciones-modal {
+  border: 1px solid var(--apt-borde);
+  box-shadow: 0 20px 45px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,240,192,.10);
+  color: var(--apt-crema);
+}
+.apt-asociaciones .apt-asociaciones-hero {
+  background-image:linear-gradient(100deg,rgba(3,33,24,.95),rgba(4,39,29,.76) 60%,rgba(6,31,26,.71)),url('/images/photo-1477959858617-67f85cf4f1df.jpg');
+  background-size:cover;
+  background-position:center 47%;
+}
+.apt-asociaciones .apt-asociaciones-stat {
+  min-height: 134px;
+  background-position: center;
+  background-size: cover;
+  transition: transform .2s ease, border-color .2s ease;
+}
+.apt-asociaciones .apt-asociaciones-stat:hover { transform:translateY(-2px);border-color:#f5d99b; }
+.apt-asociaciones .apt-asociaciones-stat-uno {
+  background-image:linear-gradient(115deg,rgba(3,38,28,.94),rgba(4,41,29,.78)),url('/images/photo-1600607687920-4e2a09cf159d.jpg');
+}
+.apt-asociaciones .apt-asociaciones-stat-dos {
+  background-image:linear-gradient(115deg,rgba(5,34,27,.94),rgba(6,39,31,.74)),url('/images/photo-1497366754035-f200968a6e72.jpg');
+}
+.apt-asociaciones .apt-asociaciones-stat-tres {
+  background-image:linear-gradient(115deg,rgba(3,38,28,.95),rgba(4,42,31,.76)),url('/images/photo-1494526585095-c41746248156.jpg');
+}
+.apt-asociaciones .apt-asociaciones-stat .text-3xl,
+.apt-asociaciones .apt-asociaciones-stat .text-xl { color: #f6d68c; font-family: Georgia, serif; }
+.apt-asociaciones .apt-asociaciones-titulo {
+  padding: 1.1rem 1.35rem;
+  border: 1px solid var(--apt-borde);
+  border-radius: 1rem;
+  background-image:linear-gradient(105deg,rgba(5,39,29,.96),rgba(7,36,29,.82)),url('/images/photo-1497366811353-6870744d04b2.jpg');
+  background-position:center;
+  background-size:cover;
+}
+.apt-asociaciones .apt-asociaciones-tabla {
+  background-image:linear-gradient(105deg,rgba(5,36,27,.97),rgba(6,36,28,.93)),url('/images/photo-1494526585095-c41746248156.jpg');
+  background-size:cover;
+  background-position:center;
+}
+.apt-asociaciones .apt-asociaciones-tabla .table { color: #f5edd6; }
+.apt-asociaciones .apt-asociaciones-tabla .table thead {background:rgba(2,23,18,.83)!important;color:#f5d68e;}
+.apt-asociaciones .apt-asociaciones-tabla .table th {font-weight:700; white-space:nowrap;}
+.apt-asociaciones .apt-asociaciones-tabla .table td,
+.apt-asociaciones .apt-asociaciones-tabla .table th {border-bottom:1px solid rgba(221,190,120,.24);padding-top:1rem;padding-bottom:1rem;}
+.apt-asociaciones .apt-asociaciones-tabla .table tbody tr:hover {background:rgba(220,188,106,.09)!important;}
+.apt-asociaciones .apt-asociaciones-vacio,
+.apt-asociaciones .rounded-2xl.bg-base-100 {
+  background-image:linear-gradient(115deg,rgba(3,37,28,.94),rgba(4,36,30,.86)),url('/images/photo-1494526585095-c41746248156.jpg');
+  background-size:cover;
+  background-position:center;
+  border-color:var(--apt-borde);
+  color:var(--apt-crema);
+}
+.apt-asociaciones .apt-asociaciones-filtros {
+  padding:1rem;
+  border:1px solid rgba(226,188,106,.42);
+  border-radius:1rem;
+  background:rgba(5,35,26,.88);
+}
+.apt-asociaciones .btn {border-radius:.8rem;font-weight:700;min-height:2.35rem;}
+.apt-asociaciones .btn-primary,
+.apt-asociaciones .btn-success {
+  background:#d9ac59!important;border-color:#edcb81!important;color:#18362a!important;
+}
+.apt-asociaciones .btn-primary:hover,
+.apt-asociaciones .btn-success:hover {background:#f1cd83!important;}
+.apt-asociaciones .btn-outline,
+.apt-asociaciones .btn-neutral {
+  background:rgba(9,42,32,.74)!important;border:1px solid rgba(229,194,119,.76)!important;color:#f9e5b7!important;
+}
+.apt-asociaciones .btn-outline:hover,
+.apt-asociaciones .btn-neutral:hover {background:rgba(209,170,88,.19)!important;}
+.apt-asociaciones .btn-error {border-color:#ed9e98!important;}
+.apt-asociaciones .btn-warning {border-color:#edca81!important;}
+.apt-asociaciones .btn:disabled {opacity:.5;cursor:not-allowed;}
+.apt-asociaciones .badge {max-width:100%;font-weight:650;}
+.apt-asociaciones .badge-outline,.apt-asociaciones .badge-ghost {
+  border-color:rgba(224,187,112,.66)!important;color:#ffedc3!important;background:rgba(14,50,37,.66)!important;
+}
+.apt-asociaciones .badge-warning {color:#30210c!important;}
+.apt-asociaciones .badge-success {background:#247f61;color:white;}
+.apt-asociaciones .badge-info {color:#e5f7ff;}
+.apt-asociaciones .alert {border:1px solid var(--apt-borde);color:#fff0ce;}
+.apt-asociaciones .alert-error {background:#5d2829;color:#fff3e9;}
+.apt-asociaciones .alert-success {background:#174a39;color:#f1f8e8;}
+.apt-asociaciones .apt-asociaciones-modal {
+  background-image:linear-gradient(130deg,rgba(4,35,27,.99),rgba(9,44,34,.97)),url('/images/photo-1497366754035-f200968a6e72.jpg');
+  background-position:center;
+  background-size:cover;
+  max-height:min(88vh,950px);
+  overflow-y:auto;
+}
+.apt-asociaciones .apt-asociaciones-modal .rounded-xl {background-color:rgba(3,27,21,.53);border-color:rgba(225,190,121,.38);}
+.apt-asociaciones .apt-asociaciones-modal .text-base-content,
+.apt-asociaciones .apt-asociaciones-modal .font-medium,
+.apt-asociaciones .apt-asociaciones-modal p {color:#f7edda;}
+.apt-asociaciones .apt-asociaciones-overlay {z-index:100;}
+.apt-asociaciones .apt-asociaciones-overlay::backdrop {background:rgba(0,0,0,.7);}
+.apt-asociaciones [class~="text-base-content/40"],
+.apt-asociaciones [class~="text-base-content/45"],
+.apt-asociaciones [class~="text-base-content/50"],
+.apt-asociaciones [class~="text-base-content/60"],
+.apt-asociaciones [class~="text-base-content/70"] {color:#e4dcc9;}
+.apt-asociaciones .text-base-content {color:#fff3d6;}
+@media(max-width:640px){
+  .apt-asociaciones {padding:1rem;}
+  .apt-asociaciones .apt-asociaciones-hero {padding:1.1rem;}
+  .apt-asociaciones .apt-asociaciones-tabla .table {min-width:950px;}
+  .apt-asociaciones .apt-asociaciones-modal {width:calc(100vw - 1.6rem);max-height:87vh;}
+}
+`}</style>
             <section className="mx-auto w-full max-w-7xl">
 
                 {/* Encabezado */}
-                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                <div className="apt-asociaciones-hero mb-6 rounded-2xl border p-6 shadow-sm">
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div>
                             <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -390,9 +538,9 @@ function AsociacionesDirectivaPage() {
                 {/* Resumen */}
                 {!cargando && (
                     <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <div className="rounded-2xl border border-violet-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="apt-asociaciones-stat apt-asociaciones-stat-uno rounded-2xl border p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
-                                Solicitudes pendientes
+                                Solicitudes en la vista
                             </p>
 
                             <div className="mt-2 flex items-end justify-between gap-3">
@@ -406,7 +554,7 @@ function AsociacionesDirectivaPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="apt-asociaciones-stat apt-asociaciones-stat-dos rounded-2xl border p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
                                 Tipo de gestión
                             </p>
@@ -422,7 +570,7 @@ function AsociacionesDirectivaPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+                        <div className="apt-asociaciones-stat apt-asociaciones-stat-tres rounded-2xl border p-5 shadow-sm sm:col-span-2 lg:col-span-1">
                             <p className="text-sm font-medium text-base-content/60">
                                 Estado
                             </p>
@@ -455,7 +603,7 @@ function AsociacionesDirectivaPage() {
 
                 {/* Cargando */}
                 {cargando && (
-                    <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                    <div className="apt-asociaciones-vacio rounded-2xl border p-10 text-center shadow-sm">
                         <span className="loading loading-spinner loading-lg" />
 
                         <p className="mt-4 text-base-content/60">
@@ -467,7 +615,7 @@ function AsociacionesDirectivaPage() {
                 {!cargando && (
                     <>
                         {/* Filtros por estado */}
-                        <div className="mb-6 flex flex-wrap gap-2">
+                        <div className="apt-asociaciones-filtros mb-6 flex flex-wrap gap-2">
                             <button
                                 type="button"
                                 className={`btn btn-sm ${filtroEstado === 'GENERAL'
@@ -539,7 +687,7 @@ function AsociacionesDirectivaPage() {
                             </button>
                         </div>
                         {/* Título sección */}
-                        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                        <div className="apt-asociaciones-titulo mb-4 flex flex-wrap items-end justify-between gap-3">
                             <div>
                                 <h2 className="text-2xl font-bold">
                                     {configuracionFiltro.titulo}
@@ -561,14 +709,14 @@ function AsociacionesDirectivaPage() {
                         </div>
 
                         {asociacionesFiltradas.length === 0 ? (
-                            <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                            <div className="apt-asociaciones-vacio rounded-2xl border p-10 text-center shadow-sm">
                                 <div className="mx-auto max-w-md">
                                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
                                         ✓
                                     </div>
 
                                     <h3 className="text-xl font-bold">
-                                        No existen asociaciones pendientes
+                                        No hay solicitudes en esta vista
                                     </h3>
 
                                     <p className="mt-2 text-base-content/60">
@@ -578,7 +726,7 @@ function AsociacionesDirectivaPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                            <div className="apt-asociaciones-tabla overflow-hidden rounded-2xl border shadow-sm">
                                 <div className="overflow-x-auto">
                                     <table className="table">
                                         <thead className="bg-base-200/70">
@@ -761,8 +909,8 @@ function AsociacionesDirectivaPage() {
                     </>
                 )}
                 {asociacionSeleccionada && (
-                    <dialog className="modal modal-open">
-                        <div className="modal-box max-w-3xl">
+                    <dialog className="apt-asociaciones-overlay modal modal-open">
+                        <div className="apt-asociaciones-modal modal-box max-w-3xl">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <h3 className="text-xl font-bold">

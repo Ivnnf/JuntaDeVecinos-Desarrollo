@@ -276,9 +276,192 @@ function MensajeriaDirectivaPage() {
         }
     }
     return (
-        <main className="min-h-screen bg-base-200 px-4 py-8">
-            <section className="mx-auto w-full max-w-7xl">
-                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+        <main className="mensajeria-bosque min-h-screen px-4 py-8 sm:px-6">
+
+            <style>{`
+                .mensajeria-bosque {
+                    --mb-oro: #d9ba76;
+                    --mb-crema: #fff6df;
+                    position: relative;
+                    isolation: isolate;
+                    color: var(--mb-crema);
+                    background: #091c17;
+                    min-height: 100vh;
+                }
+                .mensajeria-bosque::before {
+                    content: "";
+                    position: fixed;
+                    inset: 0;
+                    z-index: -2;
+                    background-image:
+                        linear-gradient(120deg, rgba(4,22,18,.88), rgba(7,39,30,.75) 53%, rgba(9,25,22,.86)),
+                        url('/images/photo-1480714378408-67cf0d13bc1b.jpg');
+                    background-position: center;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                }
+                .mensajeria-bosque::after {
+                    content: "";
+                    position: fixed;
+                    inset: 0;
+                    z-index: -1;
+                    pointer-events: none;
+                    background: radial-gradient(circle at 15% 20%, rgba(201,168,100,.10), transparent 34%);
+                }
+                .mensajeria-contenido { position: relative; z-index: 1; }
+                .mensajeria-portada,
+                .mensajeria-resumen > div,
+                .mensajeria-chat,
+                .mensajeria-bosque .alert,
+                .mensajeria-bosque > .mensajeria-contenido > .rounded-2xl {
+                    border: 1px solid rgba(219,186,117,.52) !important;
+                    box-shadow: 0 16px 38px rgba(0,0,0,.24);
+                    color: var(--mb-crema);
+                }
+                .mensajeria-portada {
+                    background-image:
+                      linear-gradient(100deg, rgba(8,40,30,.96), rgba(10,49,39,.82) 65%, rgba(10,39,31,.68)),
+                      url('/images/photo-1497366811353-6870744d04b2.jpg');
+                    background-size: cover;
+                    background-position: center;
+                }
+                .mensajeria-portada h1,
+                .mensajeria-bosque h2,
+                .mensajeria-modal h3 { font-family: Georgia, 'Times New Roman', serif; letter-spacing: .01em; }
+                .mensajeria-portada h1 { color: #ffe9b8; font-size: clamp(2rem,4vw,2.8rem); }
+                .mensajeria-bosque p, .mensajeria-bosque span,
+                .mensajeria-bosque h2, .mensajeria-bosque h3 { color: inherit; }
+                .mensajeria-portada p { color: #e8e5d7 !important; }
+                .mensajeria-resumen > div { min-height: 123px; background-size: cover; background-position: center; }
+                .mensajeria-resumen > div:nth-child(1) {
+                  background-image: linear-gradient(120deg,rgba(8,44,33,.93),rgba(8,42,33,.70)),url('/images/photo-1497366754035-f200968a6e72.jpg');
+                }
+                .mensajeria-resumen > div:nth-child(2) {
+                  background-image: linear-gradient(120deg,rgba(8,44,33,.93),rgba(8,42,33,.70)),url('/images/photo-1524758631624-e2822e304c36.jpg');
+                }
+                .mensajeria-resumen > div:nth-child(3) {
+                  background-image: linear-gradient(120deg,rgba(8,44,33,.93),rgba(8,42,33,.70)),url('/images/photo-1486406146926-c627a92ad1ab.jpg');
+                }
+                .mensajeria-resumen .text-3xl { color:#ffdf9d; font-family:Georgia,serif; }
+                .mensajeria-bosque .badge {
+                    border:1px solid rgba(221,187,113,.65);
+                    background:rgba(15,55,42,.8);
+                    color:#ffebc1 !important;
+                    font-weight:600;
+                }
+                .mensajeria-bosque .btn {
+                    border:1px solid #d8b979;
+                    border-radius: 11px;
+                    background: linear-gradient(120deg,#ead09a,#b99754);
+                    color:#17382c;
+                    font-weight:700;
+                    box-shadow:0 5px 15px rgba(0,0,0,.14);
+                }
+                .mensajeria-bosque .btn:hover:not(:disabled) {
+                    background:linear-gradient(120deg,#ffdfaa,#d9b976);
+                    border-color:#ffdda0;
+                }
+                .mensajeria-bosque .btn:disabled { opacity:.52; }
+                .mensajeria-bosque .btn-error {
+                    border-color:#d99a8d;
+                    background:#60332f;
+                    color:#fff0e8;
+                }
+                .mensajeria-bosque .btn-error:hover:not(:disabled) { background:#7c3b36; }
+                .mensajeria-chat { background:rgba(9,36,29,.91); }
+                .mensajeria-listado {
+                    border-color:rgba(218,186,117,.35);
+                    background-image:linear-gradient(rgba(8,38,31,.93),rgba(8,38,31,.95)),url('/images/photo-1497366858526-0766cadbe8fa.jpg');
+                    background-size:cover;
+                    background-position:center;
+                }
+                .mensajeria-listado > div:first-child,
+                .mensajeria-cabecera,
+                .mensajeria-redaccion { border-color:rgba(218,186,117,.32); }
+                .mensajeria-conversaciones > button { border-color:rgba(218,186,117,.2); color:#f7eed7; }
+                .mensajeria-conversaciones > button:hover { background:rgba(205,177,109,.13) !important; }
+                .mensajeria-conversaciones > button[class*="shadow-primary"] {
+                    background:rgba(218,186,117,.20) !important;
+                    box-shadow:inset 4px 0 0 #e1c382;
+                }
+                .mensajeria-detalle { background:rgba(12,42,34,.84); }
+                .mensajeria-sin-seleccion {
+                    background-image:linear-gradient(100deg,rgba(9,37,30,.88),rgba(11,42,34,.83)),url('/images/photo-1497366412874-3415097a27e7.jpg');
+                    background-size:cover;
+                    background-position:center;
+                }
+                .mensajeria-cabecera, .mensajeria-redaccion { background:rgba(10,43,34,.96); }
+                .mensajeria-mensajes {
+                    background-image:linear-gradient(rgba(9,34,29,.85),rgba(8,34,29,.88)),url('/images/photo-1497366811353-6870744d04b2.jpg');
+                    background-size:cover;
+                    background-position:center;
+                }
+                .mensajeria-burbuja-directiva {
+                    background:#215441 !important;
+                    border-color:rgba(221,184,111,.65) !important;
+                    color:#fff4dd !important;
+                }
+                .mensajeria-burbuja-vecino {
+                    background:#f4e8ce !important;
+                    border-color:#cfb377 !important;
+                    color:#203b30 !important;
+                }
+                .mensajeria-burbuja-vecino * { color:#203b30 !important; }
+                .mensajeria-bosque textarea {
+                    background:rgba(246,239,220,.97);
+                    border:1px solid #cfb77d;
+                    color:#18382c;
+                    border-radius:10px;
+                }
+                .mensajeria-bosque textarea::placeholder { color:#63746a; }
+                .mensajeria-bosque [class~="text-base-content/50"],
+                .mensajeria-bosque [class~="text-base-content/60"],
+                .mensajeria-bosque [class~="text-base-content/70"],
+                .mensajeria-bosque [class~="text-base-content/40"],
+                .mensajeria-bosque [class~="text-base-content/45"] {
+                 color: #dbd8cb;
+                }
+                .mensajeria-bosque .alert-error { background:rgba(102,37,37,.95); color:#fff3ea; }
+                .mensajeria-modal { z-index:100; }
+                .mensajeria-modal-caja {
+                    background:linear-gradient(145deg,#163e31,#092a22);
+                    border:1px solid #d8b979;
+                    color:#fff4d9;
+                    box-shadow:0 24px 65px rgba(0,0,0,.5);
+                }
+                .mensajeria-modal-caja .rounded-xl { border-color:rgba(218,186,117,.40); background:rgba(0,0,0,.17); }
+                .mensajeria-modal .modal-backdrop { background:rgba(0,0,0,.64); }
+                @media (max-width:1023px) {
+                    .mensajeria-chat { display:flex; flex-direction:column; height:auto; }
+                    .mensajeria-listado { max-height:350px; flex-shrink:0; }
+                    .mensajeria-detalle { min-height:520px; }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .mensajeria-bosque * { scroll-behavior:auto !important; }
+                }
+
+                /* Paleta semántica: distingue estado, volumen y autor de cada mensaje. */
+                .mensajeria-bosque .mensajeria-resumen > div:nth-child(1) { border-top: 4px solid #b4a3f0 !important; }
+                .mensajeria-bosque .mensajeria-resumen > div:nth-child(2) { border-top: 4px solid #78d6a7 !important; }
+                .mensajeria-bosque .mensajeria-resumen > div:nth-child(3) { border-top: 4px solid #aeb9c6 !important; }
+                .mensajeria-bosque .mensajeria-resumen > div:nth-child(1) .text-3xl { color:#d7c8ff; }
+                .mensajeria-bosque .mensajeria-resumen > div:nth-child(2) .text-3xl { color:#9ff0bc; }
+                .mensajeria-bosque .mensajeria-resumen > div:nth-child(3) .text-3xl { color:#d4dce4; }
+                .mensajeria-bosque .badge-primary {background:rgba(96,78,154,.8);border-color:#b5a5f2;color:#f5ecff !important;}
+                .mensajeria-bosque .badge-success {background:rgba(24,103,68,.85);border-color:#78d6a7;color:#e5fff0 !important;}
+                .mensajeria-bosque .badge-ghost {background:rgba(83,99,110,.40);border-color:#9eafbd;color:#e8edf1 !important;}
+                .mensajeria-bosque .mensajeria-conversaciones > button:focus-visible {outline:2px solid #efc979;outline-offset:-2px;}
+                .mensajeria-bosque .mensajeria-conversaciones > button[class*="shadow-primary"] {border-left:4px solid #d1b4ff;background:rgba(107,85,164,.20) !important;}
+                .mensajeria-bosque .mensajeria-burbuja-directiva {background:#205748 !important;border-left:4px solid #81dab0 !important;}
+                .mensajeria-bosque .mensajeria-burbuja-vecino {background:#f4e8ce !important;border-left:4px solid #d8b36a !important;}
+                .mensajeria-bosque .mensajeria-burbuja-directiva :is(p,span) {color:#fff4dd !important;}
+                .mensajeria-bosque .mensajeria-burbuja-vecino :is(p,span) {color:#203b30 !important;}
+                .mensajeria-bosque .mensajeria-cabecera .badge-success {background:#176848;}
+                .mensajeria-bosque .mensajeria-modal .btn-error {background:#a3403e;color:#fff4ed;border-color:#e4a6a0;}
+                .mensajeria-bosque .mensajeria-modal .btn-error:hover {background:#b84c49;}
+            `}</style>
+            <section className="mensajeria-contenido mx-auto w-full max-w-7xl">
+                <div className="mensajeria-portada mb-6 rounded-2xl border p-6 shadow-sm sm:p-8">
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div>
                             <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -307,7 +490,7 @@ function MensajeriaDirectivaPage() {
                 </div>
 
                 {!cargando && !error && (
-                    <div className="mb-6 grid gap-4 sm:grid-cols-3">
+                    <div className="mensajeria-resumen mb-6 grid gap-4 sm:grid-cols-3">
                         <div className="rounded-2xl border border-indigo-500/30 bg-base-100 p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
                                 Conversaciones
@@ -373,8 +556,8 @@ function MensajeriaDirectivaPage() {
                         </p>
                     </div>
                 ) : (
-                    <div className="grid h-[650px] overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm lg:grid-cols-[360px_1fr]">
-                        <aside className="border-b border-base-300 bg-base-100 lg:border-b-0 lg:border-r">
+                    <div className="mensajeria-chat grid min-h-[620px] overflow-hidden rounded-2xl border shadow-sm lg:h-[680px] lg:grid-cols-[350px_minmax(0,1fr)]">
+                        <aside className="mensajeria-listado min-h-0 border-b lg:border-b-0 lg:border-r">
                             <div className="border-b border-base-300 p-5">
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
@@ -393,7 +576,7 @@ function MensajeriaDirectivaPage() {
                                 </div>
                             </div>
 
-                            <div className="max-h-[590px] overflow-y-auto">
+                            <div className="mensajeria-conversaciones max-h-[260px] overflow-y-auto lg:max-h-[610px]">
                                 {conversaciones.length === 0 ? (
                                     <div className="p-8 text-center">
                                         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
@@ -494,7 +677,7 @@ function MensajeriaDirectivaPage() {
                             </div>
                         </aside>
 
-                        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+                        <section className="mensajeria-detalle flex min-h-0 min-w-0 flex-col overflow-hidden">
                             {cargandoConversacion ? (
                                 <div className="flex flex-1 items-center justify-center p-8 text-center">
                                     <div>
@@ -506,7 +689,7 @@ function MensajeriaDirectivaPage() {
                                     </div>
                                 </div>
                             ) : !conversacionSeleccionada ? (
-                                <div className="flex flex-1 items-center justify-center bg-base-100 p-8 text-center">
+                                <div className="mensajeria-sin-seleccion flex flex-1 items-center justify-center p-8 text-center">
                                     <div className="max-w-md">
                                         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-bold text-primary">
                                             M
@@ -524,7 +707,7 @@ function MensajeriaDirectivaPage() {
                                 </div>
                             ) : (
                                 <>
-                                    <header className="border-b border-base-300 bg-base-100 px-5 py-5 sm:px-6">
+                                    <header className="mensajeria-cabecera border-b px-5 py-5 sm:px-6">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="flex min-w-0 items-start gap-3">
                                                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-bold text-emerald-700">
@@ -590,7 +773,7 @@ function MensajeriaDirectivaPage() {
 
                                     <div
                                         ref={mensajesContenedorRef}
-                                        className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-base-200/50 p-6"
+                                        className="mensajeria-mensajes min-h-[290px] flex-1 space-y-4 overflow-y-auto p-4 sm:p-6"
                                     >
                                         {conversacionSeleccionada.mensajes.length === 0 ? (
                                             <div className="flex h-full items-center justify-center text-center">
@@ -622,8 +805,8 @@ function MensajeriaDirectivaPage() {
                                                             >
                                                                 <div
                                                                     className={`rounded-2xl border p-4 shadow-sm ${esDirectiva
-                                                                        ? 'border-primary/20 bg-primary text-primary-content'
-                                                                        : 'border-base-300 bg-base-100'
+                                                                        ? 'mensajeria-burbuja-directiva border-primary/20 bg-primary text-primary-content'
+                                                                        : 'mensajeria-burbuja-vecino border-base-300 bg-base-100'
                                                                         }`}
                                                                 >
                                                                     <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -705,7 +888,7 @@ function MensajeriaDirectivaPage() {
                                     {conversacionSeleccionada.activa ? (
                                         <form
                                             onSubmit={enviarMensaje}
-                                            className="border-t border-base-300 bg-base-100 p-4 sm:p-5"
+                                            className="mensajeria-redaccion border-t p-4 sm:p-5"
                                         >
                                             <div className="mb-2 flex items-center justify-between gap-3">
                                                 <span className="text-sm font-semibold">
@@ -746,7 +929,7 @@ function MensajeriaDirectivaPage() {
                                             </div>
                                         </form>
                                     ) : (
-                                        <div className="border-t border-base-300 bg-base-100 p-5">
+                                        <div className="mensajeria-redaccion border-t p-5">
                                             <div className="rounded-xl border border-base-300 bg-base-200/50 p-4 text-center">
                                                 <span className="badge badge-ghost mb-2">
                                                     Conversación cerrada
@@ -766,8 +949,8 @@ function MensajeriaDirectivaPage() {
                 )}
             </section>
             {mostrarConfirmacionCierre && conversacionSeleccionada && (
-                <div className="modal modal-open">
-                    <div className="modal-box max-w-md rounded-2xl">
+                <div className="modal modal-open mensajeria-modal" role="dialog" aria-modal="true" aria-label="Confirmar cierre de conversación">
+                    <div className="modal-box mensajeria-modal-caja max-w-md rounded-2xl">
                         <h3 className="text-xl font-bold">
                             ¿Cerrar conversación?
                         </h3>

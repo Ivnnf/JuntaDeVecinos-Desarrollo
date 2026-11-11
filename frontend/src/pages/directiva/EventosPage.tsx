@@ -435,15 +435,90 @@ function EventosPage() {
         ).length
 
     return (
-        <main className="min-h-screen bg-base-200 px-4 py-8">
+        <main
+            className="eventos-bosque min-h-screen px-4 py-8 sm:px-6"
+            style={{
+                backgroundImage: 'linear-gradient(135deg, rgba(5, 25, 20, .84), rgba(8, 34, 25, .71)), url("/images/photo-1519331379826-f10be5486c6f.jpg")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundAttachment: 'fixed',
+                color: '#f6f0db',
+            }}
+        >
+            <style>{`
+                .eventos-bosque { font-family: Arial, Helvetica, sans-serif; }
+                .eventos-bosque h1, .eventos-bosque h2, .eventos-bosque h3 { font-family: Georgia, 'Times New Roman', serif; color: #fff4d5; }
+                .eventos-bosque .bg-base-100 { background-color: rgba(9, 32, 26, .90); }
+                .eventos-bosque .bg-base-200 { background-color: rgba(5, 25, 20, .60); }
+                .eventos-bosque [class*="text-base-content/"] { color: #d8dfd0; }
+                .eventos-bosque [class*="border-base-300"] { border-color: rgba(215, 181, 100, .35); }
+                .eventos-bosque .btn { min-height: 2.65rem; border-radius: .85rem; font-weight: 700; }
+                .eventos-bosque .btn-primary, .eventos-bosque .btn-warning { background: linear-gradient(115deg,#f5df9b,#cba64e); color: #142b1f; border-color: #cda952; }
+                .eventos-bosque .btn-primary:hover, .eventos-bosque .btn-warning:hover { background: #f3da90; color: #10251a; }
+                .eventos-bosque .btn-outline { border-color: #d8ba72; color: #f5dfab; background: rgba(5,25,20,.34); }
+                .eventos-bosque .btn-outline:hover { background: rgba(211,178,98,.19); color: #fff2c7; }
+                .eventos-bosque input, .eventos-bosque textarea, .eventos-bosque select { background: rgba(252, 249, 235, .97); border: 1px solid #c6a75c; border-radius: .75rem; color: #19382b; color-scheme: light; }
+                .eventos-bosque input::placeholder, .eventos-bosque textarea::placeholder { color: #617365; }
+                .eventos-bosque input:focus, .eventos-bosque textarea:focus { outline: 2px solid #d8bb76; outline-offset: 1px; }
+                .eventos-bosque .badge { border-radius: 999px; font-weight: 700; }
+                .eventos-bosque .badge-outline { border-color: #ddbe70; color: #f5dca2; }
+                .eventos-bosque .badge-error { border-color: #f8a5a0; color: #ffd8d5; }
+                .eventos-bosque .badge-success { border-color: #80d9ab; color: #d0ffe8; }
+                .eventos-bosque .badge-info { border-color: #a5d4e3; color: #d9f6ff; }
+                .eventos-bosque .alert-success { background: rgba(18,78,54,.92); color: #e1ffeb; border: 1px solid #85bf92; }
+                .eventos-bosque .alert-error { background: rgba(103,37,37,.95); color: #fff0e8; border: 1px solid #eba5a0; }
+                .eventos-bosque .alert-warning { background: rgba(98,71,30,.82); color: #fff2d5; border: 1px solid #dfbd78; }
+                .eventos-bosque .modal { z-index: 100; }
+                .eventos-bosque .modal-box { color: #f7efd8; background: linear-gradient(150deg, #173c31, #092219); border: 1px solid #cfaf65; box-shadow: 0 20px 65px rgba(0,0,0,.62); }
+                .eventos-bosque .modal-backdrop { background: rgba(0,0,0,.66); }
+                .eventos-bosque .panel-foto { border: 1px solid rgba(213,179,103,.58); box-shadow: 0 16px 35px rgba(0,0,0,.24); background-position: center; background-size: cover; }
+
+                /* Jerarquía visual de estados: cada color mantiene su significado. */
+                .eventos-bosque { --ev-blue:#8bcaf2; --ev-green:#8cddb0; --ev-red:#f3a0a7; --ev-amber:#f2ca7e; --ev-violet:#c5aff7; }
+                .eventos-bosque .ev-kpi { position:relative; overflow:hidden; border-width:1px; border-style:solid; border-radius:1.15rem; transition:transform .18s ease, box-shadow .18s ease; }
+                .eventos-bosque .ev-kpi::after { content:''; position:absolute; left:0; right:0; top:0; height:4px; background:var(--ev-accent); }
+                .eventos-bosque .ev-kpi:hover { transform:translateY(-2px); box-shadow:0 18px 38px rgba(0,0,0,.32); }
+                .eventos-bosque .ev-kpi .text-3xl { color:var(--ev-accent); font-size:2.1rem; font-weight:850; font-variant-numeric:tabular-nums; }
+                .eventos-bosque .ev-kpi .badge { background:var(--ev-tint); border:1px solid var(--ev-accent); color:var(--ev-accent); }
+                .eventos-bosque .ev-kpi-total { --ev-accent:var(--ev-violet); --ev-tint:rgba(197,175,247,.13); border-color:rgba(197,175,247,.60); }
+                .eventos-bosque .ev-kpi-programados { --ev-accent:var(--ev-blue); --ev-tint:rgba(139,202,242,.13); border-color:rgba(139,202,242,.60); }
+                .eventos-bosque .ev-kpi-finalizados { --ev-accent:var(--ev-green); --ev-tint:rgba(140,221,176,.13); border-color:rgba(140,221,176,.60); }
+                .eventos-bosque .ev-kpi-cancelados { --ev-accent:var(--ev-red); --ev-tint:rgba(243,160,167,.13); border-color:rgba(243,160,167,.60); }
+                .eventos-bosque .ev-evento { --ev-accent:var(--ev-blue); position:relative; overflow:hidden; border-color:var(--ev-accent)!important; border-width:1px; }
+                .eventos-bosque .ev-evento::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--ev-accent); pointer-events:none; }
+                .eventos-bosque .ev-evento[data-estado='PROGRAMADO'] { --ev-accent:var(--ev-blue); }
+                .eventos-bosque .ev-evento[data-estado='FINALIZADO'] { --ev-accent:var(--ev-green); }
+                .eventos-bosque .ev-evento[data-estado='CANCELADO'] { --ev-accent:var(--ev-red); }
+                .eventos-bosque .ev-evento h3 { color:var(--ev-accent); }
+                .eventos-bosque .ev-evento .badge-info { color:var(--ev-blue); background:rgba(19,75,103,.80); border:1px solid var(--ev-blue); }
+                .eventos-bosque .ev-evento .badge-success { color:var(--ev-green); background:rgba(16,73,45,.80); border:1px solid var(--ev-green); }
+                .eventos-bosque .ev-evento .badge-error { color:var(--ev-red); background:rgba(103,35,45,.80); border:1px solid var(--ev-red); }
+                .eventos-bosque .ev-evento .btn-primary { background:linear-gradient(115deg,#c7e9fa,#82c4e8); border-color:var(--ev-blue); color:#102b3a; }
+                .eventos-bosque .ev-evento .btn-primary:hover { background:#def3ff; }
+                .eventos-bosque .ev-evento .btn-error { color:#ffd9dd; border-color:var(--ev-red); background:rgba(111,36,48,.40); }
+                .eventos-bosque .ev-evento .btn-error:hover { color:#fff; background:#a53c50; }
+                .eventos-bosque .ev-evento .btn-outline:not(.btn-error):hover { background:rgba(198,169,104,.24); }
+                .eventos-bosque .ev-evento .bg-base-200\/60 { border:1px solid rgba(207,188,142,.16); border-radius:.8rem; }
+                .eventos-bosque .ev-evento .bg-base-200\/60 p:last-child { color:#fff8e8; }
+                .eventos-bosque .badge-warning { background:rgba(140,96,26,.36); border-color:var(--ev-amber); color:#ffdfa0; }
+                .eventos-bosque .modal-box .btn-error { background:#aa3f50; border-color:var(--ev-red); color:white; }
+                .eventos-bosque .modal-box .btn-error:hover { background:#bc5361; }
+                .eventos-bosque .modal-box .text-base-content { color:#fff4df; }
+                .eventos-bosque .form-control .label-text { color:#f5edd8; }
+                .eventos-bosque .form-control .label-text-alt { color:#dccda9; }
+                .eventos-bosque .form-control .label-text-alt.text-error { color:#ffc0ba; }
+                .eventos-bosque .btn:focus-visible { outline:3px solid #f0d18c; outline-offset:3px; }
+                @media (prefers-reduced-motion: reduce) { .eventos-bosque .ev-kpi { transition:none; } .eventos-bosque .ev-kpi:hover { transform:none; } }
+            `}</style>
             <section className="mx-auto w-full max-w-6xl">
 
                 {/* Encabezado */}
-                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                <div className="panel-foto mb-6 rounded-3xl p-6 shadow-xl sm:p-8"
+                    style={{backgroundImage: 'linear-gradient(110deg, rgba(4, 31, 23, .94), rgba(8, 42, 33, .69)), url("/images/photo-1529156069898-49953e39b3ac.jpg")'}}>
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div>
                             <div className="mb-3 flex flex-wrap items-center gap-3">
-                                <h1 className="text-3xl font-bold">
+                                <h1 className="text-3xl font-bold sm:text-4xl">
                                     Actividades y Eventos
                                 </h1>
 
@@ -472,7 +547,7 @@ function EventosPage() {
                 {!cargando && !error && (
                     <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-                        <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+                        <div className="panel-foto ev-kpi ev-kpi-total rounded-2xl p-5" style={{backgroundImage: 'linear-gradient(115deg, rgba(7,30,23,.92), rgba(10,37,29,.68)), url("/images/photo-1492684223066-81342ee5ff30.jpg")'}}>
                             <p className="text-sm font-medium text-base-content/60">
                                 Total de eventos
                             </p>
@@ -488,7 +563,7 @@ function EventosPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="panel-foto ev-kpi ev-kpi-programados rounded-2xl p-5" style={{backgroundImage: 'linear-gradient(115deg, rgba(7,30,23,.92), rgba(10,37,29,.68)), url("/images/photo-1500534623283-312aade485b7.jpg")'}}>
                             <p className="text-sm font-medium text-base-content/60">
                                 Programados
                             </p>
@@ -504,7 +579,7 @@ function EventosPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="panel-foto ev-kpi ev-kpi-finalizados rounded-2xl p-5" style={{backgroundImage: 'linear-gradient(115deg, rgba(7,30,23,.92), rgba(10,37,29,.68)), url("/images/photo-1511795409834-ef04bbd61622.jpg")'}}>
                             <p className="text-sm font-medium text-base-content/60">
                                 Finalizados
                             </p>
@@ -520,7 +595,7 @@ function EventosPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-red-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="panel-foto ev-kpi ev-kpi-cancelados rounded-2xl p-5" style={{backgroundImage: 'linear-gradient(115deg, rgba(7,30,23,.92), rgba(10,37,29,.68)), url("/images/photo-1527525443983-6e60c75fff46.jpg")'}}>
                             <p className="text-sm font-medium text-base-content/60">
                                 Cancelados
                             </p>
@@ -541,10 +616,11 @@ function EventosPage() {
                 {/* Formulario */}
                 <form
                     onSubmit={crearEvento}
-                    className={`mb-6 overflow-hidden rounded-2xl border bg-base-100 shadow-sm ${eventoAEditar
+                    className={`panel-foto mb-6 overflow-hidden rounded-3xl border bg-base-100 shadow-xl ${eventoAEditar
                             ? 'border-amber-500/40'
                             : 'border-base-300'
                         }`}
+                    style={{backgroundImage: 'linear-gradient(115deg, rgba(6, 32, 25, .96), rgba(8, 34, 27, .88)), url("/images/photo-1517457373958-b7bdd4587205.jpg")'}}
                 >
                     <div className="border-b border-base-300 p-6">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -817,7 +893,7 @@ function EventosPage() {
                         </div>
 
                         {eventos.length === 0 ? (
-                            <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                            <div className="panel-foto rounded-2xl p-10 text-center" style={{backgroundImage: 'linear-gradient(120deg,rgba(6,29,22,.94),rgba(12,40,31,.78)),url("/images/photo-1519331379826-f10be5486c6f.jpg")'}}>
                                 <div className="mx-auto max-w-md">
                                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl text-primary">
                                         +
@@ -838,9 +914,11 @@ function EventosPage() {
                                 {eventos.map((evento) => (
                                     <article
                                         key={evento.id}
-                                        className={`flex h-full flex-col rounded-2xl border bg-base-100 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${obtenerBordeEvento(
+                                        data-estado={evento.estado}
+                                        className={`panel-foto ev-evento flex h-full flex-col rounded-2xl border bg-base-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${obtenerBordeEvento(
                                             evento.estado
                                         )}`}
+                                        style={{backgroundImage: 'linear-gradient(125deg, rgba(6, 31, 25, .94), rgba(10, 35, 26, .86)), url("/images/photo-1500530855697-b586d89ba3ee.jpg")'}}
                                     >
                                         <div className="flex-1 p-6">
 

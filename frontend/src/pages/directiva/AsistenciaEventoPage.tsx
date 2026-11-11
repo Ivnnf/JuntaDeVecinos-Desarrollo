@@ -276,15 +276,118 @@ function AsistenciaEventoPage() {
         inscripciones[0]?.evento_titulo ?? 'Evento seleccionado'
 
     return (
-        <main className="min-h-screen bg-base-200 px-4 py-8">
-            <section className="mx-auto w-full max-w-6xl">
+        <main className="asistencia-bosque min-h-screen px-4 py-8 sm:py-10">
+
+            <style>{`
+              .asistencia-bosque {
+                isolation: isolate;
+                position: relative;
+                min-height: 100vh;
+                color: #fff8e9;
+                background: #09251d;
+                font-family: Georgia, 'Times New Roman', serif;
+              }
+              .asistencia-bosque::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                z-index: -2;
+                background-image:
+                  linear-gradient(125deg, rgba(3,23,18,.86), rgba(10,44,33,.76) 48%, rgba(8,27,24,.88)),
+                  url('/images/photo-1517457373958-b7bdd4587205.jpg');
+                background-size: cover;
+                background-position: center;
+              }
+              .asistencia-bosque::after {
+                content: '';
+                position: fixed;
+                inset: 0;
+                z-index: -1;
+                background: radial-gradient(ellipse at top right, rgba(193,153,74,.12), transparent 48%);
+                pointer-events: none;
+              }
+              .asistencia-bosque .asistencia-panel,
+              .asistencia-bosque .asistencia-metrica {
+                position: relative;
+                overflow: hidden;
+                border: 1px solid rgba(212,177,100,.52) !important;
+                border-radius: 22px;
+                background-color: rgba(7,36,28,.85) !important;
+                box-shadow: 0 14px 34px rgba(0,0,0,.22);
+                color: #fff8e9;
+                backdrop-filter: blur(8px);
+              }
+              .asistencia-bosque .asistencia-encabezado {
+                background-image:
+                  linear-gradient(105deg, rgba(3,25,19,.95), rgba(6,39,30,.68)),
+                  url('/images/photo-1529156069898-49953e39b3ac.jpg');
+                background-position: center;
+                background-size: cover;
+              }
+              .asistencia-bosque .asistencia-actividad {
+                background-image:
+                  linear-gradient(110deg, rgba(7,31,24,.96), rgba(15,50,33,.65)),
+                  url('/images/photo-1500534623283-312aade485b7.jpg');
+                background-position: center;
+                background-size: cover;
+              }
+              .asistencia-bosque .asistencia-metrica {
+                min-height: 128px;
+                background-size: cover;
+                background-position: center;
+                transition: transform .2s ease, border-color .2s ease;
+              }
+              .asistencia-bosque .asistencia-metrica:hover { transform: translateY(-3px); border-color: #e5bd71 !important; }
+              .asistencia-bosque .asistencia-inscritos {
+                background-image: linear-gradient(110deg, rgba(4,30,22,.94), rgba(9,48,35,.70)), url('/images/photo-1527525443983-6e60c75fff46.jpg');
+              }
+              .asistencia-bosque .asistencia-presentes {
+                background-image: linear-gradient(110deg, rgba(4,30,22,.94), rgba(9,48,35,.70)), url('/images/photo-1511632765486-a01980e01a18.jpg');
+              }
+              .asistencia-bosque .asistencia-ausentes {
+                background-image: linear-gradient(110deg, rgba(4,30,22,.94), rgba(9,48,35,.70)), url('/images/photo-1497366754035-f200968a6e72.jpg');
+              }
+              .asistencia-bosque .asistencia-pendientes {
+                background-image: linear-gradient(110deg, rgba(4,30,22,.94), rgba(9,48,35,.70)), url('/images/photo-1497366811353-6870744d04b2.jpg');
+              }
+              .asistencia-bosque .asistencia-titulo,
+              .asistencia-bosque h2,
+              .asistencia-bosque h3 { color: #fff6df; font-family: Georgia, 'Times New Roman', serif; }
+              .asistencia-bosque :is(p, span, th, td) { text-wrap: pretty; }
+              .asistencia-bosque [class*='text-base-content/'] { color: #d7decf !important; }
+              .asistencia-bosque .badge { border-color: rgba(223,189,109,.55); }
+              .asistencia-bosque .badge-primary,
+              .asistencia-bosque .badge-info { background: rgba(191,148,65,.18); color: #f5dfa0; border-color: rgba(228,190,113,.6); }
+              .asistencia-bosque .badge-success { background: rgba(26,102,69,.8); color: #eaffdc; border-color: #54a47c; }
+              .asistencia-bosque .badge-error { background: rgba(132,48,46,.75); color: #fff1e3; border-color: #ca8274; }
+              .asistencia-bosque .badge-warning { background: rgba(151,103,32,.55); color: #ffedbf; border-color: #dab574; }
+              .asistencia-bosque .btn { border-radius: 11px; font-weight: 700; }
+              .asistencia-bosque .btn-primary { background: linear-gradient(110deg,#efd68c,#c69b4d); color: #18271b; border-color: #d3ae64; }
+              .asistencia-bosque .btn-outline { color: #f8e3ae; border-color: rgba(222,188,113,.72); background: rgba(8,32,26,.42); }
+              .asistencia-bosque .btn-outline:hover { color: #10291c; background: #ecd086; }
+              .asistencia-bosque .asistencia-tabla { background-image: linear-gradient(rgba(8,35,28,.95),rgba(8,35,28,.95)),url('/images/photo-1497366858526-0766cadbe8fa.jpg'); background-size: cover; }
+              .asistencia-bosque .asistencia-tabla thead { background: rgba(177,135,67,.20) !important; }
+              .asistencia-bosque .asistencia-tabla thead th { color: #f5d994 !important; letter-spacing: .03em; }
+              .asistencia-bosque .asistencia-tabla tbody tr { border-color: rgba(226,198,139,.18); }
+              .asistencia-bosque .asistencia-tabla tbody tr:hover { background: rgba(203,169,100,.10) !important; }
+              .asistencia-bosque .asistencia-tabla td { color: #f9f5e9; }
+              .asistencia-bosque [class~="bg-primary/10"] {
+  background: rgba(210, 165, 81, 0.16);
+}
+              @media (max-width: 640px) {
+                .asistencia-bosque .asistencia-panel { border-radius: 18px; }
+                .asistencia-bosque .asistencia-metrica { min-height: 112px; }
+              }
+            `}</style>
+
+            <section className="relative z-10 mx-auto w-full max-w-6xl">
 
                 {/* Encabezado */}
-                <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                <div className="asistencia-encabezado mb-6 asistencia-panel rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm sm:p-8">
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div>
                             <div className="mb-3 flex flex-wrap items-center gap-3">
-                                <h1 className="text-3xl font-bold">
+                                <h1 className="asistencia-titulo text-3xl font-bold sm:text-4xl">
                                     Registro de Asistencia
                                 </h1>
 
@@ -310,7 +413,7 @@ function AsistenciaEventoPage() {
 
                 {/* Información del evento */}
                 {!cargando && !error && inscripciones.length > 0 && (
-                    <div className="mb-6 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                    <div className="asistencia-actividad mb-6 asistencia-panel rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
                                 <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-base-content/50">
@@ -356,7 +459,7 @@ function AsistenciaEventoPage() {
                 {!cargando && !error && inscripciones.length > 0 && (
                     <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-                        <div className="rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="asistencia-metrica asistencia-inscritos rounded-2xl border border-blue-500/30 bg-base-100 p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
                                 Inscritos
                             </p>
@@ -372,7 +475,7 @@ function AsistenciaEventoPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="asistencia-metrica asistencia-presentes rounded-2xl border border-emerald-500/30 bg-base-100 p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
                                 Presentes
                             </p>
@@ -388,7 +491,7 @@ function AsistenciaEventoPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-red-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="asistencia-metrica asistencia-ausentes rounded-2xl border border-red-500/30 bg-base-100 p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
                                 Ausentes
                             </p>
@@ -404,7 +507,7 @@ function AsistenciaEventoPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-amber-500/30 bg-base-100 p-5 shadow-sm">
+                        <div className="asistencia-metrica asistencia-pendientes rounded-2xl border border-amber-500/30 bg-base-100 p-5 shadow-sm">
                             <p className="text-sm font-medium text-base-content/60">
                                 Pendientes
                             </p>
@@ -426,7 +529,7 @@ function AsistenciaEventoPage() {
                 {!cargando &&
                     !error &&
                     inscripciones.length === 0 && (
-                        <div className="rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
+                        <div className="asistencia-panel rounded-2xl border border-base-300 bg-base-100 p-10 text-center shadow-sm">
                             <div className="mx-auto max-w-md">
                                 <h2 className="text-xl font-bold">
                                     No hay vecinos inscritos
@@ -451,7 +554,7 @@ function AsistenciaEventoPage() {
                 {!cargando &&
                     !error &&
                     inscripciones.length > 0 && (
-                        <div className="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                        <div className="asistencia-tabla overflow-hidden asistencia-panel rounded-2xl border border-base-300 bg-base-100 shadow-sm">
 
                             <div className="border-b border-base-300 p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
