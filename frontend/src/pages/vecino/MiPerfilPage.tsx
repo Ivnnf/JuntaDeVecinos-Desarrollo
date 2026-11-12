@@ -27,7 +27,7 @@ type SectorDisponible = {
   descripcion: string | null
   activo: boolean
 }
-const API = 'http\://localhost:8000'
+const API = 'http://localhost:8000'
 function MiPerfilPage() {
   const [perfil, setPerfil] = useState<PerfilVecino | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -304,7 +304,7 @@ function MiPerfilPage() {
               rgba(4, 23, 16, 0.35),
               rgba(4, 23, 16, 0.48)
             ),
-            url('/vecino-perfil.webp');
+            url('/casitas.webp');
           background-position: center;
           background-size: cover;
           background-repeat: no-repeat;
@@ -683,6 +683,255 @@ function MiPerfilPage() {
             grid-column: auto;
           }
         }
+
+
+        /* =====================================
+           APT · FOTOGRAFÍAS EN CADA SECCIÓN
+           ===================================== */
+        .mi-perfil-bosque .mp-header,
+        .mi-perfil-bosque .mp-profile-summary,
+        .mi-perfil-bosque .mp-character-card,
+        .mi-perfil-bosque .mp-personal-card,
+        .mi-perfil-bosque .mp-territorial-card {
+          background-color: #0b291e;
+          background-position: center;
+          background-size: cover;
+          background-repeat: no-repeat;
+          border-color: rgba(215, 172, 50, 0.46);
+          box-shadow: 0 16px 40px rgba(2, 18, 12, 0.27);
+        }
+
+        /* Portada "Mi Perfil" */
+        .mi-perfil-bosque .mp-header {
+          background-image:
+            linear-gradient(115deg, rgba(5, 29, 19, 0.77), rgba(8, 39, 27, 0.84)),
+            url('/directivas-inicio.webp');
+        }
+
+        /* Identidad y resumen del usuario */
+        .mi-perfil-bosque .mp-profile-summary {
+          background-image:
+            linear-gradient(112deg, rgba(5, 30, 19, 0.83), rgba(9, 39, 28, 0.89)),
+            url('/registro-vecino.webp');
+        }
+
+        /* Acceso a caracterización comunitaria */
+        .mi-perfil-bosque .mp-character-card {
+          background-image:
+            linear-gradient(112deg, rgba(5, 30, 19, 0.81), rgba(9, 39, 28, 0.88)),
+            url('/sector.webp');
+        }
+
+        /* Tarjeta de datos personales */
+        .mi-perfil-bosque .mp-personal-card {
+          background-image:
+            linear-gradient(115deg, rgba(6, 30, 21, 0.89), rgba(7, 34, 23, 0.94)),
+            url('/casas.webp');
+        }
+
+        /* Tarjeta de asociación territorial */
+        .mi-perfil-bosque .mp-territorial-card {
+          background-image:
+            linear-gradient(115deg, rgba(6, 30, 21, 0.87), rgba(7, 34, 23, 0.93)),
+            url('/casitas.webp');
+        }
+
+        /* Cabeceras internas, también con fotografía */
+        .mi-perfil-bosque .mp-personal-card .mp-card-header {
+          background-image:
+            linear-gradient(115deg, rgba(4, 27, 18, 0.77), rgba(6, 31, 22, 0.86)),
+            url('/directivas.webp');
+          background-size: cover;
+          background-position: center;
+        }
+
+        .mi-perfil-bosque .mp-territorial-card .mp-card-header {
+          background-image:
+            linear-gradient(115deg, rgba(4, 27, 18, 0.77), rgba(6, 31, 22, 0.86)),
+            url('/gestion-directiva.webp');
+          background-size: cover;
+          background-position: center;
+        }
+
+        /* Recuadros de datos: fotografía muy tenue y texto protegido */
+        .mi-perfil-bosque .mp-info-box {
+          background-color: rgba(4, 24, 16, 0.82);
+          background-image:
+            linear-gradient(110deg, rgba(3, 23, 15, 0.88), rgba(5, 28, 19, 0.94)),
+            url('/casitas.webp');
+          background-position: center;
+          background-size: cover;
+          border-color: rgba(215, 172, 50, 0.29);
+        }
+
+        .mi-perfil-bosque .mp-info-box:nth-child(even) {
+          background-image:
+            linear-gradient(110deg, rgba(3, 23, 15, 0.88), rgba(5, 28, 19, 0.94)),
+            url('/sector.webp');
+        }
+
+        .mi-perfil-bosque .mp-status-notice {
+          background-image:
+            linear-gradient(110deg, rgba(19, 40, 23, 0.88), rgba(19, 43, 28, 0.91)),
+            url('/registro-vecino.webp');
+          background-position: center;
+          background-size: cover;
+        }
+
+        .mi-perfil-bosque .mp-success-notice {
+          background-image:
+            linear-gradient(110deg, rgba(15, 64, 37, 0.88), rgba(16, 67, 42, 0.91)),
+            url('/sector.webp');
+        }
+
+        /* Campos editables: contraste alto para lectura y escritura */
+        .mi-perfil-bosque .mp-input {
+          background-color: rgba(3, 20, 12, 0.89);
+          border-color: rgba(215, 172, 50, 0.45);
+          color: #fff4da;
+        }
+
+        .mi-perfil-bosque .mp-input::placeholder {
+          color: #bcc9b9;
+        }
+
+        /* Evitar que las tarjetas, nombres o botones se superpongan */
+        .mi-perfil-bosque .mp-row-between > *,
+        .mi-perfil-bosque .mp-profile-left > *,
+        .mi-perfil-bosque .mp-grid > *,
+        .mi-perfil-bosque .mp-info-grid > * {
+          min-width: 0;
+        }
+
+        .mi-perfil-bosque .mp-profile-left {
+          flex: 1 1 340px;
+        }
+
+        .mi-perfil-bosque .mp-title,
+        .mi-perfil-bosque .mp-heading,
+        .mi-perfil-bosque .mp-profile-name,
+        .mi-perfil-bosque .mp-info-value,
+        .mi-perfil-bosque .mp-badge {
+          overflow-wrap: anywhere;
+        }
+
+        .mi-perfil-bosque .mp-card {
+          min-width: 0;
+        }
+
+        .mi-perfil-bosque .mp-button {
+          max-width: 100%;
+          white-space: normal;
+          text-align: center;
+        }
+
+        @media (max-width: 650px) {
+          .mi-perfil-bosque .mp-profile-left {
+            flex-basis: 100%;
+            flex-wrap: wrap;
+          }
+
+          .mi-perfil-bosque .mp-profile-summary .mp-row-between > .mp-button,
+          .mi-perfil-bosque .mp-character-card .mp-button {
+            width: 100%;
+          }
+
+          .mi-perfil-bosque .mp-profile-summary .mp-row-between {
+            align-items: stretch;
+          }
+
+          .mi-perfil-bosque .mp-form-actions {
+            justify-content: stretch;
+          }
+
+          .mi-perfil-bosque .mp-form-actions .mp-button {
+            flex: 1 1 160px;
+          }
+        }
+
+
+        /* =============================================
+           ACENTOS PROFESIONALES · IDENTIDAD POR SECCIÓN
+           Se mantiene la fotografía y toda la lógica TSX.
+           ============================================= */
+        .mi-perfil-bosque {
+          --mp-identidad: #e9ce92;
+          --mp-caracterizacion: #8fdcb7;
+          --mp-datos: #9cccf4;
+          --mp-territorio: #c7aff8;
+        }
+        .mi-perfil-bosque .mp-header { border-top: 4px solid var(--mp-identidad); }
+        .mi-perfil-bosque .mp-profile-summary {
+          border-top: 4px solid var(--mp-identidad);
+          box-shadow: 0 14px 35px rgba(0,0,0,.25), inset 0 1px 0 rgba(233,206,146,.12);
+        }
+        .mi-perfil-bosque .mp-profile-summary .mp-avatar {
+          border: 1px solid var(--mp-identidad);
+          background: linear-gradient(130deg,rgba(233,206,146,.28),rgba(168,122,43,.17));
+          color: #ffe8b3;
+          box-shadow: 0 0 0 4px rgba(233,206,146,.07);
+        }
+        .mi-perfil-bosque .mp-character-card { border-top: 4px solid var(--mp-caracterizacion); }
+        .mi-perfil-bosque .mp-character-card .mp-heading { color: #b4f2d4; }
+        .mi-perfil-bosque .mp-character-card .mp-badge.mp-green {
+          color: #baf4d5; border-color: rgba(143,220,183,.77);
+          background: rgba(23,112,72,.25);
+        }
+        .mi-perfil-bosque .mp-personal-card { border-top: 4px solid var(--mp-datos); }
+        .mi-perfil-bosque .mp-personal-card .mp-card-header { border-bottom-color: rgba(156,204,244,.36); }
+        .mi-perfil-bosque .mp-personal-card .mp-heading { color: #c1e4ff; }
+        .mi-perfil-bosque .mp-personal-card .mp-info-box {
+          border-color: rgba(156,204,244,.30);
+          box-shadow: inset 3px 0 0 rgba(156,204,244,.68);
+          transition: border-color .2s ease;
+        }
+        .mi-perfil-bosque .mp-personal-card .mp-info-box:nth-child(3n + 2) {
+          box-shadow: inset 3px 0 0 rgba(184,168,247,.78);
+        }
+        .mi-perfil-bosque .mp-personal-card .mp-info-box:nth-child(3n) {
+          box-shadow: inset 3px 0 0 rgba(143,220,183,.75);
+        }
+        .mi-perfil-bosque .mp-personal-card .mp-info-label { color: #b7daf5; }
+        .mi-perfil-bosque .mp-personal-card .mp-input:focus { border-color: #9cccf4; box-shadow: 0 0 0 3px rgba(156,204,244,.18); }
+        .mi-perfil-bosque .mp-territorial-card { border-top: 4px solid var(--mp-territorio); }
+        .mi-perfil-bosque .mp-territorial-card .mp-card-header { border-bottom-color: rgba(199,175,248,.37); }
+        .mi-perfil-bosque .mp-territorial-card .mp-heading { color: #e1d1ff; }
+        .mi-perfil-bosque .mp-territorial-card .mp-field-label { color: #e2d3ff; }
+        .mi-perfil-bosque .mp-territorial-card .mp-input:focus { border-color: #c7aff8; box-shadow: 0 0 0 3px rgba(199,175,248,.19); }
+        .mi-perfil-bosque .mp-territorial-card .mp-status-notice { border-left: 4px solid #f1c77d; }
+        .mi-perfil-bosque .mp-territorial-card .mp-success-notice { border-left-color: #8fdcb7; }
+        .mi-perfil-bosque .mp-territorial-card .mp-badge.mp-warning { color: #ffe2a3; border-color: #eac377; }
+        .mi-perfil-bosque .mp-territorial-card .mp-badge.mp-green { color: #b6f0d2; border-color: #8fdcb7; }
+        .mi-perfil-bosque .mp-territorial-card .mp-badge.mp-red { color: #ffc0bd; border-color: #ef9c9b; }
+
+        /* Acciones principales con color semántico por módulo. */
+        .mi-perfil-bosque .mp-character-card .mp-button-primary {
+          background: linear-gradient(115deg,#b8f2d4,#80cda6);
+          border-color: #99e2bc; color: #103425;
+        }
+        .mi-perfil-bosque .mp-character-card .mp-button-primary:hover {
+          background: linear-gradient(115deg,#d3ffe9,#9ee6c2); color: #103425;
+        }
+        .mi-perfil-bosque .mp-personal-card .mp-button-primary {
+          background: linear-gradient(115deg,#c5e6ff,#8fc6ed);
+          border-color:#a9d8fb; color:#102b40;
+        }
+        .mi-perfil-bosque .mp-personal-card .mp-button-primary:hover {
+          background: linear-gradient(115deg,#e3f3ff,#addbfa); color:#102b40;
+        }
+        .mi-perfil-bosque .mp-territorial-card .mp-button-primary {
+          background:linear-gradient(115deg,#e3d4ff,#bda2ed);
+          border-color:#cdb5fa; color:#281d41;
+        }
+        .mi-perfil-bosque .mp-territorial-card .mp-button-primary:hover {
+          background:linear-gradient(115deg,#f0e7ff,#d0b8fd); color:#281d41;
+        }
+        .mi-perfil-bosque .mp-button:focus-visible,
+        .mi-perfil-bosque .mp-input:focus-visible { outline-offset: 3px; }
+        @media (prefers-reduced-motion: reduce) {
+          .mi-perfil-bosque .mp-info-box,
+          .mi-perfil-bosque .mp-button { transition:none; }
+        }
       `}</style>
       <section className="mp-container">
         {/* ENCABEZADO */}
@@ -783,7 +1032,7 @@ function MiPerfilPage() {
             </section>
             {/* CARACTERIZACIÓN COMUNITARIA — acceso conservado del original */}
             <section
-              className="mp-panel"
+              className="mp-panel mp-character-card"
               style={{ padding: '26px 30px', marginBottom: 25 }}
             >
               <div className="mp-row-between" style={{ alignItems: 'center' }}>
@@ -807,7 +1056,7 @@ function MiPerfilPage() {
             </section>
             <div className="mp-grid">
               {/* INFORMACIÓN PERSONAL */}
-              <section className="mp-panel mp-card">
+              <section className="mp-panel mp-card mp-personal-card">
                 <div className="mp-card-header">
                   <h2 className="mp-heading">
                     Información personal
@@ -965,7 +1214,7 @@ function MiPerfilPage() {
                 </div>
               </section>
               {/* ASOCIACIÓN TERRITORIAL */}
-              <section className="mp-panel mp-card">
+              <section className="mp-panel mp-card mp-territorial-card">
                 <div className="mp-card-header">
                   <div className="mp-row-between">
                     <div>

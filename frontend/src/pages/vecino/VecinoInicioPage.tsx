@@ -1876,6 +1876,252 @@ function VecinoInicioPage() {
 
 
 
+
+
+        /* =============================================================
+           APT | ESTILO FOTOGRAFICO APROBADO — ROL VECINO
+           Mantiene la logica React y el desplegable de notificaciones.
+           Fotografias sutiles, superficies oscuras, tipografia crema.
+           ============================================================= */
+
+        .vecino-inicio-bosque {
+          background-color: #092318;
+          background-image:
+            linear-gradient(115deg, rgba(5, 28, 20, 0.73), rgba(5, 28, 20, 0.56)),
+            url('/casitas.webp');
+          background-position: center;
+          background-size: cover;
+          background-repeat: no-repeat;
+        }
+
+        .vecino-inicio-bosque .vi-container {
+          max-width: 1320px;
+        }
+
+        .vecino-inicio-bosque .vi-panel {
+          border: 1px solid rgba(215, 183, 96, 0.45);
+          box-shadow: 0 18px 45px rgba(4, 20, 13, 0.28);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* Foto tenue en el encabezado principal; overflow visible
+           es indispensable para no recortar las notificaciones. */
+        .vecino-inicio-bosque .vi-header {
+          position: relative;
+          z-index: 20;
+          overflow: visible;
+          border-radius: 24px;
+          background-color: #102b20;
+          background-image:
+            linear-gradient(115deg, rgba(6, 32, 23, 0.82), rgba(8, 42, 30, 0.78)),
+            url('/vecino-inicio.webp');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        }
+
+        /* Informacion territorial. La foto no afecta los estados del perfil. */
+        .vecino-inicio-bosque .vi-junta-panel {
+          position: relative;
+          z-index: 1;
+          border-radius: 24px;
+          background-color: #102b20;
+          background-image:
+            linear-gradient(115deg, rgba(6, 32, 23, 0.84), rgba(8, 42, 30, 0.85)),
+            url('/casas.webp');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        }
+
+        /* Fotografias independientes en las seis tarjetas de servicios. */
+        .vecino-inicio-bosque .vi-service-card {
+          --vi-foto: url('/casitas.webp');
+          position: relative;
+          overflow: hidden;
+          border-radius: 22px;
+          background-color: #102b20;
+          background-image:
+            linear-gradient(115deg, rgba(6, 32, 23, 0.83), rgba(8, 42, 30, 0.85)),
+            var(--vi-foto);
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          transition:
+            transform 0.25s ease,
+            border-color 0.25s ease,
+            box-shadow 0.25s ease;
+        }
+
+        .vecino-inicio-bosque .vi-service-card:nth-child(1) {
+          --vi-foto: url('/junta-v.jpg');
+        }
+
+        .vecino-inicio-bosque .vi-service-card:nth-child(2) {
+          --vi-foto: url('/registro-vecino.webp');
+        }
+
+        .vecino-inicio-bosque .vi-service-card:nth-child(3) {
+          --vi-foto: url('/sector.webp');
+        }
+
+        .vecino-inicio-bosque .vi-service-card:nth-child(4) {
+          --vi-foto: url('/mensajeria-directiva.webp');
+        }
+
+        .vecino-inicio-bosque .vi-service-card:nth-child(5) {
+          --vi-foto: url('/gestion-directiva.webp');
+        }
+
+        .vecino-inicio-bosque .vi-service-card:nth-child(6) {
+          --vi-foto: url('/vecino-inicio.webp');
+        }
+
+        .vecino-inicio-bosque .vi-service-card:hover {
+          background-color: #15382a;
+          background-image:
+            linear-gradient(115deg, rgba(6, 32, 23, 0.77), rgba(8, 42, 30, 0.80)),
+            var(--vi-foto);
+          border-color: rgba(235, 205, 123, 0.74);
+          box-shadow: 0 22px 44px rgba(4, 20, 13, 0.35);
+          transform: translateY(-4px);
+        }
+
+        .vecino-inicio-bosque .vi-service-title,
+        .vecino-inicio-bosque .vi-junta-title,
+        .vecino-inicio-bosque .vi-title {
+          color: #fbf4e2;
+          text-shadow: 0 2px 7px rgba(0, 0, 0, 0.13);
+        }
+
+        .vecino-inicio-bosque .vi-service-description,
+        .vecino-inicio-bosque .vi-junta-description,
+        .vecino-inicio-bosque .vi-subtitle {
+          color: #d6dacc;
+        }
+
+        .vecino-inicio-bosque .vi-service-icon {
+          background: rgba(215, 183, 96, 0.20);
+          border: 1px solid rgba(215, 183, 96, 0.35);
+          color: #f0d375;
+        }
+
+        .vecino-inicio-bosque .vi-service-button {
+          border-radius: 11px;
+          background: linear-gradient(110deg, #f0d375, #d6ac4c);
+          color: #102419;
+        }
+
+        .vecino-inicio-bosque .vi-service-button:hover {
+          background: linear-gradient(110deg, #f7e4a1, #e6bf68);
+          color: #102419;
+        }
+
+        /* Conserva la ventana de notificaciones por encima de tarjetas y
+           panel territorial; el dropdown debe permanecer opaco y legible. */
+        .vecino-inicio-bosque .vi-notification-wrapper {
+          position: relative;
+          z-index: 25;
+        }
+
+        .vecino-inicio-bosque .vi-notification-panel {
+          background-color: rgba(9, 31, 23, 0.98);
+          box-shadow: 0 20px 55px rgba(0, 0, 0, 0.48);
+        }
+
+        @media (max-width: 650px) {
+          .vecino-inicio-bosque {
+            background-attachment: scroll;
+          }
+
+          .vecino-inicio-bosque .vi-header,
+          .vecino-inicio-bosque .vi-junta-panel,
+          .vecino-inicio-bosque .vi-service-card {
+            background-position: center;
+          }
+        }
+
+      
+
+        /* ==========================================================
+           IDENTIDAD VISUAL POR MODULO — MANTIENE FONDOS FOTOGRAFICOS
+           ========================================================== */
+        .vecino-inicio-bosque .vi-service-card {
+          --vi-accent: #EACD87;
+          --vi-accent-rgb: 234,205,135;
+          border-color: rgba(var(--vi-accent-rgb), .55);
+          border-top: 4px solid var(--vi-accent);
+          padding-top: 21px;
+          box-shadow: 0 14px 32px rgba(0, 0, 0, .25);
+        }
+        .vecino-inicio-bosque .vi-service-card:nth-child(1) { --vi-accent:#90C9FA; --vi-accent-rgb:144,201,250; }
+        .vecino-inicio-bosque .vi-service-card:nth-child(2) { --vi-accent:#C4A9F9; --vi-accent-rgb:196,169,249; }
+        .vecino-inicio-bosque .vi-service-card:nth-child(3) { --vi-accent:#F1C47A; --vi-accent-rgb:241,196,122; }
+        .vecino-inicio-bosque .vi-service-card:nth-child(4) { --vi-accent:#80D9B3; --vi-accent-rgb:128,217,179; }
+        .vecino-inicio-bosque .vi-service-card:nth-child(5) { --vi-accent:#F1A9B9; --vi-accent-rgb:241,169,185; }
+        .vecino-inicio-bosque .vi-service-card:nth-child(6) { --vi-accent:#8DDCE8; --vi-accent-rgb:141,220,232; }
+        .vecino-inicio-bosque .vi-service-card .vi-service-icon {
+          background: rgba(var(--vi-accent-rgb), .19);
+          border: 1px solid rgba(var(--vi-accent-rgb), .67);
+          color: var(--vi-accent);
+          box-shadow: inset 0 0 16px rgba(var(--vi-accent-rgb), .07);
+        }
+        .vecino-inicio-bosque .vi-service-card .vi-service-title {
+          color: var(--vi-accent);
+        }
+        .vecino-inicio-bosque .vi-service-card .vi-service-button {
+          background: linear-gradient(120deg, rgba(var(--vi-accent-rgb), 1), rgba(var(--vi-accent-rgb), .78));
+          color: #092519;
+          border: 1px solid rgba(var(--vi-accent-rgb), .92);
+          box-shadow: 0 6px 18px rgba(var(--vi-accent-rgb), .12);
+          font-weight: 800;
+        }
+        .vecino-inicio-bosque .vi-service-card .vi-service-button:hover {
+          background: var(--vi-accent);
+          color: #092519;
+          box-shadow: 0 9px 24px rgba(var(--vi-accent-rgb), .23);
+        }
+        .vecino-inicio-bosque .vi-service-card:hover {
+          border-color: var(--vi-accent);
+          border-top-color: var(--vi-accent);
+        }
+        /* Panel territorial y botón de notificaciones se destacan sin
+           impedir la interacción ni afectar el orden de superposición. */
+        .vecino-inicio-bosque .vi-junta-panel { border-left: 5px solid #8DD9AE; }
+        .vecino-inicio-bosque .vi-header-actions .vi-notification-button {
+          display: grid;
+          place-items: center;
+          padding: 0;
+          color: #F4D48A;
+          border-color: rgba(244, 212, 138, .75);
+        }
+        .vecino-inicio-bosque .vi-notification-unread {
+          border-left: 3px solid #E9CB7F;
+          background: rgba(233, 203, 127, .09);
+        }
+        .vecino-inicio-bosque .vi-notification-actions .vi-button:first-child {
+          background: rgba(144,201,250,.17);
+          border-color: rgba(144,201,250,.68);
+          color: #CAE7FF;
+        }
+        .vecino-inicio-bosque .vi-notification-actions .vi-button:first-child:hover {
+          background: #90C9FA;
+          color: #0A2A1E;
+        }
+        .vecino-inicio-bosque .vi-notification-actions button.vi-button {
+          background: rgba(128,217,179,.15);
+          border-color: rgba(128,217,179,.62);
+          color: #B8F4DA;
+        }
+        .vecino-inicio-bosque .vi-notification-actions button.vi-button:hover {
+          background: #80D9B3;
+          color: #092519;
+        }
+        @media (max-width:650px) {
+          .vecino-inicio-bosque .vi-service-card { padding-top: 20px; }
+        }
+
       `}</style>
 
 

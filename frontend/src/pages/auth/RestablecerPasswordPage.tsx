@@ -482,6 +482,216 @@ function RestablecerPasswordPage() {
             animation: none;
           }
         }
+
+        /* ===== RENOVACIÓN VISUAL PROFESIONAL · APT 2026 ===== */
+        .jv-restablecer {
+          padding: clamp(18px, 3vw, 48px);
+          background-image:
+            linear-gradient(115deg, rgba(6, 26, 18, .64), rgba(6, 26, 18, .34)),
+            url('/casas.webp');
+          background-position: center;
+          background-size: cover;
+        }
+        .jv-restablecer .rs-card {
+          grid-template-columns: minmax(0, .91fr) minmax(0, 1.09fr);
+          max-width: 1050px;
+          border: 1px solid rgba(244, 236, 208, .24);
+          border-radius: 26px;
+          background: #f8faf7;
+          box-shadow: 0 30px 95px rgba(1, 15, 10, .42);
+          backdrop-filter: none;
+        }
+        .jv-restablecer .rs-info {
+          position: relative;
+          isolation: isolate;
+          padding: clamp(36px, 4vw, 60px);
+          border-right: 1px solid rgba(224, 197, 128, .3);
+          background: #103124;
+          color: #f8f7ee;
+        }
+        .jv-restablecer .rs-info::before {
+          position: absolute;
+          z-index: -1;
+          inset: 0;
+          content: '';
+          background:
+            radial-gradient(circle at 0% 10%, rgba(190, 219, 181, .13), transparent 55%),
+            linear-gradient(160deg, rgba(8, 39, 27, .92), rgba(7, 28, 20, .96)),
+            url('/directivas-inicio.webp') center / cover no-repeat;
+          pointer-events: none;
+        }
+        .jv-restablecer .rs-logo {
+          width: 62px;
+          height: 62px;
+          margin-bottom: 24px;
+          border: 1px solid rgba(255,255,255,.35);
+          border-radius: 16px;
+          background: linear-gradient(135deg, #f6e9c2, #d8bc77);
+          color: #183525;
+          font-size: 23px;
+          box-shadow: 0 8px 20px rgba(0,0,0,.17);
+        }
+        .jv-restablecer .rs-badge {
+          padding: 7px 12px;
+          background: rgba(215, 184, 104, .13);
+          border-color: rgba(229, 199, 132, .45);
+          color: #f7df9f;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: .02em;
+        }
+        .jv-restablecer .rs-info h1 {
+          margin: 27px 0 18px;
+          font-size: clamp(33px, 3vw, 45px);
+          color: #fffaf0;
+          line-height: 1.15;
+        }
+        .jv-restablecer .rs-info h1 span { color: #f0d99b; }
+        .jv-restablecer .rs-description {
+          max-width: 34ch;
+          color: #deebe2;
+          font-size: 15px;
+          line-height: 1.8;
+        }
+        .jv-restablecer .rs-tips {
+          margin-top: 34px;
+          padding: 23px;
+          border: 1px solid rgba(225, 204, 148, .32);
+          border-radius: 17px;
+          background: rgba(5, 29, 19, .52);
+        }
+        .jv-restablecer .rs-tips h3 { color: #f9f3dd; font-size: 15px; }
+        .jv-restablecer .rs-tips li { color: #e2ebe3; line-height: 1.6; }
+        .jv-restablecer .rs-check {
+          background: rgba(113, 215, 164, .16);
+          border: 1px solid rgba(139, 233, 186, .26);
+          color: #a8eac9;
+        }
+        .jv-restablecer .rs-panel {
+          padding: clamp(30px, 4.2vw, 58px);
+          background: #f8faf7;
+          color: #173629;
+        }
+        .jv-restablecer .rs-panel h2 {
+          font-family: Georgia, 'Times New Roman', serif;
+          color: #183a2b;
+          font-size: clamp(27px, 2.6vw, 35px);
+        }
+        .jv-restablecer .rs-panel .rs-badge {
+          border-color: #c7d9cd;
+          background: #edf5ed;
+          color: #326249;
+        }
+        .jv-restablecer .rs-intro {
+          margin: 14px 0 30px;
+          color: #52685b;
+          font-size: 14px;
+        }
+        .jv-restablecer .rs-form { gap: 22px; }
+        .jv-restablecer .rs-label {
+          color: #224333;
+          font-size: 14px;
+          font-weight: 750;
+        }
+        .jv-restablecer .rs-required { color: #a35e40; font-size: 11px; }
+        .jv-restablecer .rs-input {
+          height: 54px;
+          border: 1px solid #cbdcd0;
+          border-radius: 12px;
+          background: #fff;
+          color: #19372b;
+          box-shadow: 0 2px 5px rgba(15, 49, 31, .03);
+        }
+        .jv-restablecer .rs-input::placeholder { color: #778c7e; }
+        .jv-restablecer .rs-input:focus {
+          border-color: #337955;
+          box-shadow: 0 0 0 4px rgba(50, 129, 85, .12);
+        }
+        .jv-restablecer .rs-input.rs-invalid {
+          border-color: #c75b62;
+          box-shadow: 0 0 0 3px rgba(199, 91, 98, .10);
+        }
+        .jv-restablecer .rs-help { color: #637769; }
+        .jv-restablecer .rs-error-text { color: #b13b45; font-weight: 650; }
+        .jv-restablecer .rs-note {
+          padding: 15px 17px;
+          border: 1px solid #d6e4d9;
+          border-left: 3px solid #69a987;
+          border-radius: 10px;
+          background: #eef5ee;
+          color: #3f5e4c;
+          line-height: 1.65;
+        }
+        .jv-restablecer .rs-submit {
+          min-height: 54px;
+          border: 1px solid #1f6243;
+          border-radius: 12px;
+          background: linear-gradient(115deg, #256d48, #164a36);
+          color: #fff;
+          font-weight: 800;
+          letter-spacing: .055em;
+          box-shadow: 0 10px 22px rgba(16, 73, 45, .17);
+          transition: background .2s, transform .2s, box-shadow .2s;
+        }
+        .jv-restablecer .rs-submit:hover:not(:disabled) {
+          filter: none;
+          transform: translateY(-1px);
+          background: linear-gradient(115deg, #318457, #1c5b40);
+          box-shadow: 0 13px 24px rgba(16,73,45,.23);
+        }
+        .jv-restablecer .rs-spinner {
+          border-color: rgba(255,255,255,.28);
+          border-top-color: white;
+        }
+        .jv-restablecer .rs-back { border-top-color: #dce8df; }
+        .jv-restablecer .rs-back p { color: #65776b; }
+        .jv-restablecer .rs-back-link {
+          padding: 13px;
+          border: 1px solid #9bb5a5;
+          background: #fff;
+          color: #28583d;
+          font-weight: 750;
+        }
+        .jv-restablecer .rs-back-link:hover {
+          border-color: #327d50;
+          background: #edf5ee;
+        }
+        .jv-restablecer .rs-alert {
+          border-color: #e8b6b6;
+          background: #fff0ef;
+          color: #96383d;
+        }
+        .jv-restablecer .rs-success {
+          border-color: #a5d9b7;
+          background: #e6f5eb;
+          color: #236540;
+        }
+        .jv-restablecer .rs-footer { color: #77897d; }
+        .jv-restablecer button:focus-visible,
+        .jv-restablecer a:focus-visible {
+          outline: 3px solid #4b9870;
+          outline-offset: 3px;
+        }
+        @media (max-width: 800px) {
+          .jv-restablecer .rs-card { max-width: 590px; grid-template-columns: 1fr; }
+          .jv-restablecer .rs-info {
+            padding: 30px;
+            border-right: 0;
+            border-bottom: 1px solid rgba(213,186,112,.35);
+          }
+          .jv-restablecer .rs-panel { padding: 34px 30px; }
+          .jv-restablecer .rs-description { max-width: none; }
+          .jv-restablecer .rs-tips { margin-top: 22px; }
+        }
+        @media (max-width: 400px) {
+          .jv-restablecer .rs-info, .jv-restablecer .rs-panel { padding: 25px 20px; }
+          .jv-restablecer .rs-card { border-radius: 20px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .jv-restablecer .rs-submit { transition: none; }
+          .jv-restablecer .rs-submit:hover:not(:disabled) { transform: none; }
+        }
+
       `}</style>
 
       <section className="rs-card" aria-label="Restablecer contraseña">

@@ -129,6 +129,21 @@ class LoginView(APIView):
         password = serializer.validated_data["password"]
         recordar = serializer.validated_data["recordar"]
 
+        Usuario = get_user_model()
+
+        usuario_deshabilitado = Usuario.objects.filter(
+            username__iexact=username,
+            is_active=False,
+        ).first()
+
+        if usuario_deshabilitado is not None and usuario_deshabilitado.check_password(
+            password
+        ):
+            return Response(
+                {"detail": "Su cuenta ha sido deshabilitada."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         usuario = authenticate(
             request=request,
             username=username,

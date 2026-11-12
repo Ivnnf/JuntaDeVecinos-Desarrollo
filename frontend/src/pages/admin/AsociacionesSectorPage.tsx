@@ -347,6 +347,88 @@ const estilosAsociaciones = String.raw`
   .apt-asociaciones .apt-asociaciones-tabla .table tbody tr { transition: none; }
 }
 
+
+/* Tabla agrupada: datos completos, sin columnas estrechas ni correos cortados por letra. */
+.apt-asociaciones .apt-asociaciones-tabla .apt-asociaciones-tabla-organizada {
+  min-width: 930px;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.apt-asociaciones .apt-asociaciones-tabla-organizada th:nth-child(1) { width: 29%; }
+.apt-asociaciones .apt-asociaciones-tabla-organizada th:nth-child(2) { width: 27%; }
+.apt-asociaciones .apt-asociaciones-tabla-organizada th:nth-child(3) { width: 26%; }
+.apt-asociaciones .apt-asociaciones-tabla-organizada th:nth-child(4) { width: 18%; }
+.apt-asociaciones .apt-asociaciones-tabla-organizada :is(td,th) {
+  padding: 20px 17px;
+  text-align: left;
+  vertical-align: top;
+}
+.apt-asociaciones .apt-asociaciones-tabla-organizada thead th {
+  color: #f5dfac;
+  letter-spacing: .015em;
+  background: rgba(4,24,16,.56);
+}
+.apt-asociaciones .apt-asociaciones-tabla-organizada tbody tr:nth-child(odd) {
+  background: rgba(21,52,37,.6);
+}
+.apt-asociaciones .apt-asociaciones-tabla-organizada tbody tr:nth-child(even) {
+  background: rgba(8,35,25,.78);
+}
+.apt-asociaciones .apt-asoc-persona { display:flex; align-items:center; gap:12px; min-width:0; }
+.apt-asociaciones .apt-asoc-avatar {
+  display:grid; place-items:center; flex:none; width:44px; height:44px;
+  border-radius:50%; background:rgba(196,173,246,.19); color:#dfc9ff;
+  border:1px solid rgba(196,173,246,.45); font-weight:800;
+}
+.apt-asociaciones .apt-asoc-persona-info { min-width:0; }
+.apt-asociaciones .apt-asoc-nombre { margin:0; font-weight:750; line-height:1.4; overflow-wrap:break-word; }
+.apt-asociaciones .apt-asoc-username { margin:4px 0 0; color:#cad8cb; font-size:12px; overflow-wrap:anywhere; }
+.apt-asociaciones .apt-asoc-datos { margin-top:15px; padding-top:12px; border-top:1px solid rgba(219,188,105,.18); }
+.apt-asociaciones .apt-asoc-dato { display:grid; grid-template-columns:48px minmax(0,1fr); gap:9px; margin-top:7px; font-size:13px; }
+.apt-asociaciones .apt-asoc-etiqueta { color:#c0ccbd; font-size:11px; font-weight:750; letter-spacing:.045em; text-transform:uppercase; }
+.apt-asociaciones .apt-asoc-email { overflow-wrap:anywhere; word-break:normal; line-height:1.5; }
+.apt-asociaciones .apt-asoc-territorio { display:flex; flex-direction:column; align-items:flex-start; min-width:0; gap:5px; }
+.apt-asociaciones .apt-asoc-junta { font-size:14px; font-weight:750; line-height:1.5; overflow-wrap:break-word; }
+.apt-asociaciones .apt-asoc-etiqueta-sector { margin-top:13px; }
+.apt-asociaciones .apt-asoc-sector { color:#b3e7f1; background:rgba(93,161,188,.12); border:1px solid rgba(122,202,226,.44); border-radius:9px; padding:5px 10px; font-size:13px; font-weight:700; overflow-wrap:anywhere; }
+.apt-asociaciones .apt-asoc-estados { display:flex; flex-direction:column; align-items:flex-start; gap:13px; }
+.apt-asociaciones .apt-asoc-estado-linea { display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
+.apt-asociaciones .apt-asoc-chip { display:inline-flex; align-items:center; min-height:27px; border:1px solid; border-radius:8px; padding:5px 11px; font-size:12px; font-weight:800; line-height:1.3; }
+.apt-asociaciones .apt-asoc-chip-exito { color:#142a1e; background:#abe0b8; border-color:#abe0b8; }
+.apt-asociaciones .apt-asoc-chip-pendiente { color:#fbe1a1; background:rgba(179,124,31,.17); border-color:rgba(241,193,109,.58); }
+.apt-asociaciones .apt-asoc-chip-error { color:#ffc1c4; background:rgba(144,45,56,.24); border-color:rgba(243,151,158,.58); }
+.apt-asociaciones .apt-asoc-chip-revision { color:#c7e7ff; background:rgba(52,111,167,.23); border-color:rgba(137,192,243,.56); }
+.apt-asociaciones .apt-asoc-chip-neutro { color:#dde5df; background:rgba(197,209,202,.1); border-color:rgba(197,209,202,.4); }
+.apt-asociaciones .apt-asoc-revisar { border:1px solid rgba(155,199,234,.58); border-radius:9px; background:rgba(60,119,164,.18); color:#c6e7ff; padding:9px 11px; font:inherit; font-size:12px; font-weight:750; cursor:pointer; text-align:left; }
+.apt-asociaciones .apt-asoc-revisar:hover { background:rgba(60,119,164,.32); }
+.apt-asociaciones .apt-asoc-acciones { display:flex; flex-direction:column; gap:9px; align-items:stretch; }
+.apt-asociaciones .apt-asoc-acciones .btn { width:100%; min-height:34px; white-space:nowrap; }
+.apt-asociaciones .apt-asoc-ayuda { font-size:11px; color:#d9c8a5; line-height:1.4; }
+.apt-asociaciones .apt-asoc-resuelta { color:#c1d3c9; font-size:13px; }
+.apt-asociaciones .apt-asoc-revisar:focus-visible { outline:2px solid #d9ba68; outline-offset:3px; }
+@media (max-width: 900px) {
+  .apt-asociaciones .apt-asociaciones-tabla-scroll { overflow:visible; }
+  .apt-asociaciones .apt-asociaciones-tabla-organizada { display:block; min-width:0; }
+  .apt-asociaciones .apt-asociaciones-tabla-organizada thead { display:none; }
+  .apt-asociaciones .apt-asociaciones-tabla-organizada tbody { display:grid; gap:13px; padding:12px; }
+  .apt-asociaciones .apt-asociaciones-tabla-organizada tbody tr {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0;
+    border:1px solid rgba(219,188,105,.35); border-radius:15px; overflow:hidden;
+  }
+  .apt-asociaciones .apt-asociaciones-tabla-organizada tbody td { display:block; min-width:0; padding:16px; border-bottom:1px solid rgba(219,188,105,.15); }
+  .apt-asociaciones .apt-asociaciones-tabla-organizada tbody td::before { content:attr(data-label); display:block; margin-bottom:12px; color:#efd78f; font-size:12px; font-weight:800; letter-spacing:.03em; }
+  .apt-asociaciones .apt-asoc-acciones { flex-direction:row; flex-wrap:wrap; }
+  .apt-asociaciones .apt-asoc-acciones .btn { width:auto; flex:1; }
+  .apt-asociaciones .apt-asoc-ayuda { width:100%; }
+}
+@media (max-width: 600px) {
+  .apt-asociaciones .apt-asociaciones-tabla-organizada tbody tr { grid-template-columns:1fr; }
+  .apt-asociaciones .apt-asociaciones-tabla-organizada tbody td { padding:16px; }
+  .apt-asociaciones .apt-asoc-acciones .btn { min-width:110px; }
+}
+
 /* Modal original de verificación: apariencia consistente y contraste. */
 .apt-asociaciones .modal { z-index: 1000; }
 .apt-asociaciones .modal-box {
@@ -1003,192 +1085,140 @@ function AsociacionesSectorPage() {
               </div>
             ) : (
               <div className="apt-asociaciones-tabla overflow-hidden rounded-2xl border shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="table">
-                    <thead className="bg-base-200/70">
+                <div className="overflow-x-auto apt-asociaciones-tabla-scroll">
+                  <table className="table apt-asociaciones-tabla-organizada">
+                    <thead>
                       <tr>
-                        <th>Vecino</th>
-                        <th>RUT</th>
-                        <th>Correo</th>
-                        <th>Junta</th>
-                        <th>Sector</th>
-                        <th>Asociación</th>
-                        <th>Verificación</th>
-                        <th className="text-right">
-                          Acciones
-                        </th>
+                        <th>Vecino y contacto</th>
+                        <th>Ubicación territorial</th>
+                        <th>Estado y verificación</th>
+                        <th>Acciones</th>
                       </tr>
                     </thead>
-
                     <tbody>
                       {asociacionesFiltradas.map((asociacion) => {
-                        const nombreCompleto =
-                          obtenerNombreCompleto(asociacion)
-
-                        const procesando =
-                          procesandoId === asociacion.id
+                        const nombreCompleto = obtenerNombreCompleto(asociacion)
+                        const procesando = procesandoId === asociacion.id
+                        const verificacion = asociacion.verificacion_residencia
 
                         return (
-                          <tr
-                            key={asociacion.id}
-                            className="hover"
-                          >
-                            <td>
-                              <div className="flex min-w-[190px] items-center gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-sm font-bold text-violet-700">
+                          <tr key={asociacion.id}>
+                            <td data-label="Vecino y contacto">
+                              <div className="apt-asoc-persona">
+                                <div className="apt-asoc-avatar" aria-hidden="true">
                                   {obtenerIniciales(asociacion)}
                                 </div>
-
-                                <div>
-                                  <p className="font-semibold">
-                                    {nombreCompleto}
-                                  </p>
-
-                                  <p className="text-xs text-base-content/50">
-                                    @{asociacion.username}
-                                  </p>
+                                <div className="apt-asoc-persona-info">
+                                  <p className="apt-asoc-nombre">{nombreCompleto}</p>
+                                  <p className="apt-asoc-username">@{asociacion.username}</p>
+                                </div>
+                              </div>
+                              <div className="apt-asoc-datos">
+                                <div className="apt-asoc-dato">
+                                  <span className="apt-asoc-etiqueta">RUT</span>
+                                  <span>{asociacion.rut || 'No informado'}</span>
+                                </div>
+                                <div className="apt-asoc-dato">
+                                  <span className="apt-asoc-etiqueta">Correo</span>
+                                  <span className="apt-asoc-email" title={asociacion.email}>
+                                    {asociacion.email || 'No informado'}
+                                  </span>
                                 </div>
                               </div>
                             </td>
-
-                            <td>
-                              <span className="whitespace-nowrap">
-                                {asociacion.rut ?? '-'}
-                              </span>
+                            <td data-label="Ubicación territorial">
+                              <div className="apt-asoc-territorio">
+                                <span className="apt-asoc-etiqueta">Junta de Vecinos</span>
+                                <span className="apt-asoc-junta">{asociacion.junta_nombre}</span>
+                                <span className="apt-asoc-etiqueta apt-asoc-etiqueta-sector">Sector</span>
+                                <span className="apt-asoc-sector">{asociacion.sector_nombre}</span>
+                              </div>
                             </td>
-
-                            <td>
-                              <span className="break-all text-sm">
-                                {asociacion.email}
-                              </span>
-                            </td>
-
-                            <td>
-                              <span className="font-medium">
-                                {asociacion.junta_nombre}
-                              </span>
-                            </td>
-
-                            <td>
-                              <span className="badge badge-info badge-outline whitespace-nowrap">
-                                {asociacion.sector_nombre}
-                              </span>
-                            </td>
-                            <td>
-                              <span
-                                className={
-                                  asociacion.estado_asociacion_sector ===
-                                    'CONFIRMADA'
-                                    ? 'badge badge-success whitespace-nowrap'
-                                    : asociacion.estado_asociacion_sector ===
-                                      'RECHAZADA'
-                                      ? 'badge badge-error badge-outline whitespace-nowrap'
-                                      : 'badge badge-warning badge-outline whitespace-nowrap'
-                                }
-                              >
-                                {asociacion.estado_asociacion_sector ===
-                                  'CONFIRMADA'
-                                  ? 'Aceptada'
-                                  : asociacion.estado_asociacion_sector ===
-                                    'RECHAZADA'
-                                    ? 'Rechazada'
-                                    : 'Pendiente'}
-                              </span>
-
-                            </td>
-
-                            <td>
-                              {asociacion.verificacion_residencia ? (
-                                <div className="flex min-w-[170px] flex-col items-start gap-2">
-                                  <span
-                                    className={
-                                      asociacion.verificacion_residencia.estado ===
-                                        'VALIDADA'
-                                        ? 'badge badge-success whitespace-nowrap'
-                                        : asociacion.verificacion_residencia.estado ===
-                                          'RECHAZADA'
-                                          ? 'badge badge-error badge-outline whitespace-nowrap'
-                                          : asociacion.verificacion_residencia.estado ===
-                                            'REVISION_MANUAL'
-                                            ? 'badge badge-info badge-outline whitespace-nowrap'
-                                            : 'badge badge-warning badge-outline whitespace-nowrap'
-                                    }
-                                  >
-                                    {asociacion.verificacion_residencia.estado ===
-                                      'VALIDADA'
-                                      ? 'Validada'
-                                      : asociacion.verificacion_residencia.estado ===
-                                        'RECHAZADA'
+                            <td data-label="Estado y verificación">
+                              <div className="apt-asoc-estados">
+                                <div className="apt-asoc-estado-linea">
+                                  <span className="apt-asoc-etiqueta">Asociación</span>
+                                  <span className={
+                                    asociacion.estado_asociacion_sector === 'CONFIRMADA'
+                                      ? 'apt-asoc-chip apt-asoc-chip-exito'
+                                      : asociacion.estado_asociacion_sector === 'RECHAZADA'
+                                        ? 'apt-asoc-chip apt-asoc-chip-error'
+                                        : 'apt-asoc-chip apt-asoc-chip-pendiente'
+                                  }>
+                                    {asociacion.estado_asociacion_sector === 'CONFIRMADA'
+                                      ? 'Aceptada'
+                                      : asociacion.estado_asociacion_sector === 'RECHAZADA'
                                         ? 'Rechazada'
-                                        : asociacion.verificacion_residencia.estado ===
-                                          'REVISION_MANUAL'
-                                          ? 'Revisión manual'
-                                          : 'Pendiente'}
+                                        : 'Pendiente'}
                                   </span>
+                                </div>
+                                <div className="apt-asoc-estado-linea">
+                                  <span className="apt-asoc-etiqueta">Residencia</span>
+                                  <span className={
+                                    !verificacion
+                                      ? 'apt-asoc-chip apt-asoc-chip-neutro'
+                                      : verificacion.estado === 'VALIDADA'
+                                        ? 'apt-asoc-chip apt-asoc-chip-exito'
+                                        : verificacion.estado === 'RECHAZADA'
+                                          ? 'apt-asoc-chip apt-asoc-chip-error'
+                                          : verificacion.estado === 'REVISION_MANUAL'
+                                            ? 'apt-asoc-chip apt-asoc-chip-revision'
+                                            : 'apt-asoc-chip apt-asoc-chip-pendiente'
+                                  }>
+                                    {!verificacion
+                                      ? 'Sin verificación'
+                                      : verificacion.estado === 'VALIDADA'
+                                        ? 'Validada'
+                                        : verificacion.estado === 'RECHAZADA'
+                                          ? 'Rechazada'
+                                          : verificacion.estado === 'REVISION_MANUAL'
+                                            ? 'Revisión manual'
+                                            : 'Pendiente'}
+                                  </span>
+                                </div>
+                                {verificacion && (
                                   <button
                                     type="button"
-                                    className="btn btn-sm btn-outline whitespace-nowrap min-w-max px-3"
-                                    onClick={() =>
-                                      setAsociacionSeleccionada(asociacion)
-                                    }
+                                    className="apt-asoc-revisar"
+                                    onClick={() => setAsociacionSeleccionada(asociacion)}
                                   >
                                     Revisar comprobante
                                   </button>
-                                </div>
-
-                              ) : (
-
-                                <span className="badge border border-base-content/30 bg-base-200 text-base-content whitespace-nowrap">
-                                  Sin verificación
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              <div className="flex min-w-[190px] justify-end gap-2">
-                                {asociacion.estado_asociacion_sector ===
-                                  'PENDIENTE' ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm btn-success"
-                                      disabled={
-                                        procesando ||
-                                        asociacion.verificacion_residencia?.estado !== 'VALIDADA'
-                                      }
-                                      onClick={() =>
-                                        void resolverAsociacion(
-                                          asociacion.id,
-                                          'CONFIRMAR',
-                                        )
-                                      }
-                                    >
-                                      {procesando && (
-                                        <span className="loading loading-spinner loading-xs" />
-                                      )}
-
-                                      Confirmar
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm btn-error btn-outline"
-                                      disabled={procesando}
-                                      onClick={() =>
-                                        void resolverAsociacion(
-                                          asociacion.id,
-                                          'RECHAZAR',
-                                        )
-                                      }
-                                    >
-                                      Rechazar
-                                    </button>
-                                  </>
-                                ) : (
-                                  <span className="text-sm text-base-content/50">
-                                    Solicitud resuelta
-                                  </span>
                                 )}
                               </div>
+                            </td>
+                            <td data-label="Acciones">
+                              {asociacion.estado_asociacion_sector === 'PENDIENTE' ? (
+                                <div className="apt-asoc-acciones">
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-success"
+                                    disabled={procesando || verificacion?.estado !== 'VALIDADA'}
+                                    title={verificacion?.estado !== 'VALIDADA'
+                                      ? 'Se requiere una residencia validada para confirmar la asociación.'
+                                      : 'Confirmar asociación territorial'}
+                                    onClick={() => void resolverAsociacion(asociacion.id, 'CONFIRMAR')}
+                                  >
+                                    {procesando && <span className="loading loading-spinner loading-xs" />}
+                                    Confirmar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-error btn-outline"
+                                    disabled={procesando}
+                                    onClick={() => void resolverAsociacion(asociacion.id, 'RECHAZAR')}
+                                  >
+                                    Rechazar
+                                  </button>
+                                  {verificacion?.estado !== 'VALIDADA' && (
+                                    <small className="apt-asoc-ayuda">
+                                      Para confirmar, primero debe validarse la residencia.
+                                    </small>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="apt-asoc-resuelta">Solicitud resuelta</span>
+                              )}
                             </td>
                           </tr>
                         )

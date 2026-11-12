@@ -561,6 +561,97 @@ const estilosDirectivas = String.raw`
 .apt-directivas .apt-directivas-listado .text-base-content\/45 {
   color: #d4ddcf;
 }
+
+
+/* ===============================================================
+   PALETA FUNCIONAL · GESTIÓN DE DIRECTIVAS
+   Solo cambia la presentación; las operaciones y rutas se conservan.
+   =============================================================== */
+.apt-directivas {
+  --dv-violeta:#cab5ff;
+  --dv-verde:#91e2b7;
+  --dv-gris:#b6c8d7;
+  --dv-celeste:#93d6f8;
+  --dv-ambar:#f1cc82;
+  --dv-coral:#f4a4ad;
+}
+/* Cada indicador se identifica por color y mantiene su fotografía. */
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(1) { border-top:4px solid var(--dv-violeta); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(2) { border-top:4px solid var(--dv-verde); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(3) { border-top:4px solid var(--dv-gris); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(4) { border-top:4px solid var(--dv-celeste); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(1) .text-3xl { color:var(--dv-violeta); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(2) .text-3xl { color:var(--dv-verde); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(3) .text-3xl { color:var(--dv-gris); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(4) .text-3xl { color:var(--dv-celeste); }
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(1) .badge {
+  color:var(--dv-violeta); background:rgba(137,103,214,.18); border-color:rgba(202,181,255,.62);
+}
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(2) .badge {
+  color:var(--dv-verde); background:rgba(60,153,103,.18); border-color:rgba(145,226,183,.62);
+}
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(3) .badge {
+  color:var(--dv-gris); background:rgba(128,152,168,.16); border-color:rgba(182,200,215,.62);
+}
+.apt-directivas .apt-directivas-estadisticas > div:nth-child(4) .badge {
+  color:var(--dv-celeste); background:rgba(66,149,199,.16); border-color:rgba(147,214,248,.62);
+}
+/* Formulario: el alta de una directiva es una acción positiva, no un error. */
+.apt-directivas .apt-directivas-formulario { border-top:4px solid var(--dv-verde); }
+.apt-directivas .apt-directivas-formulario > div:first-child { border-bottom-color:rgba(145,226,183,.35); }
+.apt-directivas .apt-directivas-formulario > div:first-child h2 { color:#b9f1d0; }
+.apt-directivas .apt-directivas-formulario > div:first-child .badge-error.badge-outline {
+  background:rgba(66,155,104,.16); color:#b7f0d0; border-color:rgba(145,226,183,.7);
+}
+.apt-directivas .apt-directivas-formulario .btn.btn-primary:not(.btn-outline) {
+  background:linear-gradient(110deg,#b6f2cf,#66cfa1); border-color:#88e1b5; color:#103325;
+}
+.apt-directivas .apt-directivas-formulario .btn.btn-primary:not(.btn-outline):hover {
+  background:linear-gradient(110deg,#d2f9e1,#89e5bd); color:#103325;
+}
+.apt-directivas .apt-directivas-formulario .badge-success.badge-outline {
+  color:var(--dv-verde); border-color:rgba(145,226,183,.65); background:rgba(38,124,74,.15);
+}
+/* Tabla: encabezados nítidos, estados distinguibles y acciones claras. */
+.apt-directivas .apt-directivas-listado { border-top:4px solid var(--dv-violeta); }
+.apt-directivas .apt-directivas-tabla .table thead { background:rgba(19,27,42,.95); }
+.apt-directivas .apt-directivas-tabla .table thead th { color:#d4c2ff; }
+.apt-directivas .apt-directivas-tabla .table tbody td { overflow-wrap:anywhere; }
+.apt-directivas .apt-directivas-tabla .badge-success.badge-outline {
+  color:var(--dv-verde); background:rgba(43,128,80,.17); border-color:rgba(145,226,183,.65);
+}
+.apt-directivas .apt-directivas-tabla .badge-ghost {
+  color:var(--dv-gris); background:rgba(121,143,159,.15); border-color:rgba(182,200,215,.5);
+}
+.apt-directivas .apt-directivas-tabla .btn.btn-primary:not(.btn-outline) {
+  background:linear-gradient(110deg,#b6e5ff,#80c8f5); border-color:#9fdaf8; color:#102d3e;
+}
+.apt-directivas .apt-directivas-tabla .btn.btn-primary:not(.btn-outline):hover {
+  background:linear-gradient(110deg,#d4f1ff,#a6dcff); color:#102d3e;
+}
+.apt-directivas .apt-directivas-tabla .btn.btn-error.btn-outline,
+.apt-directivas .modal-box .btn.btn-error:not(.btn-outline) {
+  border-color:rgba(244,164,173,.8);
+}
+.apt-directivas .apt-directivas-tabla .btn.btn-error.btn-outline {
+  background:rgba(143,43,58,.19); color:#ffc1c7;
+}
+.apt-directivas .apt-directivas-tabla .btn.btn-error.btn-outline:hover {
+  background:rgba(143,43,58,.33); color:#ffe1e3;
+}
+.apt-directivas .modal-box .btn.btn-error:not(.btn-outline) {
+  background:#bb525f; color:#fff7f7;
+}
+.apt-directivas .modal-box .alert-warning {
+  background:rgba(140,91,27,.28); border:1px solid rgba(241,204,130,.58); color:#ffe7ad;
+}
+.apt-directivas .apt-directivas-tabla .text-base-content\/60,
+.apt-directivas .apt-directivas-listado .text-base-content\/50,
+.apt-directivas .apt-directivas-listado .text-base-content\/45 { color:#d6dfd5; }
+@media(max-width:640px) {
+  .apt-directivas .apt-directivas-estadisticas > div { min-height:120px; }
+  .apt-directivas .apt-directivas-tabla .table { min-width:760px; }
+}
 `
 
 function DirectivasPage() {

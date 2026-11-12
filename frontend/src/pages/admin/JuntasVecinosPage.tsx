@@ -464,6 +464,74 @@ const estilosJuntas = String.raw`
 .apt-juntas .apt-juntas-formulario .input,
 .apt-juntas .apt-juntas-formulario .select,
 .apt-juntas .apt-juntas-formulario .textarea { width: 100%; }
+
+
+/* ================================================
+   PALETA PROFESIONAL DIFERENCIADA · ADMINISTRACIÓN
+   Exclusivamente estilos: no altera lógica ni API.
+   ================================================ */
+.apt-juntas { --j-violeta:#c9b5fa; --j-verde:#91e0b4; --j-rojo:#f2a2ad; --j-celeste:#95d6f7; --j-dorado:#efd18b; }
+
+/* Encabezado y contraste general */
+.apt-juntas .apt-juntas-encabezado { border-top:5px solid var(--j-dorado); }
+.apt-juntas .apt-juntas-encabezado > div > div > p { color:#e0e9df; }
+.apt-juntas .apt-juntas-encabezado .badge-warning { background:rgba(225,185,85,.23); border:1px solid #e8c877; color:#ffeba8; }
+
+/* Indicadores: cada categoría tiene su propia identidad */
+.apt-juntas .apt-juntas-estadisticas > div { position:relative; border-top:4px solid var(--j-violeta); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(1) { border-top-color:var(--j-violeta); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(2) { border-top-color:var(--j-verde); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(3) { border-top-color:var(--j-rojo); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(4) { border-top-color:var(--j-celeste); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(1) .text-3xl { color:var(--j-violeta); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(2) .text-3xl { color:var(--j-verde); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(3) .text-3xl { color:var(--j-rojo); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(4) .text-3xl { color:var(--j-celeste); }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(1) .badge { border-color:rgba(201,181,250,.74); background:rgba(116,78,178,.21); color:#e0d2ff; }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(2) .badge { border-color:rgba(145,224,180,.74); background:rgba(39,119,74,.24); color:#bdf4d3; }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(3) .badge { border-color:rgba(242,162,173,.74); background:rgba(138,45,66,.24); color:#ffcbd1; }
+.apt-juntas .apt-juntas-estadisticas > div:nth-child(4) .badge { border-color:rgba(149,214,247,.74); background:rgba(35,106,142,.25); color:#c3eaff; }
+.apt-juntas .apt-juntas-estadisticas > div:hover { transform:translateY(-3px); }
+
+/* Formulario: crear en verde, editar en ámbar */
+.apt-juntas .apt-juntas-formulario { border-top:5px solid var(--j-verde); }
+.apt-juntas .apt-juntas-formulario:has(.apt-btn-editar) { border-top-color:var(--j-dorado); }
+.apt-juntas .apt-juntas-formulario .badge-success { background:rgba(29,118,75,.26); border:1px solid #79d3a6; color:#bdf5d5; }
+.apt-juntas .apt-juntas-formulario .badge-warning { background:rgba(165,118,28,.26); border:1px solid #e9c878; color:#ffedae; }
+.apt-juntas .apt-juntas-formulario .label-text-alt.text-error { color:#ffbac2; }
+.apt-juntas .apt-juntas-formulario :is(.input,.select,.textarea) { background:#edf5f2; border-color:#9ebbb0; color:#133227; }
+.apt-juntas .apt-juntas-formulario :is(.input,.select,.textarea):focus-visible { border-color:#82d5b1; outline:2px solid #82d5b1; outline-offset:2px; }
+.apt-juntas .apt-juntas-formulario .apt-btn-crear.btn.btn-primary:not(.btn-outline) { background:linear-gradient(115deg,#b0efd0,#66cfa3); border-color:#76dcb0; color:#103629; }
+.apt-juntas .apt-juntas-formulario .apt-btn-crear.btn.btn-primary:not(.btn-outline):hover { background:linear-gradient(115deg,#c9f8df,#8ae2bd); color:#103629; }
+.apt-juntas .apt-juntas-formulario .apt-btn-editar.btn.btn-primary:not(.btn-outline) { background:linear-gradient(115deg,#f7e0a1,#e5b754); border-color:#efd18b; color:#3e2c0b; }
+.apt-juntas .apt-juntas-formulario .apt-btn-editar.btn.btn-primary:not(.btn-outline):hover { background:linear-gradient(115deg,#ffebb7,#f0cd78); color:#3e2c0b; }
+
+/* Tabla: espacio claro para distinguir datos y acciones */
+.apt-juntas .apt-juntas-listado { border-top:5px solid var(--j-celeste); }
+.apt-juntas .apt-juntas-listado .apt-juntas-filtros h2 { color:#d8efff; }
+.apt-juntas .apt-juntas-tabla .table thead { background:rgba(19,46,62,.96); color:#c7e7fc; }
+.apt-juntas .apt-juntas-tabla .table thead th { border-bottom:1px solid rgba(149,214,247,.35); }
+.apt-juntas .apt-juntas-tabla .table tbody tr:nth-child(even) { background-color:rgba(21,51,40,.42); }
+.apt-juntas .apt-juntas-tabla .table tbody tr:hover { background-color:rgba(45,86,77,.58); }
+.apt-juntas .apt-juntas-tabla .table tbody tr.bg-warning\/5 { background:rgba(187,141,44,.18); }
+.apt-juntas .apt-juntas-tabla .badge-info { border:1px solid rgba(149,214,247,.74); background:rgba(35,106,142,.23); color:#c6ebff; }
+.apt-juntas .apt-juntas-tabla .badge-success { border:1px solid rgba(145,224,180,.74); background:rgba(39,119,74,.24); color:#c0f6d8; }
+.apt-juntas .apt-juntas-tabla .badge-ghost { border:1px solid rgba(185,198,209,.53); background:rgba(185,198,209,.13); color:#d9e2eb; }
+.apt-juntas .apt-juntas-tabla .btn.btn-outline:not(.btn-error) { border-color:#94d0f4; background:rgba(35,106,142,.21); color:#caeaff; }
+.apt-juntas .apt-juntas-tabla .btn.btn-outline:not(.btn-error):hover { background:rgba(67,140,176,.35); border-color:#bce6ff; color:#fff; }
+.apt-juntas .apt-juntas-tabla .btn.btn-warning:not(.btn-outline) { background:linear-gradient(115deg,#f7e0a1,#e3b54e); border-color:#f0d18b; color:#392a0d; }
+.apt-juntas .apt-juntas-tabla .btn.btn-warning:not(.btn-outline):hover { background:linear-gradient(115deg,#ffebb7,#f1d07a); }
+.apt-juntas .apt-juntas-tabla .bg-emerald-500\/10 { background-color:rgba(89,203,161,.18); }
+.apt-juntas .apt-juntas-tabla .text-emerald-700 { color:#a7f0d0; }
+.apt-juntas .apt-juntas-listado .bg-emerald-500\/10 { background-color:rgba(89,203,161,.18); }
+.apt-juntas .apt-juntas-listado .text-emerald-700 { color:#a7f0d0; }
+
+/* Alertas: informativas, positivas y negativas diferenciadas */
+.apt-juntas .alert-success { background:rgba(18,91,60,.92); border-color:#7ed8ac; color:#e2ffef; }
+.apt-juntas .alert-error { background:rgba(107,33,45,.92); border-color:#f2a2ad; color:#ffe3e8; }
+@media(max-width:640px) {
+  .apt-juntas .apt-juntas-estadisticas > div { padding:1.15rem; }
+}
 `
 
 const COMUNAS_RM = [
@@ -1002,7 +1070,7 @@ function JuntasVecinosPage() {
 
                             <button
                                 type="submit"
-                                className="btn btn-primary"
+                                className={`btn btn-primary ${juntaEditando ? 'apt-btn-editar' : 'apt-btn-crear'}`}
                                 disabled={guardando}
                             >
                                 {guardando && (

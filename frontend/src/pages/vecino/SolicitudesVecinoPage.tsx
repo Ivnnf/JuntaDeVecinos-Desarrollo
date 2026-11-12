@@ -935,6 +935,264 @@ function SolicitudesVecinoPage() {
             font-size: 29px;
           }
         }
+
+
+        /* ================================================
+           APT | IDENTIDAD VISUAL OFICIAL - EDICION FOTOGRAFICA
+           Las fotografias son secundarias al contenido.
+           ================================================ */
+
+        .solicitudes-vecino-bosque {
+          --sv-oro: #e2bf62;
+          --sv-oro-claro: #f3dc98;
+          --sv-crema: #fbf4e2;
+          --sv-suave: #d3d9cf;
+          background-color: #0b241b;
+          background-image:
+            linear-gradient(120deg, rgba(5, 25, 18, .62), rgba(5, 25, 18, .56)),
+            url('/vecino-solicitudes.webp');
+        }
+
+        .solicitudes-vecino-bosque .sv-container {
+          max-width: 1320px;
+        }
+
+        .solicitudes-vecino-bosque .sv-panel {
+          background-color: rgba(13, 43, 31, .92);
+          border: 1px solid rgba(216, 184, 98, .42);
+          border-radius: 24px;
+          box-shadow: 0 18px 44px rgba(3, 17, 12, .28);
+          -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(10px);
+        }
+
+        /* Fotografia en el encabezado principal. */
+        .solicitudes-vecino-bosque .sv-header {
+          min-height: 160px;
+          padding: 30px 33px;
+          overflow: hidden;
+          background-image:
+            linear-gradient(115deg, rgba(7, 34, 24, .82), rgba(8, 37, 28, .83)),
+            url('/registro-vecino.webp');
+          background-size: cover;
+          background-position: center 48%;
+          background-repeat: no-repeat;
+        }
+
+        .solicitudes-vecino-bosque .sv-title {
+          font-size: clamp(32px, 3.2vw, 47px);
+          letter-spacing: -.6px;
+        }
+
+        .solicitudes-vecino-bosque .sv-subtitle {
+          color: #d5d9cf;
+        }
+
+        /* Cuatro estadisticas con una fotografia propia. */
+        .solicitudes-vecino-bosque .sv-stat {
+          min-height: 122px;
+          overflow: hidden;
+          padding: 23px;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          transition: transform .24s ease, border-color .24s ease;
+        }
+
+        .solicitudes-vecino-bosque .sv-stat:nth-child(1) {
+          background-image:
+            linear-gradient(115deg, rgba(7, 33, 24, .83), rgba(9, 39, 28, .85)),
+            url('/registro-vecino.webp');
+        }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(2) {
+          background-image:
+            linear-gradient(115deg, rgba(7, 33, 24, .82), rgba(9, 39, 28, .85)),
+            url('/gestion-directiva.webp');
+        }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(3) {
+          background-image:
+            linear-gradient(115deg, rgba(7, 33, 24, .83), rgba(9, 39, 28, .86)),
+            url('/directivas.webp');
+        }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(4) {
+          background-image:
+            linear-gradient(115deg, rgba(7, 33, 24, .83), rgba(9, 39, 28, .86)),
+            url('/casitas.webp');
+        }
+
+        .solicitudes-vecino-bosque .sv-stat:hover {
+          border-color: rgba(241, 213, 138, .68);
+          transform: translateY(-3px);
+        }
+        .solicitudes-vecino-bosque .sv-stat-value {
+          color: #f0ca68;
+        }
+        .solicitudes-vecino-bosque .sv-stat-label {
+          color: #e0e2d7;
+        }
+
+        /* Fotografia tambien en la ficha completa de nueva solicitud. */
+        .solicitudes-vecino-bosque .sv-form {
+          background-image:
+            linear-gradient(115deg, rgba(7, 33, 24, .86), rgba(8, 35, 25, .88)),
+            url('/vecino-solicitudes.webp');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        }
+        .solicitudes-vecino-bosque .sv-form-header {
+          background-image:
+            linear-gradient(110deg, rgba(8, 35, 25, .72), rgba(8, 35, 25, .82)),
+            url('/sector.webp');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        }
+        .solicitudes-vecino-bosque .sv-form-body {
+          background-color: rgba(8, 30, 22, .45);
+        }
+        .solicitudes-vecino-bosque .sv-input {
+          background: #eaf0f8;
+          color: #142b22;
+          border: 1px solid rgba(221, 190, 101, .58);
+          border-radius: 12px;
+          color-scheme: light;
+        }
+        .solicitudes-vecino-bosque .sv-input::placeholder {
+          color: #65736d;
+        }
+        .solicitudes-vecino-bosque select.sv-input {
+          color-scheme: light;
+        }
+        .solicitudes-vecino-bosque .sv-input option {
+          background: #f3f6f9;
+          color: #142b22;
+        }
+        .solicitudes-vecino-bosque .sv-label {
+          color: #fff6e5;
+        }
+        .solicitudes-vecino-bosque .sv-required {
+          color: #f2d17e;
+        }
+
+        /* Listado: el titulo, el vacio y las tarjetas contienen fotos. */
+        .solicitudes-vecino-bosque .sv-list-section {
+          padding: 25px 23px;
+          border: 1px solid rgba(216, 184, 98, .37);
+          border-radius: 24px;
+          background-color: rgba(11, 39, 28, .90);
+          background-image:
+            linear-gradient(115deg, rgba(8, 32, 23, .87), rgba(8, 32, 23, .89)),
+            url('/casitas.webp');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          box-shadow: 0 18px 44px rgba(3, 17, 12, .25);
+        }
+        .solicitudes-vecino-bosque .sv-section-heading {
+          padding: 5px 5px 0;
+        }
+        .solicitudes-vecino-bosque .sv-empty {
+          background-image:
+            linear-gradient(115deg, rgba(7, 33, 24, .84), rgba(9, 39, 28, .88)),
+            url('/sector.webp');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        }
+        .solicitudes-vecino-bosque .sv-card {
+          background-image:
+            linear-gradient(115deg, rgba(7, 32, 23, .86), rgba(8, 36, 27, .89)),
+            url('/vecino-solicitudes.webp');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          border-color: rgba(216, 184, 98, .39);
+        }
+        .solicitudes-vecino-bosque .sv-card:nth-child(2n) {
+          background-image:
+            linear-gradient(115deg, rgba(7, 32, 23, .86), rgba(8, 36, 27, .89)),
+            url('/gestion-directiva.webp');
+        }
+        .solicitudes-vecino-bosque .sv-card-header {
+          background: rgba(5, 27, 19, .35);
+        }
+        .solicitudes-vecino-bosque .sv-card-body {
+          background: rgba(7, 29, 21, .32);
+        }
+        .solicitudes-vecino-bosque .sv-message-box {
+          background: rgba(5, 24, 17, .78);
+          border: 1px solid rgba(216, 184, 98, .27);
+        }
+        .solicitudes-vecino-bosque .sv-answer {
+          background: rgba(15, 64, 42, .74);
+        }
+        .solicitudes-vecino-bosque .sv-button-primary {
+          background: linear-gradient(115deg, #f0d57f, #d4ac4c);
+          color: #11291e;
+        }
+        .solicitudes-vecino-bosque .sv-button-primary:hover {
+          background: linear-gradient(115deg, #ffe49b, #eac269);
+          color: #11291e;
+        }
+
+        @media (max-width: 600px) {
+          .solicitudes-vecino-bosque .sv-header {
+            min-height: 0;
+            padding: 23px;
+          }
+          .solicitudes-vecino-bosque .sv-list-section {
+            padding: 18px 12px;
+          }
+          .solicitudes-vecino-bosque .sv-stat {
+            min-height: 112px;
+          }
+        }
+
+
+        /* PALETA FUNCIONAL: estados, tipologias y acciones. */
+        .solicitudes-vecino-bosque .sv-stat { border-top:4px solid var(--sv-accent,#e1bf70); }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(1) { --sv-accent:#f3c476; }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(2) { --sv-accent:#86cafa; }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(3) { --sv-accent:#86deb0; }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(4) { --sv-accent:#bac6d1; }
+        .solicitudes-vecino-bosque .sv-stat .sv-stat-value { color:var(--sv-accent) !important; }
+        .solicitudes-vecino-bosque .sv-stat .sv-stat-label { color:#f4f2e7; }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(1) .sv-badge { border-color:#f3c476;color:#ffe1a5; }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(2) .sv-badge { border-color:#86cafa;color:#c0e7ff; }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(3) .sv-badge { border-color:#86deb0;color:#b6f1d2; }
+        .solicitudes-vecino-bosque .sv-stat:nth-child(4) .sv-badge { border-color:#bac6d1;color:#e1e9ee; }
+
+        /* Identidad de tipos independiente de los estados. */
+        .solicitudes-vecino-bosque .sv-type-CONSULTA { --sv-type:#91d5f3; }
+        .solicitudes-vecino-bosque .sv-type-RECLAMO { --sv-type:#f3a0a5; }
+        .solicitudes-vecino-bosque .sv-type-SOLICITUD { --sv-type:#c5acfa; }
+        .solicitudes-vecino-bosque .sv-card { border-left:5px solid var(--sv-type,#d8bd7d) !important; }
+        .solicitudes-vecino-bosque .sv-card.sv-type-CONSULTA .sv-badges > span:first-child { background:rgba(42,108,144,.27);color:#c3eeff;border-color:#91d5f3; }
+        .solicitudes-vecino-bosque .sv-card.sv-type-RECLAMO .sv-badges > span:first-child { background:rgba(135,41,58,.28);color:#ffd4d4;border-color:#f3a0a5; }
+        .solicitudes-vecino-bosque .sv-card.sv-type-SOLICITUD .sv-badges > span:first-child { background:rgba(91,62,157,.26);color:#e7d7ff;border-color:#c5acfa; }
+        .solicitudes-vecino-bosque .sv-card:hover { border-left-color:var(--sv-type,#d8bd7d) !important; }
+        .solicitudes-vecino-bosque .sv-card-title { overflow-wrap:anywhere; }
+        .solicitudes-vecino-bosque .sv-card .sv-badges .sv-warning { color:#ffe4a8;border-color:#edbc61; }
+        .solicitudes-vecino-bosque .sv-card .sv-badges .sv-info { color:#bee9ff;border-color:#85c7ed; }
+        .solicitudes-vecino-bosque .sv-card .sv-badges .sv-success { color:#bdf1d4;border-color:#87d4ad; }
+        .solicitudes-vecino-bosque .sv-card .sv-badges .sv-muted { color:#e0e8eb;border-color:#a8b8bf; }
+        .solicitudes-vecino-bosque .sv-answer { border-left:4px solid #86deb0;background:rgba(18,83,55,.52); }
+        .solicitudes-vecino-bosque .sv-answer h4 { color:#bdf1d4; }
+
+        /* Formulario y acciones: distinguir crear, volver y consultar. */
+        .solicitudes-vecino-bosque .sv-form { border-top:4px solid #a6cffa; }
+        .solicitudes-vecino-bosque .sv-form .sv-badge { color:#c3e5ff;border-color:#a6cffa;background:rgba(50,102,150,.25); }
+        .solicitudes-vecino-bosque .sv-form .sv-button-primary { background:linear-gradient(110deg,#c0e7ff,#83c3ed);border-color:#a4dafa;color:#112c3a; }
+        .solicitudes-vecino-bosque .sv-form .sv-button-primary:hover:not(:disabled) { background:linear-gradient(110deg,#e0f4ff,#a2d9fa);color:#112c3a; }
+        .solicitudes-vecino-bosque .sv-input:focus { border-color:#9bd8f7;box-shadow:0 0 0 3px rgba(129,202,242,.2); }
+        .solicitudes-vecino-bosque .sv-header > .sv-row > a.sv-button { border-color:#e7c77c;color:#f8e9b9; }
+        .solicitudes-vecino-bosque .sv-header > .sv-row > a.sv-button:hover { color:#142c21; }
+        .solicitudes-vecino-bosque .sv-alert-success { border-left:4px solid #88e6b2; }
+        .solicitudes-vecino-bosque .sv-alert-error { border-left:4px solid #efa0a5; }
+        @media (prefers-reduced-motion:reduce) {
+          .solicitudes-vecino-bosque .sv-stat,.solicitudes-vecino-bosque .sv-card,.solicitudes-vecino-bosque .sv-button {transition:none;}
+        }
       `}</style>
 
       <section className="sv-container">
@@ -1191,7 +1449,7 @@ function SolicitudesVecinoPage() {
             ================================== */}
 
         {!cargando && (
-          <section>
+          <section className="sv-list-section">
 
             <div className="sv-row sv-section-heading">
               <div>
@@ -1242,7 +1500,7 @@ function SolicitudesVecinoPage() {
                 {solicitudes.map((solicitud) => (
                   <article
                     key={solicitud.id}
-                    className="sv-panel sv-card"
+                    className={`sv-panel sv-card sv-type-${solicitud.tipo}`}
                   >
 
                     {/* CABECERA */}

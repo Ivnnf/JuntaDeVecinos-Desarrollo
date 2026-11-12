@@ -396,6 +396,74 @@ const estilosUsuarios = String.raw`
   .apt-usuarios .btn,
   .apt-usuarios .table tbody tr { transition: none; }
 }
+
+/* ============================================================
+   PALETA PROFESIONAL · Gestión de Usuarios
+   Solo presentación: se conservan estados, eventos y API.
+   ============================================================ */
+.apt-usuarios {
+  --apt-violeta: #c7b2fa;
+  --apt-verde: #8de0b3;
+  --apt-coral: #f4a3ab;
+  --apt-celeste: #95d6f6;
+  --apt-ambar: #f0cd83;
+}
+.apt-usuarios .apt-usuarios-encabezado { border-top: 5px solid var(--apt-ambar); }
+.apt-usuarios .apt-usuarios-encabezado > div > div:first-child > p { color: #e5ecdf; }
+.apt-usuarios .apt-usuarios-estadisticas > div {
+  position: relative;
+  border-top: 4px solid var(--apt-acento);
+  border-color: color-mix(in srgb, var(--apt-acento) 55%, transparent);
+  border-top-color: var(--apt-acento);
+}
+.apt-usuarios .apt-usuarios-estadisticas > div:nth-child(1) { --apt-acento: var(--apt-violeta); }
+.apt-usuarios .apt-usuarios-estadisticas > div:nth-child(2) { --apt-acento: var(--apt-verde); }
+.apt-usuarios .apt-usuarios-estadisticas > div:nth-child(3) { --apt-acento: var(--apt-coral); }
+.apt-usuarios .apt-usuarios-estadisticas > div:nth-child(4) { --apt-acento: var(--apt-celeste); }
+.apt-usuarios .apt-usuarios-estadisticas > div .text-3xl {
+  color: var(--apt-acento);
+  text-shadow: 0 2px 14px rgba(0,0,0,.28);
+}
+.apt-usuarios .apt-usuarios-estadisticas > div .badge {
+  color: var(--apt-acento);
+  border: 1px solid color-mix(in srgb, var(--apt-acento) 65%, transparent);
+  background: rgba(5,25,18,.62);
+}
+.apt-usuarios .apt-usuarios-filtros { border-top: 4px solid var(--apt-celeste); }
+.apt-usuarios .apt-usuarios-tabla { border-top: 4px solid var(--apt-violeta); }
+.apt-usuarios .table thead { color: #dcd0ff; }
+.apt-usuarios .table tbody tr:hover { background-color: rgba(50,77,66,.78); }
+.apt-usuarios .table tbody tr.bg-warning\/5 { box-shadow: inset 4px 0 0 var(--apt-ambar); }
+.apt-usuarios .table tbody td .bg-indigo-500\/10 { background: rgba(199,178,250,.18); color: #e4d7ff; }
+.apt-usuarios .table tbody .badge.badge-warning { color: #ffe5a2; border-color: #ddb861; background: rgba(141,94,23,.26); }
+.apt-usuarios .table tbody .badge.badge-primary { color: #e3d3ff; border-color: #b69ae6; background: rgba(106,72,158,.27); }
+.apt-usuarios .table tbody .badge.badge-success { color: #c5f8d9; border-color: #70d7a1; background: rgba(21,103,57,.29); }
+.apt-usuarios .table tbody .badge.badge-info { color: #caf0ff; border-color: #88cbed; background: rgba(29,97,129,.27); }
+.apt-usuarios .table tbody .badge.badge-error { color: #ffc7cb; border-color: #e88f98; background: rgba(139,38,51,.28); }
+/* Botones de roles: cada perfil mantiene su propia semántica cromática. */
+.apt-usuarios .table .btn.btn-warning:not(.btn-outline) { background: linear-gradient(120deg,#f5dfa0,#d4aa4b); border-color:#f0cd83; color:#2a220f; }
+.apt-usuarios .table .btn.btn-primary:not(.btn-outline) { background: linear-gradient(120deg,#e1ceff,#b39ae6); border-color:#cab0f5; color:#281b43; }
+.apt-usuarios .table .btn.btn-success:not(.btn-outline) { background: linear-gradient(120deg,#bdf4d3,#6bcca0); border-color:#8de0b3; color:#113c2b; }
+.apt-usuarios .table .btn.btn-info:not(.btn-outline) { background: linear-gradient(120deg,#c9efff,#80c9e9); border-color:#95d6f6; color:#123648; }
+/* Crear cuentas: vecinos en verde y municipales en celeste. */
+.apt-usuarios .apt-crear-vecino.btn { background: linear-gradient(120deg,#bdf4d3,#76d5aa); border:1px solid #8de0b3; color:#103725; font-weight:800; }
+.apt-usuarios .apt-crear-municipal.btn { background: linear-gradient(120deg,#c8f0ff,#85d0ee); border:1px solid #95d6f6; color:#133547; font-weight:800; }
+.apt-usuarios .apt-crear-vecino.btn:hover:not(:disabled),
+.apt-usuarios .apt-crear-municipal.btn:hover:not(:disabled) { filter: brightness(1.08); }
+/* Acciones generales de tipo confirmación y alertas. */
+.apt-usuarios .btn.btn-success.btn-outline { border-color:#79d7a6; color:#c2f6d8; background:rgba(42,123,82,.14); }
+.apt-usuarios .btn.btn-error.btn-outline { border-color:#ee9da3; color:#ffbac2; background:rgba(146,43,54,.15); }
+.apt-usuarios .alert-info { background:rgba(30,78,100,.89); border-color:#89cfe9; color:#e1f7ff; }
+.apt-usuarios .alert-warning { background:rgba(115,83,29,.88); border-color:#e4bd65; color:#fff1c9; }
+.apt-usuarios .modal-box { border-top:4px solid var(--apt-celeste); }
+.apt-usuarios .modal-box .btn.btn-success:not(.btn-outline) { background:linear-gradient(120deg,#bdf4d3,#77d2a7); border-color:#8de0b3; color:#123b29; }
+.apt-usuarios .modal-box .btn.btn-primary:not(.btn-outline) { background:linear-gradient(120deg,#c7eefe,#8accea); border-color:#95d6f6; color:#123547; }
+.apt-usuarios .modal-box .btn.btn-warning:not(.btn-outline) { background:linear-gradient(120deg,#f5dfa0,#d4aa4b); border-color:#f0cd83; color:#30240d; }
+.apt-usuarios .modal-box .btn.btn-error:not(.btn-outline) { background:#b84855; border-color:#e58d98; color:#fff3f4; }
+@media (prefers-reduced-motion: reduce) {
+  .apt-usuarios .apt-usuarios-estadisticas > div { transition:none; }
+}
+
 `
 
 function UsuariosPage() {
@@ -1075,7 +1143,7 @@ function UsuariosPage() {
                         <div className="flex flex-wrap gap-2">
                             <button
                                 type="button"
-                                className="btn btn-success"
+                                className="btn btn-success apt-crear-vecino"
                                 onClick={() => {
                                     setError('')
                                     setMensaje('')
@@ -1086,7 +1154,7 @@ function UsuariosPage() {
                             </button>
                             <button
                                 type="button"
-                                className="btn btn-primary"
+                                className="btn btn-primary apt-crear-municipal"
                                 onClick={() => {
                                     setError('')
                                     setMensaje('')

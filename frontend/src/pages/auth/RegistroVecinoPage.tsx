@@ -599,6 +599,82 @@ function RegistroVecinoPage() {
             font-size: 30px;
           }
         }
+
+        /* Refinamiento visual: tarjetas, jerarquía de formulario y colores semánticos. */
+        .jv-registro { color: #f7f5ed; }
+        .jv-registro::before {
+          background: linear-gradient(112deg,rgba(3,20,15,.70),rgba(6,33,23,.52)),
+            url('/registro-vecino.webp') center / cover no-repeat;
+        }
+        .jv-registro .jr-card {
+          border-color: rgba(226,204,146,.42);
+          background: rgba(8,31,23,.87);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 26px 80px rgba(0,10,5,.47);
+        }
+        .jv-registro .jr-sidebar {
+          background: linear-gradient(160deg,rgba(16,55,37,.94),rgba(5,31,21,.88));
+          border-right-color: rgba(226,204,146,.22);
+        }
+        .jv-registro .jr-panel {
+          background: linear-gradient(135deg,rgba(11,41,30,.95),rgba(7,30,23,.95));
+        }
+        .jv-registro .jr-logo { border: 1px solid #ffe4a0; }
+        .jv-registro .jr-benefits { background: rgba(11,47,36,.67); border-color: rgba(137,212,183,.3); }
+        .jv-registro .jr-back { background: rgba(54,41,19,.26); border-color: rgba(231,201,127,.35); }
+        .jv-registro .jr-badge { background: rgba(229,194,105,.16); border-color: rgba(229,194,105,.47); color: #f4dc9b; }
+        .jv-registro .jr-heading { padding-bottom: 17px; border-bottom: 1px solid rgba(234,212,164,.22); }
+        .jv-registro .jr-group-heading {
+          display:flex; align-items:center; gap:15px;
+          margin: 12px 0 0; padding: 18px 17px;
+          border-radius: 15px;
+          background: rgba(99,179,221,.09);
+          border-left: 4px solid #92cef7;
+          border-top: 1px solid rgba(146,206,247,.20);
+          border-right: 1px solid rgba(146,206,247,.20);
+          border-bottom: 1px solid rgba(146,206,247,.20);
+        }
+        .jv-registro .jr-group-heading h3 { margin:0; color: #b9e4ff; font-size: 17px; font-weight: 750; }
+        .jv-registro .jr-group-heading p { margin:4px 0 0; color:#d6e4df; font-size:12px; line-height:1.55; }
+        .jv-registro .jr-group-index { flex-shrink:0; display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:rgba(146,206,247,.16); color:#b9e4ff; font-weight:800; font-size:14px; }
+        .jv-registro .jr-group-territorio { background:rgba(126,217,173,.09); border-left-color:#88deb4; border-top-color:rgba(136,222,180,.20); border-right-color:rgba(136,222,180,.20); border-bottom-color:rgba(136,222,180,.20); }
+        .jv-registro .jr-group-territorio h3, .jv-registro .jr-group-territorio .jr-group-index {color:#a9f0cb;}
+        .jv-registro .jr-group-territorio .jr-group-index {background:rgba(136,222,180,.16);}
+        .jv-registro .jr-group-acceso { background:rgba(198,174,249,.10); border-left-color:#c6aff9; border-top-color:rgba(198,175,249,.22); border-right-color:rgba(198,175,249,.22); border-bottom-color:rgba(198,175,249,.22); }
+        .jv-registro .jr-group-acceso h3, .jv-registro .jr-group-acceso .jr-group-index {color:#e0ccff;}
+        .jv-registro .jr-group-acceso .jr-group-index {background:rgba(198,175,249,.17);}
+        .jv-registro .jr-input,.jv-registro .jr-select {
+          background: #f3f7f5; color:#123228; color-scheme:light;
+          border: 1px solid #c9d7d1; box-shadow: 0 2px 4px rgba(0,0,0,.09);
+        }
+        .jv-registro .jr-input::placeholder { color:#61776d; }
+        .jv-registro .jr-select option {background:#f3f7f5; color:#123228;}
+        .jv-registro .jr-select:disabled {background:#d6ded9; color:#52655c;}
+        .jv-registro .jr-input:focus,.jv-registro .jr-select:focus {border-color:#87d2b3; box-shadow:0 0 0 3px rgba(135,210,179,.25);}
+        .jv-registro .jr-field .jr-label {color:#f4f3e9;}
+        .jv-registro .jr-required {color:#f8c2b5; font-weight:600;}
+        .jv-registro .jr-document {padding:24px; background:rgba(6,35,26,.65);}
+        .jv-registro .jr-security {border:1px solid rgba(198,175,249,.47); border-top:4px solid #c6aff9;}
+        .jv-registro .jr-security h3 {color:#dfceff; font-size:20px;}
+        .jv-registro .jr-residence {border:1px solid rgba(146,206,247,.47); border-top:4px solid #92cef7;}
+        .jv-registro .jr-residence h3 {color:#b9e4ff; font-size:20px;}
+        .jv-registro .jr-note {background:rgba(99,174,144,.13); border-color:rgba(151,218,189,.32); color:#e2eee6;}
+        .jv-registro .jr-file {border-color:rgba(146,206,247,.64); background:rgba(11,45,34,.8);}
+        .jv-registro .jr-file::file-selector-button {background:#b4dffe; color:#102a21;}
+        .jv-registro .jr-submit {background:linear-gradient(110deg,#b3f2d1,#5bc99b);color:#0d3022;box-shadow:0 8px 20px rgba(4,24,14,.35);letter-spacing:.6px;}
+        .jv-registro .jr-submit:hover:not(:disabled) {background:linear-gradient(110deg,#d1ffe4,#81e2b4);filter:none;}
+        .jv-registro .jr-back-link {background:rgba(231,211,154,.09);border-color:rgba(234,208,140,.68);}
+        .jv-registro .jr-alert {border-left:5px solid #f1a1a6;}
+        .jv-registro .jr-success {border-left-color:#8ce0b0;}
+        @media(max-width:540px) {
+          .jv-registro .jr-group-heading {padding:14px 12px;gap:11px;}
+          .jv-registro .jr-document {padding:18px 14px;}
+        }
+        @media(prefers-reduced-motion:reduce) {
+          .jv-registro :is(.jr-input,.jr-select,.jr-submit,.jr-back-link) {transition:none;}
+        }
+
       `}</style>
 
       <section className="jr-card" aria-label="Registro de vecino">
@@ -679,6 +755,7 @@ function RegistroVecinoPage() {
             onSubmit={handleSubmit}
             aria-busy={cargando}
           >
+            <div className="jr-group-heading jr-wide"><span className="jr-group-index">01</span><div><h3>Datos personales</h3><p>Identificación y contacto del vecino</p></div></div>
             <div className="jr-field">
               <label className="jr-label" htmlFor="username">
                 Nombre de usuario
@@ -778,6 +855,7 @@ function RegistroVecinoPage() {
               />
             </div>
 
+            <div className="jr-group-heading jr-wide jr-group-territorio"><span className="jr-group-index">02</span><div><h3>Vinculación territorial</h3><p>Selecciona la junta y el sector al que perteneces</p></div></div>
             <div className="jr-field">
               <label className="jr-label" htmlFor="junta">
                 Junta Vecinal
@@ -828,6 +906,7 @@ function RegistroVecinoPage() {
               </select>
             </div>
 
+            <div className="jr-group-heading jr-wide jr-group-acceso"><span className="jr-group-index">03</span><div><h3>Acceso a tu cuenta</h3><p>Crea una contraseña segura para ingresar a la plataforma</p></div></div>
             <div className="jr-field">
               <label className="jr-label" htmlFor="password">
                 Contraseña
@@ -884,7 +963,7 @@ function RegistroVecinoPage() {
               </span>
             </div>
             <section
-              className="jr-document jr-wide"
+              className="jr-document jr-wide jr-security"
               aria-labelledby="seguridad-cuenta-titulo"
             >
               <h3 id="seguridad-cuenta-titulo">
@@ -1034,7 +1113,7 @@ function RegistroVecinoPage() {
               </div>
             </section>
             <section
-              className="jr-document jr-wide"
+              className="jr-document jr-wide jr-residence"
               aria-labelledby="domicilio-titulo"
             >
               <h3 id="domicilio-titulo">Verificación de domicilio</h3>

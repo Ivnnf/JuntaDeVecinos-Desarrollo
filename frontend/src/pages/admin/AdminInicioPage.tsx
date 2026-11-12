@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import CerrarSesionButton from '../../components/auth/CerrarSesionButton'
 import CambiarPerfilButton from '../../components/auth/CambiarPerfilButton'
@@ -39,6 +40,9 @@ const modulos = [
     ruta: '/admin/usuarios',
     imagen: '/registro-vecino.webp',
     inicial: 'U',
+    acento: '#91CBF6',
+    textoBoton: '#17334B',
+    fondoIcono: 'rgba(145,203,246,.16)',
   },
   {
     titulo: 'Juntas de Vecinos',
@@ -48,6 +52,9 @@ const modulos = [
     ruta: '/admin/juntas',
     imagen: '/casas.webp',
     inicial: 'J',
+    acento: '#91DDB6',
+    textoBoton: '#123C2A',
+    fondoIcono: 'rgba(145,221,182,.16)',
   },
   {
     titulo: 'Sectores',
@@ -57,6 +64,9 @@ const modulos = [
     ruta: '/admin/sectores',
     imagen: '/sector.webp',
     inicial: 'S',
+    acento: '#EACB85',
+    textoBoton: '#46330E',
+    fondoIcono: 'rgba(234,203,133,.17)',
   },
   {
     titulo: 'Asociaciones por Sector',
@@ -66,6 +76,9 @@ const modulos = [
     ruta: '/admin/asociaciones',
     imagen: '/asociaciones-directiva.webp',
     inicial: 'A',
+    acento: '#C9AFF7',
+    textoBoton: '#322349',
+    fondoIcono: 'rgba(201,175,247,.17)',
   },
   {
     titulo: 'Gestión de Cargos',
@@ -75,6 +88,9 @@ const modulos = [
     ruta: '/admin/cargos',
     imagen: '/cargos.webp',
     inicial: 'C',
+    acento: '#F2ABAC',
+    textoBoton: '#51252B',
+    fondoIcono: 'rgba(242,171,172,.16)',
   },
   {
     titulo: 'Gestión de Directivas',
@@ -84,6 +100,9 @@ const modulos = [
     ruta: '/admin/directivas',
     imagen: '/gestion-directiva.webp',
     inicial: 'D',
+    acento: '#91D9D7',
+    textoBoton: '#153D3C',
+    fondoIcono: 'rgba(145,217,215,.16)',
   },
 ]
 
@@ -123,18 +142,21 @@ function AdminInicioPage() {
   const resumen = [
     {
       titulo: 'Módulos disponibles',
+      acento: '#EACB85',
       valor: String(modulos.length),
       etiqueta: 'Administración',
       imagen: '/casas.webp',
     },
     {
       titulo: 'Perfil activo',
+      acento: '#C9AFF7',
       valor: 'Administrador',
       etiqueta: 'Acceso global',
       imagen: '/gestion-directiva.webp',
     },
     {
       titulo: 'Estado de sesión',
+      acento: '#91DDB6',
       valor: cargandoSesion
         ? 'Verificando...'
         : sesion
@@ -147,14 +169,14 @@ function AdminInicioPage() {
 
   return (
     <main
-      className="min-h-screen px-4 py-8 text-[#f6f0dd] sm:px-6"
+      className="admin-inicio-color min-h-screen px-4 py-8 text-[#f6f0dd] sm:px-6"
       style={{
-        backgroundColor: '#102a20',
+        backgroundColor: '#0A2018',
         backgroundImage: `
           linear-gradient(
             115deg,
-            rgba(5, 28, 20, 0.68),
-            rgba(5, 28, 20, 0.50)
+            rgba(5, 28, 20, 0.78),
+            rgba(5, 28, 20, 0.65)
           ),
           url("/casitas.webp")
         `,
@@ -163,6 +185,43 @@ function AdminInicioPage() {
         backgroundAttachment: 'fixed',
       }}
     >
+      <style>{`
+        .admin-inicio-color .admin-modulo {
+          border-color: color-mix(in srgb, var(--admin-acento) 62%, transparent);
+          box-shadow: 0 16px 36px rgba(2,18,12,.29), inset 0 4px 0 var(--admin-acento);
+        }
+        .admin-inicio-color .admin-modulo:hover {
+          border-color: var(--admin-acento);
+          box-shadow: 0 22px 45px rgba(2,18,12,.37), inset 0 4px 0 var(--admin-acento);
+        }
+        .admin-inicio-color .admin-modulo-link {
+          background: var(--admin-acento);
+          border-color: var(--admin-acento);
+          color: var(--admin-texto);
+          box-shadow: 0 5px 18px rgba(0,0,0,.25);
+        }
+        .admin-inicio-color .admin-modulo-link:hover { filter: brightness(1.12); }
+        .admin-inicio-color .admin-modulo-link:focus-visible {
+          outline: 3px solid white;
+          outline-offset: 3px;
+        }
+        .admin-inicio-color .admin-stat { border-color: var(--admin-acento); border-top-width: 4px; }
+        .admin-inicio-color .admin-stat-numero { color: var(--admin-acento); }
+        .admin-inicio-color .admin-stat-etiqueta {
+          border-color: var(--admin-acento);
+          color: var(--admin-acento);
+          background: rgba(7,26,18,.77);
+        }
+        .admin-inicio-color .admin-sello {
+          color: #1d2a1e;
+          background: linear-gradient(115deg,#f5dd96,#d2ac50);
+          border: 1px solid #ffe6ac;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .admin-inicio-color .admin-modulo,
+          .admin-inicio-color .admin-modulo-link { transition: none; }
+        }
+      `}</style>
       <section className="mx-auto w-full max-w-7xl">
 
         {/* ENCABEZADO CON FOTOGRAFÍA SUTIL */}
@@ -185,7 +244,7 @@ function AdminInicioPage() {
                   Panel de Administración
                 </h1>
 
-                <span className="rounded-full border border-[#d6b65d]/60 bg-[#d6b65d]/15 px-4 py-2 text-xs font-semibold text-[#f5dda1]">
+                <span className="admin-sello rounded-full px-4 py-2 text-xs font-bold">
                   Administrador
                 </span>
               </div>
@@ -219,12 +278,12 @@ function AdminInicioPage() {
           {resumen.map((item, index) => (
             <div
               key={item.titulo}
-              className={`min-h-[135px] overflow-hidden rounded-2xl border border-[#d6b65d]/45 p-6 shadow-lg transition-all duration-300 hover:border-[#f2d786] hover:shadow-xl ${
+              className={`admin-stat min-h-[135px] overflow-hidden rounded-2xl border p-6 shadow-lg transition-all duration-300 hover:shadow-xl ${
                 index === 2
                   ? 'sm:col-span-2 lg:col-span-1'
                   : ''
               }`}
-              style={estiloFotografico(item.imagen, true)}
+              style={{ ...estiloFotografico(item.imagen, true), '--admin-acento': item.acento } as CSSProperties}
             >
               <p className="text-sm font-medium text-[#e3e9dc]">
                 {item.titulo}
@@ -233,21 +292,17 @@ function AdminInicioPage() {
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
 
                 <span
-                  className={`font-bold ${
+                  className={`admin-stat-numero font-bold ${
                     index === 0
-                      ? 'text-4xl text-[#f4d778]'
-                      : 'text-xl text-[#f8f2df]'
+                      ? 'text-4xl'
+                      : 'text-xl'
                   }`}
                 >
                   {item.valor}
                 </span>
 
                 <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    index === 2 && sesion
-                      ? 'border-emerald-400/50 bg-emerald-500/20 text-emerald-200'
-                      : 'border-[#d6b65d]/50 bg-[#102b20]/40 text-[#f2d98f]'
-                  }`}
+                  className="admin-stat-etiqueta rounded-full border px-3 py-1 text-xs font-semibold"
                 >
                   {item.etiqueta}
                 </span>
@@ -276,7 +331,8 @@ function AdminInicioPage() {
           {modulos.map((modulo) => (
             <article
               key={modulo.ruta}
-              className="group relative flex min-h-[310px] flex-col overflow-hidden rounded-3xl border border-[#d6b65d]/45 bg-[#112d21] p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f0d27e]"
+              className="admin-modulo group relative flex min-h-[310px] flex-col overflow-hidden rounded-3xl border bg-[#112d21] p-6 shadow-xl transition-all duration-300 hover:-translate-y-1"
+              style={{ '--admin-acento': modulo.acento, '--admin-texto': modulo.textoBoton } as CSSProperties}
             >
               {/* FOTO DE FONDO */}
               <div
@@ -297,7 +353,8 @@ function AdminInicioPage() {
               {/* CONTENIDO */}
               <div className="relative z-10 flex h-full flex-1 flex-col">
 
-                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#d6b65d]/30 bg-[#d6b65d]/20 text-xl font-bold text-[#f4d778]">
+                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border text-xl font-bold"
+                  style={{ borderColor: modulo.acento, backgroundColor: modulo.fondoIcono, color: modulo.acento }}>
                   {modulo.inicial}
                 </div>
 
@@ -314,7 +371,7 @@ function AdminInicioPage() {
 
                 <Link
                   to={modulo.ruta}
-                  className="mt-7 flex min-h-12 items-center justify-center rounded-full border border-[#e0c477] bg-gradient-to-r from-[#ebd68e] to-[#cda638] px-4 py-3 text-center text-sm font-extrabold text-[#112d21] shadow-md transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f4d778]"
+                  className="admin-modulo-link mt-7 flex min-h-12 items-center justify-center rounded-full border px-4 py-3 text-center text-sm font-extrabold transition"
                 >
                   {modulo.boton}
                 </Link>

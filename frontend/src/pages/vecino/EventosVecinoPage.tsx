@@ -24,6 +24,27 @@ type Evento = {
 
 const API = 'http://localhost:8000'
 
+// Permite mostrar los errores de Django incluso si la respuesta no contiene JSON.
+const leerRespuesta = async (response: Response): Promise<Record<string, unknown>> => {
+  const texto = await response.text()
+  if (!texto) return {}
+  try {
+    const valor: unknown = JSON.parse(texto)
+    return valor !== null && typeof valor === 'object' && !Array.isArray(valor)
+      ? (valor as Record<string, unknown>)
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+const mensajeDeError = (data: Record<string, unknown>, clave: string, fallback: string) => {
+  const detalle = data[clave] ?? data.detail
+  if (typeof detalle === 'string' && detalle.trim()) return detalle
+  if (Array.isArray(detalle) && typeof detalle[0] === 'string') return detalle[0]
+  return fallback
+}
+
 function EventosVecinoPage() {
   const [eventos, setEventos] = useState<Evento[]>([])
   const [cargando, setCargando] = useState(true)
@@ -31,6 +52,7 @@ function EventosVecinoPage() {
   const [mensaje, setMensaje] = useState('')
   const [procesandoEventoId, setProcesandoEventoId] =
     useState<number | null>(null)
+  const [confirmarEventoId, setConfirmarEventoId] = useState<number | null>(null)
 
   // CARGAR EVENTOS
 
@@ -99,14 +121,10 @@ function EventosVecinoPage() {
         }
       )
 
-      const data = await response.json()
+      const data = await leerRespuesta(response)
 
       if (!response.ok) {
-        throw new Error(
-          data.evento?.[0] ||
-            data.detail ||
-            'No fue posible realizar la inscripción.'
-        )
+        throw new Error(mensajeDeError(data, 'evento', 'No fue posible realizar la inscripción.'))
       }
 
       setEventos((actuales) =>
@@ -115,7 +133,7 @@ function EventosVecinoPage() {
             ? {
                 ...evento,
                 inscrito: true,
-                inscripcion_id: data.id,
+                inscripcion_id: typeof data.id === 'number' ? data.id : null,
                 inscritos_actuales:
                   evento.inscritos_actuales + 1,
               }
@@ -158,14 +176,10 @@ function EventosVecinoPage() {
         }
       )
 
-      const data = await response.json()
+      const data = await leerRespuesta(response)
 
       if (!response.ok) {
-        throw new Error(
-          data.estado?.[0] ||
-            data.detail ||
-            'No fue posible cancelar la inscripción.'
-        )
+        throw new Error(mensajeDeError(data, 'estado', 'No fue posible cancelar la inscripción.'))
       }
 
       setEventos((actuales) =>
@@ -184,6 +198,7 @@ function EventosVecinoPage() {
         )
       )
 
+      setConfirmarEventoId(null)
       setMensaje('Tu inscripción fue cancelada correctamente.')
     } catch (err) {
       setError(
@@ -260,13 +275,10 @@ function EventosVecinoPage() {
           padding: 32px 20px;
 
           background-color: #092318;
+          /* Fotografía de naturaleza sin utilizar la antigua casa roja. */
           background-image:
-            linear-gradient(
-              120deg,
-              rgba(4, 23, 16, 0.35),
-              rgba(4, 23, 16, 0.48)
-            ),
-            url('/vecino-eventos.webp');
+            linear-gradient(120deg, rgba(4, 23, 16, 0.58), rgba(4, 23, 16, 0.68)),
+            url('/images/photo-1472396961693-142e6e269027.jpg');
 
           background-position: center;
           background-size: cover;
@@ -297,6 +309,64 @@ function EventosVecinoPage() {
           box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
+        }
+
+        /* FOTOGRAFÍAS EN LAS WINCHAS, PANELES Y TARJETAS.
+           Se conserva el verde bosque y una capa oscura para la lectura.
+           El color de fondo funciona como respaldo si falta conexión. */
+
+        .eventos-vecino-bosque .ev-header {
+          background-color: #102b1d;
+          background-image:
+            linear-gradient(115deg, rgba(6, 30, 19, 0.88), rgba(8, 36, 23, 0.72)),
+            url('/images/photo-1529156069898-49953e39b3ac.jpg');
+          background-position: center;
+          background-size: cover;
+        }
+
+        .eventos-vecino-bosque .ev-stat {
+          background-color: #102b1d;
+          background-image:
+            linear-gradient(115deg, rgba(5, 28, 18, 0.85), rgba(8, 38, 26, 0.76)),
+            url('/images/photo-1472396961693-142e6e269027.jpg');
+          background-position: center;
+          background-size: cover;
+        }
+
+        .eventos-vecino-bosque .ev-stat:nth-child(2) {
+          background-image:
+            linear-gradient(115deg, rgba(5, 28, 18, 0.86), rgba(8, 38, 26, 0.78)),
+            url('/images/photo-1529156069898-49953e39b3ac.jpg');
+        }
+
+        .eventos-vecino-bosque .ev-stat:nth-child(3) {
+          background-image:
+            linear-gradient(115deg, rgba(5, 28, 18, 0.85), rgba(8, 38, 26, 0.78)),
+            url('/images/photo-1517486808906-6ca8b3f04846.jpg');
+        }
+
+        .eventos-vecino-bosque .ev-card {
+          background-color: #102b1d;
+          background-image:
+            linear-gradient(125deg, rgba(5, 27, 17, 0.91), rgba(7, 35, 23, 0.82)),
+            url('/images/photo-1517486808906-6ca8b3f04846.jpg');
+          background-position: center;
+          background-size: cover;
+        }
+
+        .eventos-vecino-bosque .ev-card:nth-child(even) {
+          background-image:
+            linear-gradient(125deg, rgba(5, 27, 17, 0.90), rgba(7, 35, 23, 0.82)),
+            url('/images/photo-1529156069898-49953e39b3ac.jpg');
+        }
+
+        .eventos-vecino-bosque .ev-empty {
+          background-color: #102b1d;
+          background-image:
+            linear-gradient(125deg, rgba(5, 27, 17, 0.88), rgba(7, 35, 23, 0.82)),
+            url('/images/photo-1472396961693-142e6e269027.jpg');
+          background-position: center;
+          background-size: cover;
         }
 
         /* TITULOS */
@@ -665,6 +735,50 @@ function EventosVecinoPage() {
           background: rgba(3, 20, 12, 0.18);
         }
 
+        /* CONFIRMACION EN LA PROPIA TARJETA: SIN VENTANAS SUPERPUESTAS */
+        .eventos-vecino-bosque .ev-confirm {
+          width: 100%;
+          padding: 18px;
+          background: rgba(12, 28, 20, 0.96);
+          border: 1px solid rgba(215, 172, 50, 0.62);
+          border-radius: 14px;
+        }
+        .eventos-vecino-bosque .ev-confirm p {
+          margin: 0 0 14px;
+          color: #f6efd9;
+          line-height: 1.6;
+          overflow-wrap: anywhere;
+        }
+        .eventos-vecino-bosque .ev-confirm-actions {
+          display: flex;
+          justify-content: flex-end;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .eventos-vecino-bosque .ev-alert {
+          overflow-wrap: anywhere;
+        }
+        .eventos-vecino-bosque .ev-alert-close {
+          margin-left: auto;
+          border: 0;
+          background: transparent;
+          color: inherit;
+          font: inherit;
+          font-weight: 800;
+          padding: 2px 8px;
+          cursor: pointer;
+        }
+        .eventos-vecino-bosque .ev-card-actions {
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        @media (max-width: 420px) {
+          .eventos-vecino-bosque .ev-button { width: 100%; }
+          .eventos-vecino-bosque .ev-confirm-actions { flex-direction: column; }
+          .eventos-vecino-bosque .ev-card-title { font-size: 22px; }
+          .eventos-vecino-bosque .ev-heading { font-size: 25px; }
+        }
+
         /* ACCESIBILIDAD */
 
         .eventos-vecino-bosque button:focus-visible,
@@ -707,6 +821,74 @@ function EventosVecinoPage() {
             padding: 18px 22px;
           }
         }
+
+        /* =====================================
+           IDENTIDAD VISUAL POR ESTADO Y ACCIÓN
+           Estilos locales, sin afectar otras páginas
+           ===================================== */
+        .eventos-vecino-bosque .ev-stat {
+          position: relative;
+          overflow: hidden;
+          border-top: 4px solid var(--ev-acento, #c7b0ff);
+        }
+        .eventos-vecino-bosque .ev-stat:nth-child(1) { --ev-acento: #91e1b6; }
+        .eventos-vecino-bosque .ev-stat:nth-child(2) { --ev-acento: #a9caff; }
+        .eventos-vecino-bosque .ev-stat:nth-child(3) { --ev-acento: #f0cb81; }
+        .eventos-vecino-bosque .ev-stat .ev-stat-value { color: var(--ev-acento); }
+        .eventos-vecino-bosque .ev-stat:nth-child(2) .ev-badge {
+          border-color: rgba(155,194,255,.7); background: rgba(41,90,151,.29); color: #c8dcff;
+        }
+        .eventos-vecino-bosque .ev-stat:nth-child(3) .ev-badge {
+          border-color: rgba(240,203,129,.7); background: rgba(136,101,26,.26); color: #ffe4a7;
+        }
+        .eventos-vecino-bosque .ev-card {
+          border-top: 4px solid var(--ev-card-acento, #b9cad1);
+        }
+        .eventos-vecino-bosque .ev-card--programado { --ev-card-acento: #92ddb1; }
+        .eventos-vecino-bosque .ev-card--cancelado { --ev-card-acento: #f2a1a5; }
+        .eventos-vecino-bosque .ev-card--finalizado { --ev-card-acento: #b9c6d2; }
+        .eventos-vecino-bosque .ev-card--inscrito { --ev-card-acento: #a5caff; }
+        .eventos-vecino-bosque .ev-card:hover { border-top-color: var(--ev-card-acento); }
+        .eventos-vecino-bosque .ev-card--programado .ev-card-title { color: #dbf9e8; }
+        .eventos-vecino-bosque .ev-card--cancelado .ev-card-title { color: #ffe0e0; }
+        .eventos-vecino-bosque .ev-card--finalizado .ev-card-title { color: #e4eaf0; }
+        .eventos-vecino-bosque .ev-card--inscrito .ev-card-title { color: #dbeaff; }
+        .eventos-vecino-bosque .ev-badge.ev-inscrito {
+          background: rgba(50,103,159,.28); border-color: #89c5ef; color: #c6e7ff;
+        }
+        .eventos-vecino-bosque .ev-detail:nth-child(1) { border-left: 3px solid #bca7fa; }
+        .eventos-vecino-bosque .ev-detail:nth-child(2) { border-left: 3px solid #91dfb7; }
+        .eventos-vecino-bosque .ev-detail:nth-child(3) { border-left: 3px solid #95cef4; }
+        .eventos-vecino-bosque .ev-detail:nth-child(4) { border-left: 3px solid #ebc780; }
+        .eventos-vecino-bosque .ev-button.ev-button-primary {
+          background: linear-gradient(115deg,#8ce5b5,#51bd8b);
+          border-color: #70d8a4;
+          color: #10291b;
+        }
+        .eventos-vecino-bosque .ev-button.ev-button-primary:hover:not(:disabled) {
+          background: linear-gradient(115deg,#b2f5cf,#73dca9);
+          color: #10291b;
+        }
+        .eventos-vecino-bosque .ev-button.ev-button-danger {
+          background: rgba(140,36,48,.35);
+          color: #ffd3d5;
+          border-color: #ee929d;
+        }
+        .eventos-vecino-bosque .ev-button.ev-button-danger:hover:not(:disabled) {
+          background: rgba(187,55,64,.65); color: #fff6f6;
+        }
+        .eventos-vecino-bosque .ev-confirm {
+          border-left: 4px solid #f2a1a5;
+          box-shadow: 0 8px 22px rgba(0,0,0,.2);
+        }
+        .eventos-vecino-bosque .ev-alert-success { border-left: 4px solid #91e1b6; }
+        .eventos-vecino-bosque .ev-alert-warning { border-left: 4px solid #f2ca7e; }
+        .eventos-vecino-bosque .ev-alert-error { border-left: 4px solid #f2a1a5; }
+        @media (prefers-reduced-motion: reduce) {
+          .eventos-vecino-bosque .ev-card,
+          .eventos-vecino-bosque .ev-button { transition: none; }
+        }
+
       `}</style>
 
       <section className="ev-container">
@@ -740,7 +922,7 @@ function EventosVecinoPage() {
 
         {/* RESUMEN DE EVENTOS */}
 
-        {!cargando && (
+        {!cargando && !(error && eventos.length === 0) && (
           <div className="ev-stats">
 
             <div className="ev-panel ev-stat">
@@ -809,7 +991,10 @@ function EventosVecinoPage() {
             className="ev-alert ev-alert-error"
             role="alert"
           >
-            {error}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <span style={{ flex: 1 }}>{error}</span>
+              <button type="button" className="ev-alert-close" aria-label="Cerrar error" onClick={() => setError('')}>×</button>
+            </div>
           </div>
         )}
 
@@ -820,7 +1005,10 @@ function EventosVecinoPage() {
             className="ev-alert ev-alert-success"
             role="status"
           >
-            {mensaje}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <span style={{ flex: 1 }}>{mensaje}</span>
+              <button type="button" className="ev-alert-close" aria-label="Cerrar mensaje" onClick={() => setMensaje('')}>×</button>
+            </div>
           </div>
         )}
 
@@ -833,7 +1021,7 @@ function EventosVecinoPage() {
 
               <div>
                 <h2 className="ev-heading">
-                  Eventos disponibles
+                  Actividades de tu comunidad
                 </h2>
 
                 <p className="ev-subtitle">
@@ -887,7 +1075,7 @@ function EventosVecinoPage() {
                   return (
                     <article
                       key={evento.id}
-                      className="ev-panel ev-card"
+                      className={`ev-panel ev-card ev-card--${evento.estado.toLowerCase()} ${evento.inscrito ? 'ev-card--inscrito' : ''}`}
                     >
                       <div className="ev-card-body">
 
@@ -922,7 +1110,7 @@ function EventosVecinoPage() {
                             </span>
 
                             {evento.inscrito && (
-                              <span className="ev-badge">
+                              <span className="ev-badge ev-inscrito">
                                 Inscrito
                               </span>
                             )}
@@ -1019,28 +1207,42 @@ function EventosVecinoPage() {
                         <div className="ev-card-actions">
 
                           {evento.inscrito ? (
-
-                            <button
-                              type="button"
-                              className="ev-button ev-button-danger"
-                              disabled={
-                                !evento.inscripcion_id ||
-                                procesandoEventoId !== null
-                              }
-                              onClick={() => {
-                                if (evento.inscripcion_id) {
-                                  void cancelarInscripcion(
-                                    evento.id,
-                                    evento.inscripcion_id
-                                  )
-                                }
-                              }}
-                            >
-                              {procesando
-                                ? 'Cancelando...'
-                                : 'Cancelar inscripción'}
-                            </button>
-
+                            confirmarEventoId === evento.id ? (
+                              <div className="ev-confirm" role="group" aria-label="Confirmar cancelación de inscripción">
+                                <p>¿Deseas cancelar tu inscripción en «{evento.titulo}»?</p>
+                                <div className="ev-confirm-actions">
+                                  <button
+                                    type="button"
+                                    className="ev-button"
+                                    disabled={procesandoEventoId !== null}
+                                    onClick={() => setConfirmarEventoId(null)}
+                                  >
+                                    Mantener inscripción
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="ev-button ev-button-danger"
+                                    disabled={!evento.inscripcion_id || procesandoEventoId !== null}
+                                    onClick={() => {
+                                      if (evento.inscripcion_id) {
+                                        void cancelarInscripcion(evento.id, evento.inscripcion_id)
+                                      }
+                                    }}
+                                  >
+                                    {procesando ? 'Cancelando...' : 'Sí, cancelar inscripción'}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="ev-button ev-button-danger"
+                                disabled={!evento.inscripcion_id || procesandoEventoId !== null}
+                                onClick={() => setConfirmarEventoId(evento.id)}
+                              >
+                                Cancelar inscripción
+                              </button>
+                            )
                           ) : (
 
                             <button
