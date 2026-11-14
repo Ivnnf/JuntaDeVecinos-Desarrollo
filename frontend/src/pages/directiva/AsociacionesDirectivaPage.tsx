@@ -753,7 +753,11 @@ function AsociacionesDirectivaPage() {
                                                 const procesando =
                                                     procesandoId === asociacion.id
 
+                                                const asociacionPendiente =
+                                                    asociacion.estado_asociacion_sector === 'PENDIENTE'
+
                                                 const puedeConfirmar =
+                                                    asociacionPendiente &&
                                                     asociacion.verificacion_residencia?.estado ===
                                                     'VALIDADA'
 
@@ -850,7 +854,7 @@ function AsociacionesDirectivaPage() {
                                                             )}
                                                         </td>
                                                         <td>
-                                                            <div className="flex min-w-[190px] justify-end gap-2">
+                                                            <div className="flex min-w-[190px] items-center justify-end gap-2">
                                                                 <button
                                                                     type="button"
                                                                     className="btn btn-sm btn-outline"
@@ -862,40 +866,49 @@ function AsociacionesDirectivaPage() {
                                                                 >
                                                                     Ver verificación
                                                                 </button>
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-sm btn-success"
-                                                                    disabled={
-                                                                        procesando ||
-                                                                        !puedeConfirmar
-                                                                    }
-                                                                    onClick={() =>
-                                                                        void resolverAsociacion(
-                                                                            asociacion.id,
-                                                                            'CONFIRMAR',
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {procesando && (
-                                                                        <span className="loading loading-spinner loading-xs" />
-                                                                    )}
 
-                                                                    Confirmar
-                                                                </button>
+                                                                {asociacionPendiente ? (
+                                                                    <>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm btn-success"
+                                                                            disabled={
+                                                                                procesando ||
+                                                                                !puedeConfirmar
+                                                                            }
+                                                                            onClick={() =>
+                                                                                void resolverAsociacion(
+                                                                                    asociacion.id,
+                                                                                    'CONFIRMAR',
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            {procesando && (
+                                                                                <span className="loading loading-spinner loading-xs" />
+                                                                            )}
 
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-sm btn-error btn-outline"
-                                                                    disabled={procesando}
-                                                                    onClick={() =>
-                                                                        void resolverAsociacion(
-                                                                            asociacion.id,
-                                                                            'RECHAZAR',
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Rechazar
-                                                                </button>
+                                                                            Confirmar
+                                                                        </button>
+
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm btn-error btn-outline"
+                                                                            disabled={procesando}
+                                                                            onClick={() =>
+                                                                                void resolverAsociacion(
+                                                                                    asociacion.id,
+                                                                                    'RECHAZAR',
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            Rechazar
+                                                                        </button>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="badge badge-ghost whitespace-nowrap">
+                                                                        Solicitud resuelta
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
