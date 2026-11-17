@@ -46,6 +46,10 @@ class AutenticacionTests(APITestCase):
             email="vecino@test.cl",
             password=self.password,
         )
+        self.usuario.totp_requerido = False
+        self.usuario.save(
+        update_fields=["totp_requerido"]
+        )
 
         self.rol_vecino, _ = Rol.objects.get_or_create(
             id=3,
