@@ -20,9 +20,15 @@ from .views import (
     Verificar2FAView,
     Preparar2FAInicialView,
     Activar2FAInicialView,
+    Restablecer2FAUsuarioView,
 )
 
 urlpatterns = [
+    path(
+        "admin/usuarios/<int:usuario_id>/restablecer-2fa/",
+        Restablecer2FAUsuarioView.as_view(),
+        name="admin-restablecer-2fa-usuario",
+    ),
     path(
         "admin/roles/",
         RolAdministracionListView.as_view(),

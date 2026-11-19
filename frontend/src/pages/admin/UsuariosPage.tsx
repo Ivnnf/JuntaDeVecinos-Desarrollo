@@ -236,8 +236,19 @@ const estilosUsuarios = String.raw`
 }
 
 .apt-usuarios .table tbody tr {
-  border-bottom-color: rgba(225, 208, 158, .18);
-  background-color: rgba(9, 34, 23, .57);
+  border-bottom: 1px solid rgba(225, 208, 158, .18);
+}
+
+.apt-usuarios .table tbody tr:nth-child(odd) {
+  background-color: rgba(9, 34, 23, .62);
+}
+
+.apt-usuarios .table tbody tr:nth-child(even) {
+  background-color: rgba(28, 54, 43, .72);
+}
+
+.apt-usuarios .table tbody tr:hover {
+  background-color: rgba(65, 77, 61, .82);
 }
 
 .apt-usuarios .table tbody tr:hover {
@@ -466,6 +477,7 @@ const estilosUsuarios = String.raw`
 
 `
 
+
 function UsuariosPage() {
 
     const [mostrarCrearVecino, setMostrarCrearVecino] =
@@ -542,6 +554,9 @@ function UsuariosPage() {
     const [rolActualizando, setRolActualizando] =
         useState<number | null>(null)
 
+    const [usuarioRestableciendo2FA, setUsuarioRestableciendo2FA] =
+        useState<number | null>(null)
+
     const [confirmacionRol, setConfirmacionRol] =
         useState<{
             usuarioId: number
@@ -551,6 +566,9 @@ function UsuariosPage() {
         } | null>(null)
 
     const [confirmacionEstado, setConfirmacionEstado] =
+        useState<UsuarioAdministracion | null>(null)
+
+    const [confirmacion2FA, setConfirmacion2FA] =
         useState<UsuarioAdministracion | null>(null)
 
     useEffect(() => {
@@ -723,6 +741,49 @@ function UsuariosPage() {
             )
         } finally {
             setUsuarioActualizando(null)
+        }
+    }
+
+    const restablecer2FAUsuario = async (
+        usuario: UsuarioAdministracion
+    ) => {
+        try {
+            setUsuarioRestableciendo2FA(usuario.id)
+            setError('')
+            setMensaje('')
+
+            const response = await fetch(
+                `http://localhost:8000/api/auth/admin/usuarios/${usuario.id}/restablecer-2fa/`,
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ??
+                    'No fue posible restablecer el segundo factor.'
+                )
+            }
+
+            setMensaje(
+                data.message ??
+                'Autenticación en dos pasos restablecida correctamente.'
+            )
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : 'Ocurrió un error inesperado.'
+            )
+        } finally {
+            setUsuarioRestableciendo2FA(null)
         }
     }
 
@@ -1610,13 +1671,31 @@ function UsuariosPage() {
                                                         </td>
 
                                                         <td>
-                                                            <div className="flex justify-end">
+                                                            <div className="flex flex-wrap justify-end gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-sm btn-warning btn-outline w-32"
+                                                                    disabled={
+                                                                        usuarioRestableciendo2FA === usuario.id
+                                                                    }
+                                                                    onClick={() =>
+                                                                        setConfirmacion2FA(usuario)
+                                                                    }
+                                                                >
+                                                                    {usuarioRestableciendo2FA === usuario.id && (
+                                                                        <span className="loading loading-spinner loading-xs" />
+                                                                    )}
+
+                                                                    {usuarioRestableciendo2FA === usuario.id
+                                                                        ? 'Restableciendo...'
+                                                                        : 'Restablecer 2FA'}
+                                                                </button>
                                                                 <button
                                                                     type="button"
                                                                     className={
                                                                         usuario.is_active
-                                                                            ? 'btn btn-sm btn-error btn-outline'
-                                                                            : 'btn btn-sm btn-success btn-outline'
+                                                                            ? 'btn btn-sm btn-error btn-outline w-32'
+                                                                            : 'btn btn-sm btn-success btn-outline w-32'
                                                                     }
                                                                     disabled={
                                                                         usuarioActualizando === usuario.id ||
@@ -2399,6 +2478,83 @@ function UsuariosPage() {
                         onClick={() => {
                             if (usuarioActualizando === null) {
                                 setConfirmacionEstado(null)
+                            }
+                        }}
+                    />
+                </div>
+            )}
+            {/* Modal restablecer 2FA */}
+            {confirmacion2FA && (
+                <div className="modal modal-open">
+                    <div className="modal-box rounded-2xl">
+                        <div className="mb-4 flex items-start gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warning/10 font-bold text-warning">
+                                2FA
+                            </div>
+
+                            <div>
+                                <h3 className="text-xl font-bold">
+                                    Restablecer autenticación en dos pasos
+                                </h3>
+
+                                <p className="mt-1 text-sm text-base-content/60">
+                                    Confirma la acción antes de continuar.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl bg-base-200/60 p-4">
+                            <p>
+                                ¿Seguro que deseas restablecer el segundo factor de{' '}
+                                <strong>
+                                    {confirmacion2FA.username}
+                                </strong>
+                                ?
+                            </p>
+                        </div>
+
+                        <div className="alert alert-warning mt-4">
+                            <span>
+                                El autenticador actualmente asociado dejará de ser válido.
+                                El usuario deberá configurar nuevamente el 2FA en su próximo
+                                inicio de sesión.
+                            </span>
+                        </div>
+
+                        <div className="modal-action">
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                disabled={usuarioRestableciendo2FA !== null}
+                                onClick={() =>
+                                    setConfirmacion2FA(null)
+                                }
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                type="button"
+                                className="btn btn-warning"
+                                disabled={usuarioRestableciendo2FA !== null}
+                                onClick={() => {
+                                    const usuario = confirmacion2FA
+
+                                    void restablecer2FAUsuario(usuario)
+
+                                    setConfirmacion2FA(null)
+                                }}
+                            >
+                                Restablecer 2FA
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        className="modal-backdrop"
+                        onClick={() => {
+                            if (usuarioRestableciendo2FA === null) {
+                                setConfirmacion2FA(null)
                             }
                         }}
                     />

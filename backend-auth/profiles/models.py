@@ -115,7 +115,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     )
 
     totp_requerido = models.BooleanField(
-    default=True,
+        default=True,
     )
 
     fecha_registro = models.DateTimeField(auto_now_add=True)
@@ -286,6 +286,11 @@ class HistorialGestionUsuario(models.Model):
         CARGO = "CARGO", "Cargo"
         ROL = "ROL", "Rol"
         ESTADO_CUENTA = "ESTADO_CUENTA", "Estado de cuenta"
+        
+        RESTABLECIMIENTO_2FA = (
+            "RESTABLECIMIENTO_2FA",
+            "Restablecimiento de 2FA",
+        )
 
     usuario_objetivo = models.ForeignKey(
         Usuario,

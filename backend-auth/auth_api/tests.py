@@ -47,9 +47,7 @@ class AutenticacionTests(APITestCase):
             password=self.password,
         )
         self.usuario.totp_requerido = False
-        self.usuario.save(
-        update_fields=["totp_requerido"]
-        )
+        self.usuario.save(update_fields=["totp_requerido"])
 
         self.rol_vecino, _ = Rol.objects.get_or_create(
             id=3,
@@ -817,6 +815,7 @@ class AutenticacionTests(APITestCase):
         self.assertIsNone(
             self.usuario.fecha_confirmacion_sector,
         )
+
     def test_administrador_puede_listar_usuarios(self):
         rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
 
@@ -1514,6 +1513,7 @@ class AutenticacionTests(APITestCase):
             "revisión manual",
             verificacion.observacion_automatica.lower(),
         )
+
     def test_registro_advierte_si_ocr_no_extrae_nombre_o_direccion(self):
         junta = JuntaVecinos.objects.create(
             nombre="Junta OCR Incompleto Test",
@@ -1604,4 +1604,76 @@ class AutenticacionTests(APITestCase):
         self.assertIn(
             "dirección",
             verificacion.observacion_automatica.lower(),
+        )
+
+    def test_administrador_puede_restablecer_2fa_usuario(self):
+        Usuario = get_user_model()
+
+        rol_admin, _ = Rol.objects.get_or_create(nombre="Administrador")
+
+        UsuarioRol.objects.update_or_create(
+            usuario=self.usuario,
+            rol=rol_admin,
+            defaults={
+                "activo": True,
+            },
+        )
+
+        otro_usuario = Usuario.objects.create_user(
+            username="usuario_2fa_test",
+            email="usuario.2fa@test.cl",
+            password="PasswordSeguro123!",
+        )
+
+        otro_usuario.totp_secret = "secreto_cifrado_de_prueba"
+        otro_usuario.totp_habilitado = True
+        otro_usuario.totp_requerido = True
+
+        otro_usuario.save(
+            update_fields=[
+                "totp_secret",
+                "totp_habilitado",
+                "totp_requerido",
+            ]
+        )
+
+        self.client.force_authenticate(user=self.usuario)
+
+        response = self.client.post(
+            (f"/api/auth/admin/usuarios/" f"{otro_usuario.id}/restablecer-2fa/"),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        otro_usuario.refresh_from_db()
+
+        self.assertIsNone(otro_usuario.totp_secret)
+
+        self.assertFalse(otro_usuario.totp_habilitado)
+
+        self.assertTrue(otro_usuario.totp_requerido)
+
+        historial = HistorialGestionUsuario.objects.get(
+            usuario_objetivo=otro_usuario,
+            tipo_cambio=(HistorialGestionUsuario.TipoCambio.RESTABLECIMIENTO_2FA),
+        )
+
+        self.assertEqual(
+            historial.realizado_por,
+            self.usuario,
+        )
+
+        self.assertEqual(
+            historial.valor_anterior,
+            "HABILITADO",
+        )
+
+        self.assertEqual(
+            historial.valor_nuevo,
+            "PENDIENTE_CONFIGURACION",
         )

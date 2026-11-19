@@ -951,6 +951,72 @@ class EstadoCuentaUsuarioView(APIView):
             status=status.HTTP_200_OK,
         )
 
+class Restablecer2FAUsuarioView(APIView):
+    permission_classes = [EsAdministrador]
+
+    def post(self, request, usuario_id):
+        Usuario = get_user_model()
+
+        try:
+            usuario = Usuario.objects.get(
+                id=usuario_id,
+            )
+        except Usuario.DoesNotExist:
+            return Response(
+                {
+                    "detail": "Usuario no encontrado.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        estado_anterior_2fa = (
+            "HABILITADO"
+            if usuario.totp_habilitado
+            else "NO_HABILITADO"
+        )
+
+        usuario.totp_secret = None
+        usuario.totp_habilitado = False
+        usuario.totp_requerido = True
+
+        usuario.save(
+            update_fields=[
+                "totp_secret",
+                "totp_habilitado",
+                "totp_requerido",
+            ]
+        )
+
+        HistorialGestionUsuario.objects.create(
+            usuario_objetivo=usuario,
+            realizado_por=request.user,
+            tipo_cambio=(
+                HistorialGestionUsuario
+                .TipoCambio
+                .RESTABLECIMIENTO_2FA
+            ),
+            valor_anterior=estado_anterior_2fa,
+            valor_nuevo="PENDIENTE_CONFIGURACION",
+            detalle=(
+                "Restablecimiento administrativo del "
+                "segundo factor de autenticación."
+            ),
+        )
+
+        return Response(
+            {
+                "message": (
+                    "La autenticación en dos pasos fue "
+                    "restablecida correctamente. El usuario "
+                    "deberá configurarla nuevamente en su "
+                    "próximo inicio de sesión."
+                ),
+                "usuario_id": usuario.id,
+                "username": usuario.username,
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class RolUsuarioAdministracionView(APIView):
     permission_classes = [EsAdministrador]
