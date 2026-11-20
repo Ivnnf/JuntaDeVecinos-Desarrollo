@@ -1,26 +1,11 @@
 # JuntaDeVecinos
 
-Plataforma web para la gestión comunitaria de Juntas de Vecinos.
+Plataforma web para la gestiÃ³n comunitaria de Juntas de Vecinos.
 
-El proyecto contempla progresivamente:
+Grupo NÂ°4.
 
-- Gestión de usuarios y perfiles.
-- Administración de Juntas de Vecinos.
-- Directivas y roles.
-- Publicaciones y comunicación comunitaria.
-- Análisis de datos mediante dashboards.
-- Caracterización territorial mediante datos agregados.
-- Asistente inteligente para consultas vecinales mediante IA.
+IvÃ¡n Tamayo H.
 
-## Estado del proyecto
+Rodrigo Romero.
 
-Inicio del desarrollo.
-
-## Arquitectura prevista
-
-- Frontend web.
-- Backend de autenticación y usuarios.
-- Backend de organización comunitaria.
-- Base de datos.
-- Módulo de análisis de datos.
-- Integración con API de Inteligencia Artificial.
+Richard DÃ­az.
