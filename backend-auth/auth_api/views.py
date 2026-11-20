@@ -155,6 +155,49 @@ class LoginView(APIView):
                 {"detail": "Credenciales inválidas"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+        es_vecino = UsuarioRol.objects.filter(
+            usuario=usuario,
+            rol__nombre__iexact="Vecino",
+            activo=True,
+        ).exists()
+
+        tiene_otro_rol = UsuarioRol.objects.filter(
+            usuario=usuario,
+            activo=True,
+        ).exclude(
+            rol__nombre__iexact="Vecino",
+        ).exists()
+
+        if es_vecino and not tiene_otro_rol:
+            if usuario.estado_asociacion_sector == "PENDIENTE":
+                return Response(
+                    {
+                        "detail": (
+                            "Tu cuenta está siendo verificada. "
+                            "Espera un máximo de 48 horas o acércate "
+                            "con tu encargado vecinal."
+                        )
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            if usuario.estado_asociacion_sector == "RECHAZADA":
+                motivo_rechazo = (
+                    usuario.motivo_rechazo_asociacion
+                    or "No se especificó un motivo."
+                )
+
+                return Response(
+                    {
+                        "detail": (
+                            "Tu solicitud de asociación fue rechazada. "
+                            f"Motivo: {motivo_rechazo} "
+                            "Acércate con tu encargado vecinal "
+                            "para regularizar tu solicitud."
+                        )
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
         auth_usuario = AutorizacionUsuario(usuario)
         puede_acceder, motivo = auth_usuario.puede_acceder()
 

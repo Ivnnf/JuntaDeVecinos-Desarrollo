@@ -416,11 +416,28 @@ class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
                 )
 
             usuario.estado_asociacion_sector = "CONFIRMADA"
+            usuario.motivo_rechazo_asociacion = None
             usuario.confirmado_por_usuario = request.user
             usuario.fecha_confirmacion_sector = timezone.now()
 
         elif accion == "RECHAZAR":
+            motivo_rechazo = request.data.get(
+                "motivo_rechazo",
+                "",
+            ).strip()
+
+            if not motivo_rechazo:
+                return Response(
+                    {
+                        "detail": (
+                            "Debe indicar el motivo del rechazo."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             usuario.estado_asociacion_sector = "RECHAZADA"
+            usuario.motivo_rechazo_asociacion = motivo_rechazo
             usuario.confirmado_por_usuario = None
             usuario.fecha_confirmacion_sector = None
 
@@ -433,6 +450,7 @@ class ResolverAsociacionSectorDirectivaView(generics.GenericAPIView):
         usuario.save(
             update_fields=[
                 "estado_asociacion_sector",
+                "motivo_rechazo_asociacion",
                 "confirmado_por_usuario",
                 "fecha_confirmacion_sector",
             ]
@@ -724,7 +742,23 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
             usuario.fecha_confirmacion_sector = timezone.now()
 
         elif accion == "RECHAZAR":
+            motivo_rechazo = request.data.get(
+                "motivo_rechazo",
+                "",
+            ).strip()
+
+            if not motivo_rechazo:
+                return Response(
+                    {
+                        "detail": (
+                            "Debe indicar el motivo del rechazo."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             usuario.estado_asociacion_sector = "RECHAZADA"
+            usuario.motivo_rechazo_asociacion = motivo_rechazo
             usuario.confirmado_por_usuario = None
             usuario.fecha_confirmacion_sector = None
 
@@ -737,6 +771,7 @@ class ResolverAsociacionSectorView(generics.GenericAPIView):
         usuario.save(
             update_fields=[
                 "estado_asociacion_sector",
+                "motivo_rechazo_asociacion",
                 "confirmado_por_usuario",
                 "fecha_confirmacion_sector",
             ]

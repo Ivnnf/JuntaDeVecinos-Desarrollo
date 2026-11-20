@@ -530,6 +530,10 @@ class AsociacionSectorTests(APITestCase):
             url,
             {
                 "accion": "RECHAZAR",
+                "motivo_rechazo": (
+                    "El comprobante de residencia no corresponde "
+                    "al domicilio informado."
+                ),
             },
             format="json",
         )

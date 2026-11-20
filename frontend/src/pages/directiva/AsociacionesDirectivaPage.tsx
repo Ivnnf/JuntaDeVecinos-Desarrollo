@@ -49,6 +49,14 @@ function AsociacionesDirectivaPage() {
         setAsociacionSeleccionada,
     ] = useState<AsociacionPendiente | null>(null)
 
+    const [
+        asociacionRechazo,
+        setAsociacionRechazo,
+    ] = useState<AsociacionPendiente | null>(null)
+
+    const [motivoRechazo, setMotivoRechazo] =
+        useState('')
+
     const [error, setError] = useState('')
     const [mensaje, setMensaje] = useState('')
     const [
@@ -171,9 +179,11 @@ function AsociacionesDirectivaPage() {
             resumen: 'Revisión manual',
         },
     }[filtroEstado]
+
     const resolverAsociacion = async (
         usuarioId: number,
         accion: 'CONFIRMAR' | 'RECHAZAR',
+        motivoRechazo: string = '',
     ) => {
         setError('')
         setMensaje('')
@@ -190,6 +200,7 @@ function AsociacionesDirectivaPage() {
                     credentials: 'include',
                     body: JSON.stringify({
                         accion,
+                        motivo_rechazo: motivoRechazo,
                     }),
                 },
             )
@@ -894,12 +905,10 @@ function AsociacionesDirectivaPage() {
                                                                             type="button"
                                                                             className="btn btn-sm btn-error btn-outline"
                                                                             disabled={procesando}
-                                                                            onClick={() =>
-                                                                                void resolverAsociacion(
-                                                                                    asociacion.id,
-                                                                                    'RECHAZAR',
-                                                                                )
-                                                                            }
+                                                                            onClick={() => {
+                                                                                setAsociacionRechazo(asociacion)
+                                                                                setMotivoRechazo('')
+                                                                            }}
                                                                         >
                                                                             Rechazar
                                                                         </button>
@@ -920,6 +929,87 @@ function AsociacionesDirectivaPage() {
                             </div>
                         )}
                     </>
+                )}
+                {asociacionRechazo && (
+                    <dialog className="apt-asociaciones-overlay modal modal-open">
+                        <div className="apt-asociaciones-modal modal-box max-w-xl">
+                            <h3 className="text-xl font-bold">
+                                Rechazar solicitud
+                            </h3>
+
+                            <p className="mt-2 text-sm text-base-content/70">
+                                Indica el motivo por el cual se rechaza la
+                                asociación territorial de{' '}
+                                <strong>
+                                    {[
+                                        asociacionRechazo.nombres,
+                                        asociacionRechazo.apellido_paterno,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ') ||
+                                        asociacionRechazo.username}
+                                </strong>.
+                            </p>
+
+                            <div className="mt-5">
+                                <label className="form-control">
+                                    <span className="label-text mb-2 font-semibold">
+                                        Motivo del rechazo
+                                    </span>
+
+                                    <textarea
+                                        className="textarea textarea-bordered min-h-28 w-full"
+                                        placeholder="Ej.: El comprobante de residencia no corresponde al domicilio informado."
+                                        value={motivoRechazo}
+                                        onChange={(event) =>
+                                            setMotivoRechazo(
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="modal-action">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    onClick={() => {
+                                        setAsociacionRechazo(null)
+                                        setMotivoRechazo('')
+                                    }}
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-error"
+                                    disabled={
+                                        motivoRechazo.trim().length === 0 ||
+                                        procesandoId !== null
+                                    }
+                                    onClick={async () => {
+                                        await resolverAsociacion(
+                                            asociacionRechazo.id,
+                                            'RECHAZAR',
+                                            motivoRechazo.trim(),
+                                        )
+
+                                        setAsociacionRechazo(null)
+                                        setMotivoRechazo('')
+                                    }}
+                                >
+                                    {procesandoId ===
+                                        asociacionRechazo.id && (
+                                            <span className="loading loading-spinner loading-xs" />
+                                        )}
+
+                                    Confirmar rechazo
+                                </button>
+                            </div>
+                        </div>
+                    </dialog>
                 )}
                 {asociacionSeleccionada && (
                     <dialog className="apt-asociaciones-overlay modal modal-open">

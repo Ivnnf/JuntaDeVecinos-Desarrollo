@@ -457,6 +457,14 @@ function AsociacionesSectorPage() {
   const [asociacionSeleccionada, setAsociacionSeleccionada] =
     useState<AsociacionPendiente | null>(null)
 
+  const [
+    asociacionRechazo,
+    setAsociacionRechazo,
+  ] = useState<AsociacionPendiente | null>(null)
+
+  const [motivoRechazo, setMotivoRechazo] =
+    useState('')
+
   const [procesandoId, setProcesandoId] =
     useState<number | null>(null)
 
@@ -631,6 +639,7 @@ function AsociacionesSectorPage() {
   const resolverAsociacion = async (
     usuarioId: number,
     accion: 'CONFIRMAR' | 'RECHAZAR',
+    motivoRechazo: string = '',
   ) => {
     setError('')
     setMensaje('')
@@ -647,6 +656,7 @@ function AsociacionesSectorPage() {
           credentials: 'include',
           body: JSON.stringify({
             accion,
+            motivo_rechazo: motivoRechazo,
           }),
         },
       )
@@ -910,328 +920,407 @@ function AsociacionesSectorPage() {
         {!cargando && (
           <>
             <div className="apt-asociaciones-panel mb-7">
-            {/* Filtros por estado */}
-            <div className="apt-asociaciones-filtros-estado mb-6 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={`btn btn-sm ${filtroEstado === 'GENERAL'
-                  ? 'btn-primary'
-                  : 'btn-outline'
-                  }`}
-                onClick={() => setFiltroEstado('GENERAL')}
-              >
-                General
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-sm ${filtroEstado === 'PENDIENTE'
-                  ? 'btn-warning'
-                  : 'btn-outline'
-                  }`}
-                onClick={() => setFiltroEstado('PENDIENTE')}
-              >
-                Pendientes
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-sm ${filtroEstado === 'CONFIRMADA'
-                  ? 'btn-success'
-                  : 'btn-outline'
-                  }`}
-                onClick={() => setFiltroEstado('CONFIRMADA')}
-              >
-                Aceptadas
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-sm ${filtroEstado === 'RECHAZADA'
-                  ? 'btn-error'
-                  : 'btn-outline'
-                  }`}
-                onClick={() => setFiltroEstado('RECHAZADA')}
-              >
-                Rechazadas
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-sm ${filtroEstado === 'SIN_VERIFICACION'
-                  ? 'btn-neutral'
-                  : 'btn-outline'
-                  }`}
-                onClick={() =>
-                  setFiltroEstado('SIN_VERIFICACION')
-                }
-              >
-                Sin verificación
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-sm ${filtroEstado === 'REVISION_MANUAL'
-                  ? 'btn-info'
-                  : 'btn-outline'
-                  }`}
-                onClick={() =>
-                  setFiltroEstado('REVISION_MANUAL')
-                }
-              >
-                Revisión manual
-              </button>
-            </div>
-            {/* Filtros territoriales */}
-            <div className="apt-asociaciones-filtros-territorio mb-6 grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Junta vecinal
-                </label>
-
-                <select
-                  className="select select-bordered w-full"
-                  value={filtroJunta ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value
-
-                    setFiltroJunta(
-                      value === '' ? null : Number(value),
-                    )
-
-                    setFiltroSector(null)
-                  }}
+              {/* Filtros por estado */}
+              <div className="apt-asociaciones-filtros-estado mb-6 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filtroEstado === 'GENERAL'
+                    ? 'btn-primary'
+                    : 'btn-outline'
+                    }`}
+                  onClick={() => setFiltroEstado('GENERAL')}
                 >
-                  <option value="">Todas las juntas</option>
+                  General
+                </button>
 
-                  {juntasDisponibles.map((junta) => (
-                    <option
-                      key={junta.id}
-                      value={junta.id}
-                    >
-                      {junta.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Sector
-                </label>
-
-                <select
-                  className="select select-bordered w-full"
-                  value={filtroSector ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value
-
-                    setFiltroSector(
-                      value === '' ? null : Number(value),
-                    )
-                  }}
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filtroEstado === 'PENDIENTE'
+                    ? 'btn-warning'
+                    : 'btn-outline'
+                    }`}
+                  onClick={() => setFiltroEstado('PENDIENTE')}
                 >
-                  <option value="">Todos los sectores</option>
+                  Pendientes
+                </button>
 
-                  {sectoresDisponibles.map((sector) => (
-                    <option
-                      key={sector.id}
-                      value={sector.id}
-                    >
-                      {sector.nombre}
-                    </option>
-                  ))}
-                </select>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filtroEstado === 'CONFIRMADA'
+                    ? 'btn-success'
+                    : 'btn-outline'
+                    }`}
+                  onClick={() => setFiltroEstado('CONFIRMADA')}
+                >
+                  Aceptadas
+                </button>
+
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filtroEstado === 'RECHAZADA'
+                    ? 'btn-error'
+                    : 'btn-outline'
+                    }`}
+                  onClick={() => setFiltroEstado('RECHAZADA')}
+                >
+                  Rechazadas
+                </button>
+
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filtroEstado === 'SIN_VERIFICACION'
+                    ? 'btn-neutral'
+                    : 'btn-outline'
+                    }`}
+                  onClick={() =>
+                    setFiltroEstado('SIN_VERIFICACION')
+                  }
+                >
+                  Sin verificación
+                </button>
+
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filtroEstado === 'REVISION_MANUAL'
+                    ? 'btn-info'
+                    : 'btn-outline'
+                    }`}
+                  onClick={() =>
+                    setFiltroEstado('REVISION_MANUAL')
+                  }
+                >
+                  Revisión manual
+                </button>
               </div>
-            </div>
-            {/* Título sección */}
-            <div className="apt-asociaciones-titulo-lista mb-4 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="text-2xl font-bold">
-                  {configuracionFiltro.titulo}
-                </h2>
+              {/* Filtros territoriales */}
+              <div className="apt-asociaciones-filtros-territorio mb-6 grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">
+                    Junta vecinal
+                  </label>
 
-                <p className="mt-1 text-base-content/60">
-                  {configuracionFiltro.descripcion}
-                </p>
+                  <select
+                    className="select select-bordered w-full"
+                    value={filtroJunta ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value
+
+                      setFiltroJunta(
+                        value === '' ? null : Number(value),
+                      )
+
+                      setFiltroSector(null)
+                    }}
+                  >
+                    <option value="">Todas las juntas</option>
+
+                    {juntasDisponibles.map((junta) => (
+                      <option
+                        key={junta.id}
+                        value={junta.id}
+                      >
+                        {junta.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">
+                    Sector
+                  </label>
+
+                  <select
+                    className="select select-bordered w-full"
+                    value={filtroSector ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value
+
+                      setFiltroSector(
+                        value === '' ? null : Number(value),
+                      )
+                    }}
+                  >
+                    <option value="">Todos los sectores</option>
+
+                    {sectoresDisponibles.map((sector) => (
+                      <option
+                        key={sector.id}
+                        value={sector.id}
+                      >
+                        {sector.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+              {/* Título sección */}
+              <div className="apt-asociaciones-titulo-lista mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    {configuracionFiltro.titulo}
+                  </h2>
 
-              {asociacionesFiltradas.length > 0 && (
-                <span className="badge badge-outline badge-lg">
-                  {asociacionesFiltradas.length}{' '}
-                  {asociacionesFiltradas.length === 1
-                    ? 'solicitud'
-                    : 'solicitudes'}
-                </span>
-              )}
-            </div>
-
-            {asociacionesFiltradas.length === 0 ? (
-              <div className="apt-asociaciones-sin-resultados rounded-2xl border p-10 text-center shadow-sm">
-                <div className="mx-auto max-w-md">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
-                    ✓
-                  </div>
-
-                  <h3 className="text-xl font-bold">
-                    No existen asociaciones pendientes
-                  </h3>
-
-                  <p className="mt-2 text-base-content/60">
-                    Todas las solicitudes territoriales se encuentran
-                    resueltas por el momento.
+                  <p className="mt-1 text-base-content/60">
+                    {configuracionFiltro.descripcion}
                   </p>
                 </div>
-              </div>
-            ) : (
-              <div className="apt-asociaciones-tabla overflow-hidden rounded-2xl border shadow-sm">
-                <div className="overflow-x-auto apt-asociaciones-tabla-scroll">
-                  <table className="table apt-asociaciones-tabla-organizada">
-                    <thead>
-                      <tr>
-                        <th>Vecino y contacto</th>
-                        <th>Ubicación territorial</th>
-                        <th>Estado y verificación</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {asociacionesFiltradas.map((asociacion) => {
-                        const nombreCompleto = obtenerNombreCompleto(asociacion)
-                        const procesando = procesandoId === asociacion.id
-                        const verificacion = asociacion.verificacion_residencia
 
-                        return (
-                          <tr key={asociacion.id}>
-                            <td data-label="Vecino y contacto">
-                              <div className="apt-asoc-persona">
-                                <div className="apt-asoc-avatar" aria-hidden="true">
-                                  {obtenerIniciales(asociacion)}
+                {asociacionesFiltradas.length > 0 && (
+                  <span className="badge badge-outline badge-lg">
+                    {asociacionesFiltradas.length}{' '}
+                    {asociacionesFiltradas.length === 1
+                      ? 'solicitud'
+                      : 'solicitudes'}
+                  </span>
+                )}
+              </div>
+
+              {asociacionesFiltradas.length === 0 ? (
+                <div className="apt-asociaciones-sin-resultados rounded-2xl border p-10 text-center shadow-sm">
+                  <div className="mx-auto max-w-md">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success/10 text-xl font-bold text-success">
+                      ✓
+                    </div>
+
+                    <h3 className="text-xl font-bold">
+                      No existen asociaciones pendientes
+                    </h3>
+
+                    <p className="mt-2 text-base-content/60">
+                      Todas las solicitudes territoriales se encuentran
+                      resueltas por el momento.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="apt-asociaciones-tabla overflow-hidden rounded-2xl border shadow-sm">
+                  <div className="overflow-x-auto apt-asociaciones-tabla-scroll">
+                    <table className="table apt-asociaciones-tabla-organizada">
+                      <thead>
+                        <tr>
+                          <th>Vecino y contacto</th>
+                          <th>Ubicación territorial</th>
+                          <th>Estado y verificación</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {asociacionesFiltradas.map((asociacion) => {
+                          const nombreCompleto = obtenerNombreCompleto(asociacion)
+                          const procesando = procesandoId === asociacion.id
+                          const verificacion = asociacion.verificacion_residencia
+
+                          return (
+                            <tr key={asociacion.id}>
+                              <td data-label="Vecino y contacto">
+                                <div className="apt-asoc-persona">
+                                  <div className="apt-asoc-avatar" aria-hidden="true">
+                                    {obtenerIniciales(asociacion)}
+                                  </div>
+                                  <div className="apt-asoc-persona-info">
+                                    <p className="apt-asoc-nombre">{nombreCompleto}</p>
+                                    <p className="apt-asoc-username">@{asociacion.username}</p>
+                                  </div>
                                 </div>
-                                <div className="apt-asoc-persona-info">
-                                  <p className="apt-asoc-nombre">{nombreCompleto}</p>
-                                  <p className="apt-asoc-username">@{asociacion.username}</p>
+                                <div className="apt-asoc-datos">
+                                  <div className="apt-asoc-dato">
+                                    <span className="apt-asoc-etiqueta">RUT</span>
+                                    <span>{asociacion.rut || 'No informado'}</span>
+                                  </div>
+                                  <div className="apt-asoc-dato">
+                                    <span className="apt-asoc-etiqueta">Correo</span>
+                                    <span className="apt-asoc-email" title={asociacion.email}>
+                                      {asociacion.email || 'No informado'}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="apt-asoc-datos">
-                                <div className="apt-asoc-dato">
-                                  <span className="apt-asoc-etiqueta">RUT</span>
-                                  <span>{asociacion.rut || 'No informado'}</span>
+                              </td>
+                              <td data-label="Ubicación territorial">
+                                <div className="apt-asoc-territorio">
+                                  <span className="apt-asoc-etiqueta">Junta de Vecinos</span>
+                                  <span className="apt-asoc-junta">{asociacion.junta_nombre}</span>
+                                  <span className="apt-asoc-etiqueta apt-asoc-etiqueta-sector">Sector</span>
+                                  <span className="apt-asoc-sector">{asociacion.sector_nombre}</span>
                                 </div>
-                                <div className="apt-asoc-dato">
-                                  <span className="apt-asoc-etiqueta">Correo</span>
-                                  <span className="apt-asoc-email" title={asociacion.email}>
-                                    {asociacion.email || 'No informado'}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                            <td data-label="Ubicación territorial">
-                              <div className="apt-asoc-territorio">
-                                <span className="apt-asoc-etiqueta">Junta de Vecinos</span>
-                                <span className="apt-asoc-junta">{asociacion.junta_nombre}</span>
-                                <span className="apt-asoc-etiqueta apt-asoc-etiqueta-sector">Sector</span>
-                                <span className="apt-asoc-sector">{asociacion.sector_nombre}</span>
-                              </div>
-                            </td>
-                            <td data-label="Estado y verificación">
-                              <div className="apt-asoc-estados">
-                                <div className="apt-asoc-estado-linea">
-                                  <span className="apt-asoc-etiqueta">Asociación</span>
-                                  <span className={
-                                    asociacion.estado_asociacion_sector === 'CONFIRMADA'
-                                      ? 'apt-asoc-chip apt-asoc-chip-exito'
-                                      : asociacion.estado_asociacion_sector === 'RECHAZADA'
-                                        ? 'apt-asoc-chip apt-asoc-chip-error'
-                                        : 'apt-asoc-chip apt-asoc-chip-pendiente'
-                                  }>
-                                    {asociacion.estado_asociacion_sector === 'CONFIRMADA'
-                                      ? 'Aceptada'
-                                      : asociacion.estado_asociacion_sector === 'RECHAZADA'
-                                        ? 'Rechazada'
-                                        : 'Pendiente'}
-                                  </span>
-                                </div>
-                                <div className="apt-asoc-estado-linea">
-                                  <span className="apt-asoc-etiqueta">Residencia</span>
-                                  <span className={
-                                    !verificacion
-                                      ? 'apt-asoc-chip apt-asoc-chip-neutro'
-                                      : verificacion.estado === 'VALIDADA'
+                              </td>
+                              <td data-label="Estado y verificación">
+                                <div className="apt-asoc-estados">
+                                  <div className="apt-asoc-estado-linea">
+                                    <span className="apt-asoc-etiqueta">Asociación</span>
+                                    <span className={
+                                      asociacion.estado_asociacion_sector === 'CONFIRMADA'
                                         ? 'apt-asoc-chip apt-asoc-chip-exito'
-                                        : verificacion.estado === 'RECHAZADA'
+                                        : asociacion.estado_asociacion_sector === 'RECHAZADA'
                                           ? 'apt-asoc-chip apt-asoc-chip-error'
-                                          : verificacion.estado === 'REVISION_MANUAL'
-                                            ? 'apt-asoc-chip apt-asoc-chip-revision'
-                                            : 'apt-asoc-chip apt-asoc-chip-pendiente'
-                                  }>
-                                    {!verificacion
-                                      ? 'Sin verificación'
-                                      : verificacion.estado === 'VALIDADA'
-                                        ? 'Validada'
-                                        : verificacion.estado === 'RECHAZADA'
+                                          : 'apt-asoc-chip apt-asoc-chip-pendiente'
+                                    }>
+                                      {asociacion.estado_asociacion_sector === 'CONFIRMADA'
+                                        ? 'Aceptada'
+                                        : asociacion.estado_asociacion_sector === 'RECHAZADA'
                                           ? 'Rechazada'
-                                          : verificacion.estado === 'REVISION_MANUAL'
-                                            ? 'Revisión manual'
-                                            : 'Pendiente'}
-                                  </span>
-                                </div>
-                                {verificacion && (
-                                  <button
-                                    type="button"
-                                    className="apt-asoc-revisar"
-                                    onClick={() => setAsociacionSeleccionada(asociacion)}
-                                  >
-                                    Revisar comprobante
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                            <td data-label="Acciones">
-                              {asociacion.estado_asociacion_sector === 'PENDIENTE' ? (
-                                <div className="apt-asoc-acciones">
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-success"
-                                    disabled={procesando || verificacion?.estado !== 'VALIDADA'}
-                                    title={verificacion?.estado !== 'VALIDADA'
-                                      ? 'Se requiere una residencia validada para confirmar la asociación.'
-                                      : 'Confirmar asociación territorial'}
-                                    onClick={() => void resolverAsociacion(asociacion.id, 'CONFIRMAR')}
-                                  >
-                                    {procesando && <span className="loading loading-spinner loading-xs" />}
-                                    Confirmar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-error btn-outline"
-                                    disabled={procesando}
-                                    onClick={() => void resolverAsociacion(asociacion.id, 'RECHAZAR')}
-                                  >
-                                    Rechazar
-                                  </button>
-                                  {verificacion?.estado !== 'VALIDADA' && (
-                                    <small className="apt-asoc-ayuda">
-                                      Para confirmar, primero debe validarse la residencia.
-                                    </small>
+                                          : 'Pendiente'}
+                                    </span>
+                                  </div>
+                                  <div className="apt-asoc-estado-linea">
+                                    <span className="apt-asoc-etiqueta">Residencia</span>
+                                    <span className={
+                                      !verificacion
+                                        ? 'apt-asoc-chip apt-asoc-chip-neutro'
+                                        : verificacion.estado === 'VALIDADA'
+                                          ? 'apt-asoc-chip apt-asoc-chip-exito'
+                                          : verificacion.estado === 'RECHAZADA'
+                                            ? 'apt-asoc-chip apt-asoc-chip-error'
+                                            : verificacion.estado === 'REVISION_MANUAL'
+                                              ? 'apt-asoc-chip apt-asoc-chip-revision'
+                                              : 'apt-asoc-chip apt-asoc-chip-pendiente'
+                                    }>
+                                      {!verificacion
+                                        ? 'Sin verificación'
+                                        : verificacion.estado === 'VALIDADA'
+                                          ? 'Validada'
+                                          : verificacion.estado === 'RECHAZADA'
+                                            ? 'Rechazada'
+                                            : verificacion.estado === 'REVISION_MANUAL'
+                                              ? 'Revisión manual'
+                                              : 'Pendiente'}
+                                    </span>
+                                  </div>
+                                  {verificacion && (
+                                    <button
+                                      type="button"
+                                      className="apt-asoc-revisar"
+                                      onClick={() => setAsociacionSeleccionada(asociacion)}
+                                    >
+                                      Revisar comprobante
+                                    </button>
                                   )}
                                 </div>
-                              ) : (
-                                <span className="apt-asoc-resuelta">Solicitud resuelta</span>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                              </td>
+                              <td data-label="Acciones">
+                                {asociacion.estado_asociacion_sector === 'PENDIENTE' ? (
+                                  <div className="apt-asoc-acciones">
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-success"
+                                      disabled={procesando || verificacion?.estado !== 'VALIDADA'}
+                                      title={verificacion?.estado !== 'VALIDADA'
+                                        ? 'Se requiere una residencia validada para confirmar la asociación.'
+                                        : 'Confirmar asociación territorial'}
+                                      onClick={() => void resolverAsociacion(asociacion.id, 'CONFIRMAR')}
+                                    >
+                                      {procesando && <span className="loading loading-spinner loading-xs" />}
+                                      Confirmar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-error btn-outline"
+                                      disabled={procesando}
+                                      onClick={() => {
+                                        setAsociacionRechazo(asociacion)
+                                        setMotivoRechazo('')
+                                      }}
+                                    >
+                                      Rechazar
+                                    </button>
+                                    {verificacion?.estado !== 'VALIDADA' && (
+                                      <small className="apt-asoc-ayuda">
+                                        Para confirmar, primero debe validarse la residencia.
+                                      </small>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="apt-asoc-resuelta">Solicitud resuelta</span>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </>
         )}
       </section>
+      {asociacionRechazo && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-xl">
+            <h3 className="text-xl font-bold">
+              Rechazar solicitud
+            </h3>
+
+            <p className="mt-2 text-sm text-base-content/70">
+              Indica el motivo por el cual se rechaza la
+              asociación territorial de{' '}
+              <strong>
+                {[
+                  asociacionRechazo.nombres,
+                  asociacionRechazo.apellido_paterno,
+                ]
+                  .filter(Boolean)
+                  .join(' ') ||
+                  asociacionRechazo.username}
+              </strong>.
+            </p>
+
+            <div className="mt-5">
+              <label className="form-control">
+                <span className="label-text mb-2 font-semibold">
+                  Motivo del rechazo
+                </span>
+
+                <textarea
+                  className="textarea textarea-bordered min-h-28 w-full"
+                  placeholder="Ej.: El comprobante de residencia no corresponde al domicilio informado."
+                  value={motivoRechazo}
+                  onChange={(event) =>
+                    setMotivoRechazo(
+                      event.target.value
+                    )
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="modal-action">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setAsociacionRechazo(null)
+                  setMotivoRechazo('')
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-error"
+                disabled={
+                  motivoRechazo.trim().length === 0 ||
+                  procesandoId !== null
+                }
+                onClick={async () => {
+                  await resolverAsociacion(
+                    asociacionRechazo.id,
+                    'RECHAZAR',
+                    motivoRechazo.trim(),
+                  )
+
+                  setAsociacionRechazo(null)
+                  setMotivoRechazo('')
+                }}
+              >
+                Confirmar rechazo
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
       {asociacionSeleccionada && (
         <dialog className="modal modal-open">
           <div className="modal-box max-w-3xl">

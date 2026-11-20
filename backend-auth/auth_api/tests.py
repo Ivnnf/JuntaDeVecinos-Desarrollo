@@ -91,6 +91,97 @@ class AutenticacionTests(APITestCase):
 
         self.assertTrue(response.cookies["refresh_token"]["httponly"])
 
+    def test_login_vecino_pendiente_es_rechazado(self):
+        self.usuario.estado_asociacion_sector = "PENDIENTE"
+        self.usuario.save(
+            update_fields=[
+                "estado_asociacion_sector",
+            ]
+        )
+
+        response = self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertEqual(
+            response.data["detail"],
+            (
+                "Tu cuenta está siendo verificada. "
+                "Espera un máximo de 48 horas o acércate "
+                "con tu encargado vecinal."
+            ),
+        )
+
+        self.assertNotIn(
+            "access_token",
+            response.cookies,
+        )
+
+        self.assertNotIn(
+            "refresh_token",
+            response.cookies,
+        )
+
+    def test_login_vecino_rechazado_muestra_motivo(self):
+        self.usuario.estado_asociacion_sector = "RECHAZADA"
+        self.usuario.motivo_rechazo_asociacion = (
+            "El comprobante de residencia no corresponde "
+            "al domicilio informado."
+        )
+        self.usuario.save(
+            update_fields=[
+                "estado_asociacion_sector",
+                "motivo_rechazo_asociacion",
+            ]
+        )
+
+        response = self.client.post(
+            "/api/auth/login/",
+            {
+                "username": "vecino_test",
+                "password": self.password,
+                "recordar": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertIn(
+            "Tu solicitud de asociación fue rechazada.",
+            response.data["detail"],
+        )
+
+        self.assertIn(
+            "El comprobante de residencia no corresponde "
+            "al domicilio informado.",
+            response.data["detail"],
+        )
+
+        self.assertNotIn(
+            "access_token",
+            response.cookies,
+        )
+
+        self.assertNotIn(
+            "refresh_token",
+            response.cookies,
+        )
+
     def test_login_con_password_incorrecta_rechazado(self):
         response = self.client.post(
             "/api/auth/login/",
@@ -740,14 +831,14 @@ class AutenticacionTests(APITestCase):
         )
 
     def test_perfil_no_permite_confirmar_su_propia_asociacion(self):
-        self.usuario.estado_asociacion_sector = "PENDIENTE"
+        self.usuario.estado_asociacion_sector = "CONFIRMADA"
         self.usuario.save(
             update_fields=[
                 "estado_asociacion_sector",
             ]
         )
 
-        self.client.post(
+        login_response = self.client.post(
             "/api/auth/login/",
             {
                 "username": "vecino_test",
@@ -755,6 +846,18 @@ class AutenticacionTests(APITestCase):
                 "recordar": False,
             },
             format="json",
+        )
+
+        self.assertEqual(
+            login_response.status_code,
+            200,
+        )
+
+        self.usuario.estado_asociacion_sector = "PENDIENTE"
+        self.usuario.save(
+            update_fields=[
+                "estado_asociacion_sector",
+            ]
         )
 
         response = self.client.patch(
@@ -778,7 +881,7 @@ class AutenticacionTests(APITestCase):
         )
 
     def test_perfil_no_permite_modificar_fecha_confirmacion_sector(self):
-        self.usuario.estado_asociacion_sector = "PENDIENTE"
+        self.usuario.estado_asociacion_sector = "CONFIRMADA"
         self.usuario.fecha_confirmacion_sector = None
         self.usuario.save(
             update_fields=[
@@ -787,7 +890,7 @@ class AutenticacionTests(APITestCase):
             ]
         )
 
-        self.client.post(
+        login_response = self.client.post(
             "/api/auth/login/",
             {
                 "username": "vecino_test",
@@ -795,6 +898,20 @@ class AutenticacionTests(APITestCase):
                 "recordar": False,
             },
             format="json",
+        )
+
+        self.assertEqual(
+            login_response.status_code,
+            200,
+        )
+
+        self.usuario.estado_asociacion_sector = "PENDIENTE"
+        self.usuario.fecha_confirmacion_sector = None
+        self.usuario.save(
+            update_fields=[
+                "estado_asociacion_sector",
+                "fecha_confirmacion_sector",
+            ]
         )
 
         response = self.client.patch(

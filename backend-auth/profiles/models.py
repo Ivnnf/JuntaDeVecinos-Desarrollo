@@ -89,6 +89,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         blank=True,
         default=None,
     )
+    motivo_rechazo_asociacion = models.TextField(
+    null=True,
+    blank=True,
+    )
 
     confirmado_por_usuario = models.ForeignKey(
         "self",
@@ -286,7 +290,7 @@ class HistorialGestionUsuario(models.Model):
         CARGO = "CARGO", "Cargo"
         ROL = "ROL", "Rol"
         ESTADO_CUENTA = "ESTADO_CUENTA", "Estado de cuenta"
-        
+
         RESTABLECIMIENTO_2FA = (
             "RESTABLECIMIENTO_2FA",
             "Restablecimiento de 2FA",
